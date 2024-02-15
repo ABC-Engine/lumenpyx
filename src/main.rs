@@ -57,7 +57,7 @@ fn main() {
         ..Default::default()
     };
 
-    let image_path = "CapeOriginal 9.png";
+    let image_path = "test_heightmap_sphere.png";
 
     let image = load_image(image_path);
     let image_texture = glium::texture::Texture2d::new(&display, image).unwrap();
@@ -125,7 +125,25 @@ fn draw_all(
     image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     indices: &glium::index::NoIndices,
 ) {
-    let texture = glium::texture::Texture2d::empty_with_format(
+    let albedo_texture = glium::texture::Texture2d::empty_with_format(
+        display,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::MipmapsOption::NoMipmap,
+        WINDOW_VIRTUAL_SIZE.0,
+        WINDOW_VIRTUAL_SIZE.1,
+    )
+    .unwrap();
+
+    let height_texture = glium::texture::Texture2d::empty_with_format(
+        display,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::MipmapsOption::NoMipmap,
+        WINDOW_VIRTUAL_SIZE.0,
+        WINDOW_VIRTUAL_SIZE.1,
+    )
+    .unwrap();
+
+    let roughness_texture = glium::texture::Texture2d::empty_with_format(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
@@ -135,11 +153,75 @@ fn draw_all(
     .unwrap();
 
     {
-        let mut framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &texture).unwrap();
-        framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+        let mut albedo_framebuffer =
+            glium::framebuffer::SimpleFrameBuffer::new(display, &albedo_texture).unwrap();
+        albedo_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
-        draw_ahr(t, &display, image_uniform, &indices, &mut framebuffer);
+        draw_ahr(
+            t,
+            &display,
+            image_uniform,
+            &indices,
+            &mut albedo_framebuffer,
+        );
+
+        let mut height_framebuffer =
+            glium::framebuffer::SimpleFrameBuffer::new(display, &height_texture).unwrap();
+        height_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+
+        draw_ahr(
+            t,
+            &display,
+            image_uniform,
+            &indices,
+            &mut height_framebuffer,
+        );
+
+        let mut roughness_framebuffer =
+            glium::framebuffer::SimpleFrameBuffer::new(display, &roughness_texture).unwrap();
+        roughness_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+
+        draw_ahr(
+            t,
+            &display,
+            image_uniform,
+            &indices,
+            &mut roughness_framebuffer,
+        );
+    }
+
+    let lit_texture = glium::texture::Texture2d::empty_with_format(
+        display,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::MipmapsOption::NoMipmap,
+        WINDOW_VIRTUAL_SIZE.0,
+        WINDOW_VIRTUAL_SIZE.1,
+    )
+    .unwrap();
+
+    {
+        let behavior = glium::uniforms::SamplerBehavior {
+            minify_filter: glium::uniforms::MinifySamplerFilter::Nearest,
+            magnify_filter: glium::uniforms::MagnifySamplerFilter::Nearest,
+            max_anisotropy: 1,
+            ..Default::default()
+        };
+
+        let albedo = glium::uniforms::Sampler(&albedo_texture, behavior);
+        let height = glium::uniforms::Sampler(&height_texture, behavior);
+        let roughness = glium::uniforms::Sampler(&roughness_texture, behavior);
+
+        let mut lit_framebuffer =
+            glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
+
+        draw_lighting(
+            &display,
+            albedo,
+            height,
+            roughness,
+            &indices,
+            &mut lit_framebuffer,
+        );
     }
 
     {
@@ -150,7 +232,7 @@ fn draw_all(
             ..Default::default()
         };
 
-        let finished_texture = glium::uniforms::Sampler(&texture, behavior);
+        let finished_texture = glium::uniforms::Sampler(&lit_texture, behavior);
         draw_upscale(&display, finished_texture, &indices);
     }
 }
@@ -206,14 +288,15 @@ fn draw_ahr(
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
+    const SCALE: f32 = 2.0;
+
     let uniforms = &uniform! {
     matrix: [
-        [1.0, 0.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
+        [SCALE, 0.0, 0.0, 0.0],
+        [0.0, SCALE, 0.0, 0.0],
+        [0.0, 0.0, SCALE, 0.0],
         [ x , 0.0, 0.0, 1.0f32],
         ],
-        // all this is to prevent the image from being interpolated
         image: image_uniform
     };
 
@@ -290,4 +373,72 @@ fn draw_upscale(
         .unwrap();
 
     target.finish().unwrap();
+}
+
+/// draw the lighting
+fn draw_lighting(
+    display: &glium::Display<WindowSurface>,
+    albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    roughness_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    indices: &glium::index::NoIndices,
+    framebuffer: &mut SimpleFrameBuffer,
+) {
+    let vertex_shader_src = fs::read_to_string("shaders/lighting.vert").unwrap();
+    let vertex_shader_src = vertex_shader_src.as_str();
+
+    let fragment_shader_src = fs::read_to_string("shaders/lighting.frag").unwrap();
+    let fragment_shader_src = fragment_shader_src.as_str();
+
+    let program =
+        glium::Program::from_source(display, vertex_shader_src, fragment_shader_src, None).unwrap();
+
+    // this is doubled
+    // why you might ask? Absolutely no clue
+    let shape = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, -1.0],
+            tex_coords: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, 1.0],
+            tex_coords: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+    ];
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        roughnessmap: roughness_uniform,
+        heightmap: height_uniform,
+        albedomap: albedo_uniform,
+        light_pos: [0.5, 1.0, 1.0f32],
+    };
+
+    framebuffer.clear_color(0.0, 0.0, 1.0, 1.0);
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &program,
+            uniforms,
+            &Default::default(),
+        )
+        .unwrap();
 }
