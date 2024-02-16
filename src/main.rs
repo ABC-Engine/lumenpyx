@@ -13,7 +13,53 @@ use winit::event::Event;
 use winit::event_loop;
 use winit::event_loop::EventLoop;
 
-const WINDOW_VIRTUAL_SIZE: (u32, u32) = (32, 32);
+const WINDOW_VIRTUAL_SIZE: (u32, u32) = (128, 128);
+
+struct DrawableObject<'a> {
+    sampler: glium::uniforms::Sampler<'a, glium::texture::Texture2d>,
+    transform: Transform,
+}
+
+struct Transform {
+    matrix: [[f32; 4]; 4],
+}
+
+impl Transform {
+    fn new() -> Transform {
+        Transform {
+            matrix: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+        }
+    }
+
+    fn translate(&mut self, x: f32, y: f32, z: f32) {
+        self.matrix[3][0] = x;
+        self.matrix[3][1] = y;
+        self.matrix[3][2] = z;
+    }
+
+    fn scale(&mut self, x: f32, y: f32, z: f32) {
+        self.matrix[0][0] = x;
+        self.matrix[1][1] = y;
+        self.matrix[2][2] = z;
+    }
+
+    fn set_x(&mut self, x: f32) {
+        self.matrix[3][0] = x;
+    }
+
+    fn set_y(&mut self, y: f32) {
+        self.matrix[3][1] = y;
+    }
+
+    fn set_z(&mut self, z: f32) {
+        self.matrix[3][2] = z;
+    }
+}
 
 #[derive(Copy, Clone)]
 struct Vertex {
@@ -57,11 +103,16 @@ fn main() {
         ..Default::default()
     };
 
-    let image_path = "test_heightmap_sphere.png";
+    let circle_image_path = "test_heightmap_sphere.png";
 
-    let image = load_image(image_path);
+    let image = load_image(circle_image_path);
     let image_texture = glium::texture::Texture2d::new(&display, image).unwrap();
     let image_uniform = glium::uniforms::Sampler(&image_texture, behavior);
+
+    let border_image_path = "Border_Heightmap_Test.png";
+    let border_image = load_image(border_image_path);
+    let border_image_texture = glium::texture::Texture2d::new(&display, border_image).unwrap();
+    let border_image_uniform = glium::uniforms::Sampler(&border_image_texture, behavior);
 
     let mut t: f32 = 0.0;
     event_loop
@@ -74,7 +125,11 @@ fn main() {
                     display.resize(physical_size.into());
                 }
                 winit::event::WindowEvent::RedrawRequested => {
-                    draw_all(&mut t, &display, image_uniform, &indices);
+                    draw_all(
+                        &display,
+                        vec![image_uniform, border_image_uniform],
+                        &indices,
+                    );
                 }
                 _ => (),
             },
@@ -120,9 +175,8 @@ fn setup() -> (
 }
 
 fn draw_all(
-    t: &mut f32,
     display: &glium::Display<WindowSurface>,
-    image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    image_uniforms: Vec<glium::uniforms::Sampler<glium::texture::Texture2d>>,
     indices: &glium::index::NoIndices,
 ) {
     let albedo_texture = glium::texture::Texture2d::empty_with_format(
@@ -157,37 +211,40 @@ fn draw_all(
             glium::framebuffer::SimpleFrameBuffer::new(display, &albedo_texture).unwrap();
         albedo_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
-        draw_ahr(
-            t,
-            &display,
-            image_uniform,
-            &indices,
-            &mut albedo_framebuffer,
-        );
+        for image_uniform in &image_uniforms {
+            let drawable = DrawableObject {
+                sampler: *image_uniform,
+                transform: Transform::new(),
+            };
+
+            draw_ahr(&display, &drawable, &indices, &mut albedo_framebuffer);
+        }
 
         let mut height_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &height_texture).unwrap();
         height_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
-        draw_ahr(
-            t,
-            &display,
-            image_uniform,
-            &indices,
-            &mut height_framebuffer,
-        );
+        for image_uniform in &image_uniforms {
+            let drawable = DrawableObject {
+                sampler: *image_uniform,
+                transform: Transform::new(),
+            };
+
+            draw_ahr(&display, &drawable, &indices, &mut height_framebuffer);
+        }
 
         let mut roughness_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &roughness_texture).unwrap();
         roughness_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
-        draw_ahr(
-            t,
-            &display,
-            image_uniform,
-            &indices,
-            &mut roughness_framebuffer,
-        );
+        for image_uniform in &image_uniforms {
+            let drawable = DrawableObject {
+                sampler: *image_uniform,
+                transform: Transform::new(),
+            };
+
+            draw_ahr(&display, &drawable, &indices, &mut roughness_framebuffer);
+        }
     }
 
     let lit_texture = glium::texture::Texture2d::empty_with_format(
@@ -239,9 +296,8 @@ fn draw_all(
 
 // draw the albedo, height, or roughness
 fn draw_ahr(
-    t: &mut f32,
     display: &glium::Display<WindowSurface>,
-    image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    drawable: &DrawableObject,
     indices: &glium::index::NoIndices,
     framebuffer: &mut SimpleFrameBuffer,
 ) {
@@ -254,53 +310,43 @@ fn draw_ahr(
     let program =
         glium::Program::from_source(display, vertex_shader_src, fragment_shader_src, None).unwrap();
 
-    // We update `t`
-    *t += 0.001;
-    // We use the sine of t as an offset, this way we get a nice smooth animation
-    let x = t.sin() * 0.5;
-
     let shape = vec![
         Vertex {
-            position: [-0.5, -0.5],
+            position: [-1.0, -1.0],
             tex_coords: [0.0, 0.0],
         },
         Vertex {
-            position: [0.5, -0.5],
+            position: [1.0, -1.0],
             tex_coords: [1.0, 0.0],
         },
         Vertex {
-            position: [0.5, 0.5],
+            position: [1.0, 1.0],
             tex_coords: [1.0, 1.0],
         },
         Vertex {
-            position: [0.5, 0.5],
+            position: [1.0, 1.0],
             tex_coords: [1.0, 1.0],
         },
         Vertex {
-            position: [-0.5, 0.5],
+            position: [-1.0, 1.0],
             tex_coords: [0.0, 1.0],
         },
         Vertex {
-            position: [-0.5, -0.5],
+            position: [-1.0, -1.0],
             tex_coords: [0.0, 0.0],
         },
     ];
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
-    const SCALE: f32 = 2.0;
+    let matrix = drawable.transform.matrix;
+    let image = drawable.sampler.0;
 
     let uniforms = &uniform! {
-    matrix: [
-        [SCALE, 0.0, 0.0, 0.0],
-        [0.0, SCALE, 0.0, 0.0],
-        [0.0, 0.0, SCALE, 0.0],
-        [ x , 0.0, 0.0, 1.0f32],
-        ],
-        image: image_uniform
+        matrix: matrix,
+        image: image,
     };
 
-    framebuffer.clear_color(0.0, 0.0, 1.0, 1.0);
     framebuffer
         .draw(
             &vertex_buffer,
@@ -329,27 +375,27 @@ fn draw_upscale(
 
     let shape = vec![
         Vertex {
-            position: [-0.5, -0.5],
+            position: [-1.0, -1.0],
             tex_coords: [0.0, 0.0],
         },
         Vertex {
-            position: [0.5, -0.5],
+            position: [1.0, -1.0],
             tex_coords: [1.0, 0.0],
         },
         Vertex {
-            position: [0.5, 0.5],
+            position: [1.0, 1.0],
             tex_coords: [1.0, 1.0],
         },
         Vertex {
-            position: [0.5, 0.5],
+            position: [1.0, 1.0],
             tex_coords: [1.0, 1.0],
         },
         Vertex {
-            position: [-0.5, 0.5],
+            position: [-1.0, 1.0],
             tex_coords: [0.0, 1.0],
         },
         Vertex {
-            position: [-0.5, -0.5],
+            position: [-1.0, -1.0],
             tex_coords: [0.0, 0.0],
         },
     ];
