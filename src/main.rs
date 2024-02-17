@@ -15,11 +15,13 @@ use winit::event_loop::EventLoop;
 
 const WINDOW_VIRTUAL_SIZE: (u32, u32) = (128, 128);
 
+#[derive(Copy, Clone)]
 struct DrawableObject<'a> {
     sampler: glium::uniforms::Sampler<'a, glium::texture::Texture2d>,
     transform: Transform,
 }
 
+#[derive(Copy, Clone)]
 struct Transform {
     matrix: [[f32; 4]; 4],
 }
@@ -93,8 +95,7 @@ fn main() {
             .unwrap();
 
     let mut target = display.draw();
-    target.clear_color(0.0, 0.0, 1.0, 0.5);
-    // draw the triangle here
+    target.clear_color(0.0, 0.0, 0.0, 0.0);
 
     let behavior = glium::uniforms::SamplerBehavior {
         minify_filter: glium::uniforms::MinifySamplerFilter::Nearest,
@@ -103,23 +104,27 @@ fn main() {
         ..Default::default()
     };
 
-    let sphere_image_path = "test_heightmap_sphere.png";
-    let sphere_image = load_image(sphere_image_path);
-    let sphere_image_texture = glium::texture::Texture2d::new(&display, sphere_image).unwrap();
-    let sphere_image_uniform = glium::uniforms::Sampler(&sphere_image_texture, behavior);
-    let mut sphere_drawable = DrawableObject {
-        sampler: sphere_image_uniform,
-        transform: Transform::new(),
-    };
+    let paths = vec![
+        "bricks_pixelated.png",
+        "test_heightmap_sphere.png",
+        "Border_Heightmap_Test.png",
+    ];
+    let mut drawables = vec![];
+    let mut texures = vec![];
+    for path in paths {
+        let image = load_image(path);
+        let texture = glium::texture::Texture2d::new(&display, image).unwrap();
+        texures.push(texture);
+    }
 
-    let border_image_path = "Border_Heightmap_Test.png";
-    let border_image = load_image(border_image_path);
-    let border_image_texture = glium::texture::Texture2d::new(&display, border_image).unwrap();
-    let border_image_uniform = glium::uniforms::Sampler(&border_image_texture, behavior);
-    let border_drawable = DrawableObject {
-        sampler: border_image_uniform,
-        transform: Transform::new(),
-    };
+    for texture in &texures {
+        let uniform = glium::uniforms::Sampler(texture, behavior);
+        let drawable = DrawableObject {
+            sampler: uniform,
+            transform: Transform::new(),
+        };
+        drawables.push(drawable);
+    }
 
     let mut t: f32 = 0.0;
     event_loop
@@ -132,10 +137,13 @@ fn main() {
                     display.resize(physical_size.into());
                 }
                 winit::event::WindowEvent::RedrawRequested => {
-                    t += 0.001;
-                    sphere_drawable.transform.set_x(t.sin() * 0.5);
+                    {
+                        t += 0.001;
+                        drawables[1].transform.set_x(t.sin() * 0.5);
+                    }
 
-                    draw_all(&display, vec![&sphere_drawable, &border_drawable], &indices);
+                    let drawable_refs: Vec<&DrawableObject> = drawables.iter().collect();
+                    draw_all(&display, drawable_refs, &indices);
                 }
                 _ => (),
             },
@@ -285,7 +293,7 @@ fn draw_all(
     }
 }
 
-// draw the albedo, height, or roughness
+/// draw the albedo, height, or roughness
 fn draw_ahr(
     display: &glium::Display<WindowSurface>,
     drawable: &DrawableObject,
@@ -349,7 +357,7 @@ fn draw_ahr(
         .unwrap();
 }
 
-// draw the albedo, height, or roughness
+/// upscale the result to the screen size
 fn draw_upscale(
     display: &glium::Display<WindowSurface>,
     image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
@@ -398,7 +406,7 @@ fn draw_upscale(
     };
 
     let mut target = display.draw();
-    target.clear_color(0.0, 0.0, 1.0, 1.0);
+    target.clear_color(0.0, 0.0, 0.0, 0.0);
     target
         .draw(
             &vertex_buffer,
@@ -468,7 +476,7 @@ fn draw_lighting(
         light_pos: [0.5, 1.0, 1.0f32],
     };
 
-    framebuffer.clear_color(0.0, 0.0, 1.0, 1.0);
+    framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
     framebuffer
         .draw(
             &vertex_buffer,
