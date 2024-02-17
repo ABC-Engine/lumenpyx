@@ -26,6 +26,13 @@ struct Transform {
     matrix: [[f32; 4]; 4],
 }
 
+#[derive(Copy, Clone)]
+struct Light {
+    position: [f32; 3],
+    color: [f32; 3],
+    intensity: f32,
+}
+
 impl Transform {
     fn new() -> Transform {
         Transform {
@@ -109,8 +116,15 @@ fn main() {
         "test_heightmap_sphere.png",
         "Border_Heightmap_Test.png",
     ];
+
     let mut drawables = vec![];
     let mut texures = vec![];
+    let lights = vec![Light {
+        position: [0.5, 0.5, 50.0],
+        color: [1.0, 1.0, 1.0],
+        intensity: 3000.0,
+    }];
+
     for path in paths {
         let image = load_image(path);
         let texture = glium::texture::Texture2d::new(&display, image).unwrap();
@@ -143,7 +157,8 @@ fn main() {
                     }
 
                     let drawable_refs: Vec<&DrawableObject> = drawables.iter().collect();
-                    draw_all(&display, drawable_refs, &indices);
+                    let light_refs: Vec<&Light> = lights.iter().collect();
+                    draw_all(&display, drawable_refs, light_refs, &indices);
                 }
                 _ => (),
             },
@@ -191,6 +206,7 @@ fn setup() -> (
 fn draw_all(
     display: &glium::Display<WindowSurface>,
     drawables: Vec<&DrawableObject>,
+    lights: Vec<&Light>,
     indices: &glium::index::NoIndices,
 ) {
     let albedo_texture = glium::texture::Texture2d::empty_with_format(
@@ -270,14 +286,17 @@ fn draw_all(
         let mut lit_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
 
-        draw_lighting(
-            &display,
-            albedo,
-            height,
-            roughness,
-            &indices,
-            &mut lit_framebuffer,
-        );
+        for light in &lights {
+            draw_lighting(
+                &display,
+                albedo,
+                height,
+                roughness,
+                light,
+                &indices,
+                &mut lit_framebuffer,
+            );
+        }
     }
 
     {
@@ -426,6 +445,7 @@ fn draw_lighting(
     albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     roughness_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    light: &Light,
     indices: &glium::index::NoIndices,
     framebuffer: &mut SimpleFrameBuffer,
 ) {
@@ -469,11 +489,15 @@ fn draw_lighting(
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
+    //let light_pos = ;
+
     let uniforms = &uniform! {
         roughnessmap: roughness_uniform,
         heightmap: height_uniform,
         albedomap: albedo_uniform,
-        light_pos: [0.5, 1.0, 1.0f32],
+        light_pos: light.position,
+        light_color: light.color,
+        light_intensity: light.intensity,
     };
 
     framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);

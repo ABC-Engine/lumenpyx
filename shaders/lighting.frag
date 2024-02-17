@@ -7,12 +7,13 @@ uniform sampler2D roughnessmap;
 uniform sampler2D heightmap;
 uniform sampler2D albedomap;
 uniform vec3 light_pos;
+uniform vec3 light_color;
+uniform float light_intensity;
 
 // Green for now for debugging
 const vec4 UNLIT_COLOR = vec4(0.0, 1.0, 0.0, 1.0);
 
-// if this is enabled the unlit color will be the albedo color dimmed by dimFactor
-const bool isDim = true;
+// the unlit color will be the albedo color dimmed by dimFactor
 const float dimFactor = 0.5;
 
 vec4 texture_pixel(sampler2D tex, vec2 coords) {
@@ -106,14 +107,12 @@ void main() {
 		discard;
 	}
 
+	float light_dist = distance(new_v_tex_coords, new_light_pos);
+    vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * (light_intensity / (light_dist * light_dist));
+
     if (!does_intersect(new_v_tex_coords, light_pos)) {
-        color = albedo_color;
+        color += shaded_color;
     } else {
-		if (isDim) {
-			color = albedo_color * dimFactor;
-		}
-		else {
-        	color = UNLIT_COLOR;
-		}
+		color += shaded_color * dimFactor;
     }
 }
