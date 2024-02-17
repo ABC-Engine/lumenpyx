@@ -103,16 +103,23 @@ fn main() {
         ..Default::default()
     };
 
-    let circle_image_path = "test_heightmap_sphere.png";
-
-    let image = load_image(circle_image_path);
-    let image_texture = glium::texture::Texture2d::new(&display, image).unwrap();
-    let image_uniform = glium::uniforms::Sampler(&image_texture, behavior);
+    let sphere_image_path = "test_heightmap_sphere.png";
+    let sphere_image = load_image(sphere_image_path);
+    let sphere_image_texture = glium::texture::Texture2d::new(&display, sphere_image).unwrap();
+    let sphere_image_uniform = glium::uniforms::Sampler(&sphere_image_texture, behavior);
+    let mut sphere_drawable = DrawableObject {
+        sampler: sphere_image_uniform,
+        transform: Transform::new(),
+    };
 
     let border_image_path = "Border_Heightmap_Test.png";
     let border_image = load_image(border_image_path);
     let border_image_texture = glium::texture::Texture2d::new(&display, border_image).unwrap();
     let border_image_uniform = glium::uniforms::Sampler(&border_image_texture, behavior);
+    let border_drawable = DrawableObject {
+        sampler: border_image_uniform,
+        transform: Transform::new(),
+    };
 
     let mut t: f32 = 0.0;
     event_loop
@@ -125,11 +132,10 @@ fn main() {
                     display.resize(physical_size.into());
                 }
                 winit::event::WindowEvent::RedrawRequested => {
-                    draw_all(
-                        &display,
-                        vec![image_uniform, border_image_uniform],
-                        &indices,
-                    );
+                    t += 0.001;
+                    sphere_drawable.transform.set_x(t.sin() * 0.5);
+
+                    draw_all(&display, vec![&sphere_drawable, &border_drawable], &indices);
                 }
                 _ => (),
             },
@@ -176,7 +182,7 @@ fn setup() -> (
 
 fn draw_all(
     display: &glium::Display<WindowSurface>,
-    image_uniforms: Vec<glium::uniforms::Sampler<glium::texture::Texture2d>>,
+    drawables: Vec<&DrawableObject>,
     indices: &glium::index::NoIndices,
 ) {
     let albedo_texture = glium::texture::Texture2d::empty_with_format(
@@ -211,12 +217,7 @@ fn draw_all(
             glium::framebuffer::SimpleFrameBuffer::new(display, &albedo_texture).unwrap();
         albedo_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
-        for image_uniform in &image_uniforms {
-            let drawable = DrawableObject {
-                sampler: *image_uniform,
-                transform: Transform::new(),
-            };
-
+        for drawable in &drawables {
             draw_ahr(&display, &drawable, &indices, &mut albedo_framebuffer);
         }
 
@@ -224,12 +225,7 @@ fn draw_all(
             glium::framebuffer::SimpleFrameBuffer::new(display, &height_texture).unwrap();
         height_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
-        for image_uniform in &image_uniforms {
-            let drawable = DrawableObject {
-                sampler: *image_uniform,
-                transform: Transform::new(),
-            };
-
+        for drawable in &drawables {
             draw_ahr(&display, &drawable, &indices, &mut height_framebuffer);
         }
 
@@ -237,12 +233,7 @@ fn draw_all(
             glium::framebuffer::SimpleFrameBuffer::new(display, &roughness_texture).unwrap();
         roughness_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
-        for image_uniform in &image_uniforms {
-            let drawable = DrawableObject {
-                sampler: *image_uniform,
-                transform: Transform::new(),
-            };
-
+        for drawable in &drawables {
             draw_ahr(&display, &drawable, &indices, &mut roughness_framebuffer);
         }
     }
