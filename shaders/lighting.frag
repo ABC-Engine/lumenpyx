@@ -9,6 +9,7 @@ uniform sampler2D albedomap;
 uniform vec3 light_pos;
 uniform vec3 light_color;
 uniform float light_intensity;
+uniform float light_falloff;
 
 // Green for now for debugging
 const vec4 UNLIT_COLOR = vec4(0.0, 1.0, 0.0, 1.0);
@@ -108,6 +109,7 @@ void main() {
 	}
 
 	float light_dist = distance(new_v_tex_coords, new_light_pos);
+	light_dist = light_dist * light_falloff;
     vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * (light_intensity / (light_dist * light_dist));
 
     if (!does_intersect(new_v_tex_coords, light_pos)) {

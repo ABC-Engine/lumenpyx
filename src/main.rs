@@ -26,13 +26,6 @@ struct Transform {
     matrix: [[f32; 4]; 4],
 }
 
-#[derive(Copy, Clone)]
-struct Light {
-    position: [f32; 3],
-    color: [f32; 3],
-    intensity: f32,
-}
-
 impl Transform {
     fn new() -> Transform {
         Transform {
@@ -71,6 +64,41 @@ impl Transform {
 }
 
 #[derive(Copy, Clone)]
+struct Light {
+    position: [f32; 3],
+    color: [f32; 3],
+    intensity: f32,
+    falloff: f32,
+}
+
+impl Light {
+    fn new() -> Light {
+        Light {
+            position: [0.0, 0.0, 0.0],
+            color: [1.0, 1.0, 1.0],
+            intensity: 1.0,
+            falloff: 1.0,
+        }
+    }
+
+    fn set_position(&mut self, x: f32, y: f32, z: f32) {
+        self.position = [x, y, z];
+    }
+
+    fn set_color(&mut self, r: f32, g: f32, b: f32) {
+        self.color = [r, g, b];
+    }
+
+    fn set_intensity(&mut self, intensity: f32) {
+        self.intensity = intensity;
+    }
+
+    fn set_falloff(&mut self, falloff: f32) {
+        self.falloff = falloff;
+    }
+}
+
+#[derive(Copy, Clone)]
 struct Vertex {
     position: [f32; 2],
     tex_coords: [f32; 2],
@@ -80,16 +108,6 @@ implement_vertex!(Vertex, position, tex_coords);
 #[allow(unused_variables)]
 fn main() {
     let (event_loop, display, window, indices) = setup();
-
-    // STEP LIST 1:
-    // render every albedo to a texture
-    // render every height to a texture
-    // render every roughness to a texture
-    // STEP LIST 2:
-    // take the textures and feed it into a lighting shader
-    // we do this for every light and then blend the results together
-    // STEP LIST 3:
-    // upscale the result to the screen size
 
     let vertex_shader_src = fs::read_to_string("shaders/base_shader.vert").unwrap();
     let vertex_shader_src = vertex_shader_src.as_str();
@@ -120,9 +138,10 @@ fn main() {
     let mut drawables = vec![];
     let mut texures = vec![];
     let lights = vec![Light {
-        position: [0.5, 0.5, 50.0],
+        position: [0.5, 0.5, 25.0],
         color: [1.0, 1.0, 1.0],
-        intensity: 3000.0,
+        intensity: 100.0,
+        falloff: 0.3,
     }];
 
     for path in paths {
@@ -209,6 +228,16 @@ fn draw_all(
     lights: Vec<&Light>,
     indices: &glium::index::NoIndices,
 ) {
+    // STEP 1:
+    // render every albedo to a texture
+    // render every height to a texture
+    // render every roughness to a texture
+    // STEP 2:
+    // take the textures and feed it into a lighting shader
+    // we do this for every light and then blend the results together
+    // STEP 3:
+    // upscale the result to the screen size
+
     let albedo_texture = glium::texture::Texture2d::empty_with_format(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
@@ -498,6 +527,7 @@ fn draw_lighting(
         light_pos: light.position,
         light_color: light.color,
         light_intensity: light.intensity,
+        light_falloff: light.falloff,
     };
 
     framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
