@@ -109,7 +109,7 @@ void main() {
 	}
 
 	float light_dist = distance(new_v_tex_coords, new_light_pos);
-	light_dist = light_dist * light_falloff;
+	light_dist = max(light_dist * light_falloff, 1.0);
     vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * (light_intensity / (light_dist * light_dist));
 
     if (!does_intersect(new_v_tex_coords, light_pos)) {

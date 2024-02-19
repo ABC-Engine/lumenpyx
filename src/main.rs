@@ -17,7 +17,9 @@ const WINDOW_VIRTUAL_SIZE: (u32, u32) = (128, 128);
 
 #[derive(Copy, Clone)]
 struct DrawableObject<'a> {
-    sampler: glium::uniforms::Sampler<'a, glium::texture::Texture2d>,
+    albedo_sampler: glium::uniforms::Sampler<'a, glium::texture::Texture2d>,
+    height_sampler: glium::uniforms::Sampler<'a, glium::texture::Texture2d>,
+    roughness_sampler: glium::uniforms::Sampler<'a, glium::texture::Texture2d>,
     transform: Transform,
 }
 
@@ -85,6 +87,7 @@ impl Light {
         self.position = [x, y, z];
     }
 
+    /// Set the color of the light in 0.0 - 1.0 range
     fn set_color(&mut self, r: f32, g: f32, b: f32) {
         self.color = [r, g, b];
     }
@@ -138,10 +141,10 @@ fn main() {
     let mut drawables = vec![];
     let mut texures = vec![];
     let lights = vec![Light {
-        position: [0.5, 0.5, 25.0],
+        position: [0.5, 0.5, 1.0],
         color: [1.0, 1.0, 1.0],
-        intensity: 100.0,
-        falloff: 0.3,
+        intensity: 1.0,
+        falloff: 0.001,
     }];
 
     for path in paths {
@@ -153,7 +156,9 @@ fn main() {
     for texture in &texures {
         let uniform = glium::uniforms::Sampler(texture, behavior);
         let drawable = DrawableObject {
-            sampler: uniform,
+            albedo_sampler: uniform,
+            height_sampler: uniform,
+            roughness_sampler: uniform,
             transform: Transform::new(),
         };
         drawables.push(drawable);
@@ -270,24 +275,22 @@ fn draw_all(
             glium::framebuffer::SimpleFrameBuffer::new(display, &albedo_texture).unwrap();
         albedo_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
-        for drawable in &drawables {
-            draw_ahr(&display, &drawable, &indices, &mut albedo_framebuffer);
-        }
-
         let mut height_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &height_texture).unwrap();
         height_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
-
-        for drawable in &drawables {
-            draw_ahr(&display, &drawable, &indices, &mut height_framebuffer);
-        }
-
         let mut roughness_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &roughness_texture).unwrap();
         roughness_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         for drawable in &drawables {
-            draw_ahr(&display, &drawable, &indices, &mut roughness_framebuffer);
+            draw_ahr(
+                &display,
+                &drawable,
+                &indices,
+                &mut albedo_framebuffer,
+                &mut height_framebuffer,
+                &mut roughness_framebuffer,
+            );
         }
     }
 
@@ -346,7 +349,9 @@ fn draw_ahr(
     display: &glium::Display<WindowSurface>,
     drawable: &DrawableObject,
     indices: &glium::index::NoIndices,
-    framebuffer: &mut SimpleFrameBuffer,
+    albedo_framebuffer: &mut SimpleFrameBuffer,
+    height_framebuffer: &mut SimpleFrameBuffer,
+    roughness_framebuffer: &mut SimpleFrameBuffer,
 ) {
     let vertex_shader_src = fs::read_to_string("shaders/base_shader.vert").unwrap();
     let vertex_shader_src = vertex_shader_src.as_str();
@@ -387,19 +392,48 @@ fn draw_ahr(
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
     let matrix = drawable.transform.matrix;
-    let image = drawable.sampler.0;
 
-    let uniforms = &uniform! {
+    let mut image = drawable.albedo_sampler.0;
+    let uniform = &uniform! {
         matrix: matrix,
         image: image,
     };
-
-    framebuffer
+    albedo_framebuffer
         .draw(
             &vertex_buffer,
             indices,
             &program,
-            uniforms,
+            uniform,
+            &Default::default(),
+        )
+        .unwrap();
+
+    image = drawable.height_sampler.0;
+    let uniform = &uniform! {
+        matrix: matrix,
+        image: image,
+    };
+    height_framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &program,
+            uniform,
+            &Default::default(),
+        )
+        .unwrap();
+
+    image = drawable.roughness_sampler.0;
+    let uniform = &uniform! {
+        matrix: matrix,
+        image: image,
+    };
+    roughness_framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &program,
+            uniform,
             &Default::default(),
         )
         .unwrap();
