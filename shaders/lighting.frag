@@ -16,11 +16,12 @@ const vec4 UNLIT_COLOR = vec4(0.0, 1.0, 0.0, 1.0);
 
 // the unlit color will be the albedo color dimmed by dimFactor
 const float dimFactor = 0.5;
+const vec2 RESOLUTION = vec2(128.0, 128.0);
 
 vec4 texture_pixel(sampler2D tex, vec2 coords) {
     // adjust from 0-1 to 0-128
     // TODO: FIX MAGIC NUMBER
-    vec2 new_coords = 128.0 * coords;
+    vec2 new_coords = RESOLUTION * coords;
     return texture(tex, new_coords);
 }
 
@@ -100,8 +101,8 @@ bool does_intersect(vec3 p1, vec3 p2) {
 
 void main() {
 	// TODO: FIX MAGIC NUMBER
-    vec3 new_light_pos = vec3(128.0 * (light_pos.xy), light_pos.z);
-    vec3 new_v_tex_coords = vec3(128.0 * v_tex_coords, texture(heightmap, v_tex_coords).r);
+    vec3 new_light_pos = vec3(RESOLUTION * (light_pos.xy), light_pos.z);
+    vec3 new_v_tex_coords = vec3(RESOLUTION * v_tex_coords, texture(heightmap, v_tex_coords).r);
     
 	vec4 albedo_color = texture(albedomap, v_tex_coords);
 	if (albedo_color.a == 0.0) {
@@ -115,6 +116,7 @@ void main() {
     if (!does_intersect(new_v_tex_coords, light_pos)) {
         color += shaded_color;
     } else {
-		color += shaded_color * dimFactor;
+		//color += shaded_color * dimFactor;
+		color = UNLIT_COLOR;
     }
 }

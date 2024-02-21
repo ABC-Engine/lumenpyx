@@ -14,13 +14,49 @@ use winit::event_loop;
 use winit::event_loop::EventLoop;
 
 const WINDOW_VIRTUAL_SIZE: (u32, u32) = (128, 128);
+const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior = glium::uniforms::SamplerBehavior {
+    minify_filter: glium::uniforms::MinifySamplerFilter::Nearest,
+    magnify_filter: glium::uniforms::MagnifySamplerFilter::Nearest,
+    max_anisotropy: 1,
+    wrap_function: (
+        glium::uniforms::SamplerWrapFunction::Mirror,
+        glium::uniforms::SamplerWrapFunction::Mirror,
+        glium::uniforms::SamplerWrapFunction::Mirror,
+    ),
+    depth_texture_comparison: None,
+};
 
-#[derive(Copy, Clone)]
-struct DrawableObject<'a> {
-    albedo_sampler: glium::uniforms::Sampler<'a, glium::texture::Texture2d>,
-    height_sampler: glium::uniforms::Sampler<'a, glium::texture::Texture2d>,
-    roughness_sampler: glium::uniforms::Sampler<'a, glium::texture::Texture2d>,
+struct DrawableObject {
+    albedo_texture: glium::texture::Texture2d,
+    height_texture: glium::texture::Texture2d,
+    roughness_texture: glium::texture::Texture2d,
     transform: Transform,
+}
+
+impl DrawableObject {
+    fn new(
+        albedo_path: &str,
+        height_path: &str,
+        roughness_path: &str,
+        display: &glium::Display<WindowSurface>,
+        transform: Transform,
+    ) -> DrawableObject {
+        let albedo_image = load_image(albedo_path);
+        let albedo_texture = glium::texture::Texture2d::new(display, albedo_image).unwrap();
+
+        let height_image = load_image(height_path);
+        let height_texture = glium::texture::Texture2d::new(display, height_image).unwrap();
+
+        let roughness_image = load_image(roughness_path);
+        let roughness_texture = glium::texture::Texture2d::new(display, roughness_image).unwrap();
+
+        DrawableObject {
+            albedo_texture,
+            height_texture,
+            roughness_texture,
+            transform,
+        }
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -112,55 +148,25 @@ implement_vertex!(Vertex, position, tex_coords);
 fn main() {
     let (event_loop, display, window, indices) = setup();
 
-    let vertex_shader_src = fs::read_to_string("shaders/base_shader.vert").unwrap();
-    let vertex_shader_src = vertex_shader_src.as_str();
-
-    let fragment_shader_src = fs::read_to_string("shaders/base_shader.frag").unwrap();
-    let fragment_shader_src = fragment_shader_src.as_str();
-
-    let program =
-        glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src, None)
-            .unwrap();
-
     let mut target = display.draw();
     target.clear_color(0.0, 0.0, 0.0, 0.0);
 
-    let behavior = glium::uniforms::SamplerBehavior {
-        minify_filter: glium::uniforms::MinifySamplerFilter::Nearest,
-        magnify_filter: glium::uniforms::MagnifySamplerFilter::Nearest,
-        max_anisotropy: 1,
-        ..Default::default()
-    };
-
     let paths = vec![
-        "bricks_pixelated.png",
-        "test_heightmap_sphere.png",
-        "Border_Heightmap_Test.png",
+        "images/bricks_pixelated.png",
+        "images/test_sphere_heightmap.png",
+        "images/Border_Heightmap_Test.png",
     ];
 
     let mut drawables = vec![];
-    let mut texures = vec![];
-    let lights = vec![Light {
-        position: [0.5, 0.5, 1.0],
+    let mut lights = vec![Light {
+        position: [0.5, 1.0, 1.0],
         color: [1.0, 1.0, 1.0],
-        intensity: 1.0,
-        falloff: 0.001,
+        intensity: 2.0,
+        falloff: 0.01,
     }];
 
     for path in paths {
-        let image = load_image(path);
-        let texture = glium::texture::Texture2d::new(&display, image).unwrap();
-        texures.push(texture);
-    }
-
-    for texture in &texures {
-        let uniform = glium::uniforms::Sampler(texture, behavior);
-        let drawable = DrawableObject {
-            albedo_sampler: uniform,
-            height_sampler: uniform,
-            roughness_sampler: uniform,
-            transform: Transform::new(),
-        };
+        let drawable = DrawableObject::new(path, path, path, &display, Transform::new());
         drawables.push(drawable);
     }
 
@@ -177,7 +183,8 @@ fn main() {
                 winit::event::WindowEvent::RedrawRequested => {
                     {
                         t += 0.001;
-                        drawables[1].transform.set_x(t.sin() * 0.5);
+                        //drawables[1].transform.set_x(t.sin() * 0.5);
+                        lights[0].position = [(t.sin() + 1.0) / 2.0, 0.5, 1.0];
                     }
 
                     let drawable_refs: Vec<&DrawableObject> = drawables.iter().collect();
@@ -285,7 +292,7 @@ fn draw_all(
         for drawable in &drawables {
             draw_ahr(
                 &display,
-                &drawable,
+                drawable,
                 &indices,
                 &mut albedo_framebuffer,
                 &mut height_framebuffer,
@@ -304,16 +311,9 @@ fn draw_all(
     .unwrap();
 
     {
-        let behavior = glium::uniforms::SamplerBehavior {
-            minify_filter: glium::uniforms::MinifySamplerFilter::Nearest,
-            magnify_filter: glium::uniforms::MagnifySamplerFilter::Nearest,
-            max_anisotropy: 1,
-            ..Default::default()
-        };
-
-        let albedo = glium::uniforms::Sampler(&albedo_texture, behavior);
-        let height = glium::uniforms::Sampler(&height_texture, behavior);
-        let roughness = glium::uniforms::Sampler(&roughness_texture, behavior);
+        let albedo = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
+        let height = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
+        let roughness = glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR);
 
         let mut lit_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
@@ -393,7 +393,8 @@ fn draw_ahr(
 
     let matrix = drawable.transform.matrix;
 
-    let mut image = drawable.albedo_sampler.0;
+    let mut image = glium::uniforms::Sampler(&drawable.albedo_texture, DEFAULT_BEHAVIOR);
+
     let uniform = &uniform! {
         matrix: matrix,
         image: image,
@@ -408,7 +409,7 @@ fn draw_ahr(
         )
         .unwrap();
 
-    image = drawable.height_sampler.0;
+    image = glium::uniforms::Sampler(&drawable.height_texture, DEFAULT_BEHAVIOR);
     let uniform = &uniform! {
         matrix: matrix,
         image: image,
@@ -423,7 +424,7 @@ fn draw_ahr(
         )
         .unwrap();
 
-    image = drawable.roughness_sampler.0;
+    image = glium::uniforms::Sampler(&drawable.roughness_texture, DEFAULT_BEHAVIOR);
     let uniform = &uniform! {
         matrix: matrix,
         image: image,
