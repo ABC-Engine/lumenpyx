@@ -1,16 +1,13 @@
-use std::fs;
-use std::os::windows::thread;
-
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
+use glium::glutin::api::wgl::display;
 use glium::glutin::surface::WindowSurface;
 use glium::implement_vertex;
 use glium::uniform;
-use glium::uniforms::AsUniformValue;
 use glium::Surface;
-use winit;
-use winit::event::Event;
-use winit::event_loop;
+use std::fs;
+use std::path::Path;
+pub use winit;
 use winit::event_loop::EventLoop;
 
 const WINDOW_VIRTUAL_SIZE: (u32, u32) = (128, 128);
@@ -26,7 +23,17 @@ const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior = glium::uniforms::Samp
     depth_texture_comparison: None,
 };
 
-struct DrawableObject {
+// include the vertex and fragment shaders in the library
+const BASE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/base_shader.vert");
+const BASE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/base_shader.frag");
+
+const LIGHTING_VERTEX_SHADER_SRC: &str = include_str!("../shaders/lighting.vert");
+const LIGHTING_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/lighting.frag");
+
+const UPSCALE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/upscale_shader.vert");
+const UPSCALE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/upscale_shader.frag");
+
+pub struct DrawableObject {
     albedo_texture: glium::texture::Texture2d,
     height_texture: glium::texture::Texture2d,
     roughness_texture: glium::texture::Texture2d,
@@ -34,7 +41,7 @@ struct DrawableObject {
 }
 
 impl DrawableObject {
-    fn new(
+    pub fn new(
         albedo_path: &str,
         height_path: &str,
         roughness_path: &str,
@@ -60,12 +67,12 @@ impl DrawableObject {
 }
 
 #[derive(Copy, Clone)]
-struct Transform {
+pub struct Transform {
     matrix: [[f32; 4]; 4],
 }
 
 impl Transform {
-    fn new() -> Transform {
+    pub fn new() -> Transform {
         Transform {
             matrix: [
                 [1.0, 0.0, 0.0, 0.0],
@@ -76,33 +83,33 @@ impl Transform {
         }
     }
 
-    fn translate(&mut self, x: f32, y: f32, z: f32) {
+    pub fn translate(&mut self, x: f32, y: f32, z: f32) {
         self.matrix[3][0] = x;
         self.matrix[3][1] = y;
         self.matrix[3][2] = z;
     }
 
-    fn scale(&mut self, x: f32, y: f32, z: f32) {
+    pub fn scale(&mut self, x: f32, y: f32, z: f32) {
         self.matrix[0][0] = x;
         self.matrix[1][1] = y;
         self.matrix[2][2] = z;
     }
 
-    fn set_x(&mut self, x: f32) {
+    pub fn set_x(&mut self, x: f32) {
         self.matrix[3][0] = x;
     }
 
-    fn set_y(&mut self, y: f32) {
+    pub fn set_y(&mut self, y: f32) {
         self.matrix[3][1] = y;
     }
 
-    fn set_z(&mut self, z: f32) {
+    pub fn set_z(&mut self, z: f32) {
         self.matrix[3][2] = z;
     }
 }
 
 #[derive(Copy, Clone)]
-struct Light {
+pub struct Light {
     position: [f32; 3],
     color: [f32; 3],
     intensity: f32,
@@ -110,29 +117,33 @@ struct Light {
 }
 
 impl Light {
-    fn new() -> Light {
+    pub fn new(position: [f32; 3], color: [f32; 3], intensity: f32, falloff: f32) -> Light {
         Light {
-            position: [0.0, 0.0, 0.0],
-            color: [1.0, 1.0, 1.0],
-            intensity: 1.0,
-            falloff: 1.0,
+            position,
+            color,
+            intensity,
+            falloff,
         }
     }
 
-    fn set_position(&mut self, x: f32, y: f32, z: f32) {
+    pub fn set_position(&mut self, x: f32, y: f32, z: f32) {
         self.position = [x, y, z];
     }
 
+    pub fn get_position(&self) -> [f32; 3] {
+        self.position
+    }
+
     /// Set the color of the light in 0.0 - 1.0 range
-    fn set_color(&mut self, r: f32, g: f32, b: f32) {
+    pub fn set_color(&mut self, r: f32, g: f32, b: f32) {
         self.color = [r, g, b];
     }
 
-    fn set_intensity(&mut self, intensity: f32) {
+    pub fn set_intensity(&mut self, intensity: f32) {
         self.intensity = intensity;
     }
 
-    fn set_falloff(&mut self, falloff: f32) {
+    pub fn set_falloff(&mut self, falloff: f32) {
         self.falloff = falloff;
     }
 }
@@ -144,63 +155,16 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position, tex_coords);
 
-#[allow(unused_variables)]
-fn main() {
-    let (event_loop, display, window, indices) = setup();
+pub fn setup_program() -> (
+    EventLoop<()>,
+    winit::window::Window,
+    glium::Display<WindowSurface>,
+    glium::index::NoIndices,
+) {
+    // this is just a wrapper for the setup_window function for now
+    let (event_loop, display, window, indices) = setup_window();
 
-    let mut target = display.draw();
-    target.clear_color(0.0, 0.0, 0.0, 0.0);
-
-    let paths = vec![
-        "images/bricks_pixelated.png",
-        "images/test_sphere_heightmap.png",
-        "images/Border_Heightmap_Test.png",
-    ];
-
-    let mut drawables = vec![];
-    let mut lights = vec![Light {
-        position: [0.5, 1.0, 1.0],
-        color: [1.0, 1.0, 1.0],
-        intensity: 2.0,
-        falloff: 0.01,
-    }];
-
-    for path in paths {
-        let drawable = DrawableObject::new(path, path, path, &display, Transform::new());
-        drawables.push(drawable);
-    }
-
-    let mut t: f32 = 0.0;
-    event_loop
-        .run(move |ev, window_target| match ev {
-            winit::event::Event::WindowEvent { event, .. } => match event {
-                winit::event::WindowEvent::CloseRequested => {
-                    window_target.exit();
-                }
-                winit::event::WindowEvent::Resized(physical_size) => {
-                    display.resize(physical_size.into());
-                }
-                winit::event::WindowEvent::RedrawRequested => {
-                    {
-                        t += 0.001;
-                        //drawables[1].transform.set_x(t.sin() * 0.5);
-                        lights[0].position = [(t.sin() + 1.0) / 2.0, 0.5, 1.0];
-                    }
-
-                    let drawable_refs: Vec<&DrawableObject> = drawables.iter().collect();
-                    let light_refs: Vec<&Light> = lights.iter().collect();
-                    draw_all(&display, drawable_refs, light_refs, &indices);
-                }
-                _ => (),
-            },
-            winit::event::Event::AboutToWait => {
-                // RedrawRequested will only trigger once, unless we manually
-                // request it.
-                window.request_redraw();
-            }
-            _ => (),
-        })
-        .unwrap();
+    (event_loop, window, display, indices)
 }
 
 fn load_image(path: &str) -> glium::texture::RawImage2d<u8> {
@@ -218,7 +182,7 @@ fn load_image(path: &str) -> glium::texture::RawImage2d<u8> {
     image
 }
 
-fn setup() -> (
+fn setup_window() -> (
     EventLoop<()>,
     glium::Display<WindowSurface>,
     winit::window::Window,
@@ -234,7 +198,7 @@ fn setup() -> (
     (event_loop, display, window, indices)
 }
 
-fn draw_all(
+pub fn draw_all(
     display: &glium::Display<WindowSurface>,
     drawables: Vec<&DrawableObject>,
     lights: Vec<&Light>,
@@ -317,8 +281,10 @@ fn draw_all(
 
         let mut lit_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
+        lit_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
-        for light in &lights {
+        for light in lights {
+            println!("light x: {:?}, y: {:?}, z: {:?}", light.get_position()[0], light.get_position()[1], light.get_position()[2]);
             draw_lighting(
                 &display,
                 albedo,
@@ -353,14 +319,13 @@ fn draw_ahr(
     height_framebuffer: &mut SimpleFrameBuffer,
     roughness_framebuffer: &mut SimpleFrameBuffer,
 ) {
-    let vertex_shader_src = fs::read_to_string("shaders/base_shader.vert").unwrap();
-    let vertex_shader_src = vertex_shader_src.as_str();
-
-    let fragment_shader_src = fs::read_to_string("shaders/base_shader.frag").unwrap();
-    let fragment_shader_src = fragment_shader_src.as_str();
-
-    let program =
-        glium::Program::from_source(display, vertex_shader_src, fragment_shader_src, None).unwrap();
+    let program = glium::Program::from_source(
+        display,
+        BASE_VERTEX_SHADER_SRC,
+        BASE_FRAGMENT_SHADER_SRC,
+        None,
+    )
+    .unwrap();
 
     let shape = vec![
         Vertex {
@@ -446,14 +411,13 @@ fn draw_upscale(
     image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     indices: &glium::index::NoIndices,
 ) {
-    let vertex_shader_src = fs::read_to_string("shaders/upscale_shader.vert").unwrap();
-    let vertex_shader_src = vertex_shader_src.as_str();
-
-    let fragment_shader_src = fs::read_to_string("shaders/upscale_shader.frag").unwrap();
-    let fragment_shader_src = fragment_shader_src.as_str();
-
-    let program =
-        glium::Program::from_source(display, vertex_shader_src, fragment_shader_src, None).unwrap();
+    let program = glium::Program::from_source(
+        display,
+        UPSCALE_VERTEX_SHADER_SRC,
+        UPSCALE_FRAGMENT_SHADER_SRC,
+        None,
+    )
+    .unwrap();
 
     let shape = vec![
         Vertex {
@@ -513,17 +477,14 @@ fn draw_lighting(
     indices: &glium::index::NoIndices,
     framebuffer: &mut SimpleFrameBuffer,
 ) {
-    let vertex_shader_src = fs::read_to_string("shaders/lighting.vert").unwrap();
-    let vertex_shader_src = vertex_shader_src.as_str();
+    let program = glium::Program::from_source(
+        display,
+        LIGHTING_VERTEX_SHADER_SRC,
+        LIGHTING_FRAGMENT_SHADER_SRC,
+        None,
+    )
+    .unwrap();
 
-    let fragment_shader_src = fs::read_to_string("shaders/lighting.frag").unwrap();
-    let fragment_shader_src = fragment_shader_src.as_str();
-
-    let program =
-        glium::Program::from_source(display, vertex_shader_src, fragment_shader_src, None).unwrap();
-
-    // this is doubled
-    // why you might ask? Absolutely no clue
     let shape = vec![
         Vertex {
             position: [-1.0, -1.0],
@@ -553,8 +514,6 @@ fn draw_lighting(
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
-    //let light_pos = ;
-
     let uniforms = &uniform! {
         roughnessmap: roughness_uniform,
         heightmap: height_uniform,
@@ -565,7 +524,6 @@ fn draw_lighting(
         light_falloff: light.falloff,
     };
 
-    framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
     framebuffer
         .draw(
             &vertex_buffer,
