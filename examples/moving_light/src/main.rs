@@ -10,12 +10,7 @@ fn main() {
     ];
 
     let mut drawables = vec![];
-    let mut lights = vec![Light::new(
-        [0.5, 1.0, 1.0],
-        [1.0, 1.0, 1.0],
-        2.0,
-        0.01,
-    )];
+    let mut lights = vec![Light::new([0.5, 1.0, 1.0], [1.0, 1.0, 1.0], 2.0, 0.01)];
 
     for path in paths {
         let drawable = DrawableObject::new(path, path, path, &display, Transform::new());

@@ -284,7 +284,6 @@ pub fn draw_all(
         lit_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         for light in lights {
-            println!("light x: {:?}, y: {:?}, z: {:?}", light.get_position()[0], light.get_position()[1], light.get_position()[2]);
             draw_lighting(
                 &display,
                 albedo,

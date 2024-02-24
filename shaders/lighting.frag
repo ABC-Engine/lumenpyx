@@ -19,22 +19,33 @@ const float dimFactor = 0.5;
 const vec2 RESOLUTION = vec2(128.0, 128.0);
 
 vec4 texture_pixel(sampler2D tex, vec2 coords) {
-    vec2 new_coords = RESOLUTION * coords;
+    vec2 new_coords = coords / RESOLUTION;
+	// if the coords are the v_tex_coords or the light_pos, return 0.0
+	if (coords == v_tex_coords || coords == light_pos.xy) {
+		return vec4(0.0, 0.0, 0.0, 0.0);
+	}
     return texture(tex, new_coords);
 }
 
 /// Linearly interpolates between two points, P1 and P2 are the endpoints, and P3 is the point to interpolate to
 float lerp(vec3 P1, vec3 P2, vec2 P3) {
-	if (P1.x == P2.x && P1.y == P2.y) {
+	if (P1 == P2) {
 		return P2.z;
 	}
-	if (abs(P1.x - P2.x) > abs(P1.y - P2.y)) {
+	else if (abs(P1.x - P2.x) > abs(P1.y - P2.y)) {
 		float t = (P3.x - P2.x) / (P1.x - P2.x);
 
+		if (t < 0.0 || t > 1.0) {
+			return 1000.0;
+		}
 		return P2.z + t * (P1.z - P2.z);
 	}
 	else {
 		float t = (P3.y - P2.y) / (P1.y - P2.y);
+
+		if (t < 0.0 || t > 1.0) {
+			return 1000.0;
+		}
 
 		return P2.z + t * (P1.z - P2.z);
 	}
@@ -54,8 +65,8 @@ bool does_intersect(vec3 p1, vec3 p2) {
 	dx = x2-x1;
 	dy = y2-y1;
 
-	if (dx < 0) dx = -dx;
-	if (dy < 0) dy = -dy;
+	dx = abs(dx);
+	dy = abs(dy);
 	incx = 1;
 	if (x2 < x1) incx = -1;
 	incy = 1;
@@ -127,14 +138,18 @@ void main() {
 	light_dist = max(light_dist * light_falloff, 1.0);
     vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * (light_intensity / (light_dist * light_dist));
 
-    if (!does_intersect(new_v_tex_coords, new_light_pos)) {
-        color += shaded_color;
+    if (new_v_tex_coords.z < new_light_pos.z && !does_intersect(new_light_pos, new_v_tex_coords)) {
 		if (color == UNLIT_COLOR) {
 			color = shaded_color;
 		}
-    } else {
-		//color += shaded_color * dimFactor;
-		// TODO: fix this, it currently forms line y = 1.0x + light_pos.y - light_pos.x
-		color = UNLIT_COLOR;
+		else {
+			color += shaded_color;
+		}
+    }
+	else {
+		color += shaded_color * dimFactor;
+		// TODO: fix this, it currently forms line y = -1.0x + light_pos.y - light_pos.x
+		// color = UNLIT_COLOR;
     }
 }
+
