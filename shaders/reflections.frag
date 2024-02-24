@@ -3,26 +3,21 @@
 in vec2 v_tex_coords;
 out vec4 color;
 
-uniform sampler2D heightmap;
 uniform sampler2D albedomap;
-uniform vec3 light_pos;
-uniform vec3 light_color;
-uniform float light_intensity;
-uniform float light_falloff;
+uniform sampler2D heightmap;
+uniform sampler2D roughnessmap;
+uniform vec3 camera_pos;
 
-// the unlit color will be the albedo color dimmed by dimFactor
-const float dimFactor = 0.5;
 const vec2 RESOLUTION = vec2(128.0, 128.0);
+const vec4 NON_INTERSECT_COLOR = vec4(1000.0, 1000.0, 1000.0, 1000.0);
 
+// this function is the same as the one in the lighting shader
 vec4 texture_pixel(sampler2D tex, vec2 coords) {
     vec2 new_coords = coords / RESOLUTION;
-	// if the coords are the v_tex_coords or the light_pos, return 0.0
-	if (coords == v_tex_coords || coords == light_pos.xy) {
-		return vec4(0.0, 0.0, 0.0, 0.0);
-	}
     return texture(tex, new_coords);
 }
 
+// this function is the same as the one in the lighting shader
 /// Linearly interpolates between two points, P1 and P2 are the endpoints, and P3 is the point to interpolate to
 float lerp(vec3 P1, vec3 P2, vec2 P3) {
 	if (P1 == P2) {
@@ -47,8 +42,9 @@ float lerp(vec3 P1, vec3 P2, vec2 P3) {
 	}
 }
 
+// this function is the same as the one in the lighting shader
 // most this code attributed to https://gist.github.com/nowke/965fed0d5191bf373f1262be584207bb
-bool does_intersect(vec3 p1, vec3 p2) {
+vec4 find_intersect_color(vec3 p1, vec3 p2) {
     int x1 = int(p1.x);
     int y1 = int(p1.y);
     int x2 = int(p2.x);
@@ -73,7 +69,7 @@ bool does_intersect(vec3 p1, vec3 p2) {
         // TODO: double check the interpolation
 		float height_of_line = lerp(p1, p2, vec2(x, y));
         if (texture_pixel(heightmap, vec2(x, y)).r > height_of_line) {
-            return true;
+            return texture_pixel(albedomap, vec2(x, y));
         }
 
 		e = 2 * dy-dx;
@@ -90,14 +86,14 @@ bool does_intersect(vec3 p1, vec3 p2) {
 
 			float height_of_line = lerp(p1, p2, vec2(x, y));
             if (texture_pixel(heightmap, vec2(x, y)).r > height_of_line) {
-                return true;
+                return texture_pixel(albedomap, vec2(x, y));
             }
 		}
 
 	} else {
 		float height_of_line = lerp(p1, p2, vec2(x, y));
         if (texture_pixel(heightmap, vec2(x, y)).r > height_of_line) {
-            return true;
+            return texture_pixel(albedomap, vec2(x, y));
         }
 
 		e = 2*dx-dy;
@@ -114,31 +110,35 @@ bool does_intersect(vec3 p1, vec3 p2) {
 
 			float height_of_line = lerp(p1, p2, vec2(x, y));
             if (texture_pixel(heightmap, vec2(x, y)).r > height_of_line) {
-                return true;
+                return texture_pixel(albedomap, vec2(x, y));
             }
 		}
 	}
-    return false;
+    return NON_INTERSECT_COLOR;
+}
+
+/// returns a point that is the reflection that ends at the screen bounds
+vec3 get_reflected_point(vec3 p1, vec3 p2) {
+    vec3 dir = normalize(p1-p2);
+    vec3 reflected = reflect(dir, vec3(0.0, 0.0, 1.0));
+    return p2 + reflected * (RESOLUTION.y - p2.y);
 }
 
 void main() {
-	vec4 albedo_color = texture(albedomap, v_tex_coords);
-	if (albedo_color.a == 0.0) {
-		discard;
-	}
+    vec4 albedo = texture(albedomap, v_tex_coords);
+    vec4 roughness = texture(roughnessmap, v_tex_coords);
 
-    vec3 new_light_pos = vec3(RESOLUTION * (light_pos.xy), light_pos.z);
+    vec3 new_camera_pos = vec3(RESOLUTION * (camera_pos.xy), camera_pos.z);
     vec3 new_v_tex_coords = vec3(RESOLUTION * v_tex_coords, texture(heightmap, v_tex_coords).r);
-    
-	float light_dist = distance(new_v_tex_coords, new_light_pos);
-	light_dist = max(light_dist * light_falloff, 1.0);
-    vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * (light_intensity / (light_dist * light_dist));
+    vec3 reflection_point = get_reflected_point(new_camera_pos, new_v_tex_coords);
 
-    if (new_v_tex_coords.z < new_light_pos.z && !does_intersect(new_light_pos, new_v_tex_coords)) {
-		color = shaded_color;
+    vec4 intersection_color = find_intersect_color(new_v_tex_coords, reflection_point);
+
+    if (intersection_color == NON_INTERSECT_COLOR) {
+        color = albedo;
     }
-	else {
-		color = (shaded_color * dimFactor);
+    else {
+        // lerp the intersection color * albedo with the albedo
+        color = mix(albedo, intersection_color, roughness.r);
     }
 }
-

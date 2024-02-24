@@ -27,6 +27,9 @@ const BASE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/base_shader.frag
 const LIGHTING_VERTEX_SHADER_SRC: &str = include_str!("../shaders/lighting.vert");
 const LIGHTING_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/lighting.frag");
 
+const REFLECTION_VERTEX_SHADER_SRC: &str = include_str!("../shaders/reflections.vert");
+const REFLECTION_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/reflections.frag");
+
 const UPSCALE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/upscale_shader.vert");
 const UPSCALE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/upscale_shader.frag");
 
@@ -209,6 +212,9 @@ pub fn draw_all(
     // take the textures and feed it into a lighting shader
     // we do this for every light and then blend the results together
     // STEP 3:
+    // take the result and feed it into a reflection shader
+    // it uses screen space reflections and lerps between the reflection and the original image based on the roughness
+    // STEP 4:
     // upscale the result to the screen size
 
     let albedo_texture = glium::texture::Texture2d::empty_with_format(
@@ -270,29 +276,53 @@ pub fn draw_all(
         WINDOW_VIRTUAL_SIZE.0,
         WINDOW_VIRTUAL_SIZE.1,
     )
-    .unwrap();
+    .expect("Failed to create lit frame buffer");
 
     {
         let albedo = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
         let height = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
-        let roughness = glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR);
 
         let mut lit_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
         lit_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         for light in lights {
-            println!("light x {}", light.position[0]);
             draw_lighting(
                 &display,
                 albedo,
                 height,
-                roughness,
                 light,
                 &indices,
                 &mut lit_framebuffer,
             );
         }
+    }
+
+    let reflected_texture = glium::texture::Texture2d::empty_with_format(
+        display,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::MipmapsOption::NoMipmap,
+        WINDOW_VIRTUAL_SIZE.0,
+        WINDOW_VIRTUAL_SIZE.1,
+    )
+    .expect("Failed to create reflected frame buffer");
+
+    {
+        let roughness = glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR);
+        let height = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
+        let lit_sampler = glium::uniforms::Sampler(&lit_texture, DEFAULT_BEHAVIOR);
+
+        let mut reflected_framebuffer =
+            glium::framebuffer::SimpleFrameBuffer::new(display, &reflected_texture).unwrap();
+
+        draw_reflections(
+            &display,
+            lit_sampler,
+            height,
+            roughness,
+            &indices,
+            &mut reflected_framebuffer,
+        );
     }
 
     {
@@ -303,7 +333,7 @@ pub fn draw_all(
             ..Default::default()
         };
 
-        let finished_texture = glium::uniforms::Sampler(&lit_texture, behavior);
+        let finished_texture = glium::uniforms::Sampler(&reflected_texture, behavior);
         draw_upscale(&display, finished_texture, &indices);
     }
 }
@@ -470,7 +500,6 @@ fn draw_lighting(
     display: &glium::Display<WindowSurface>,
     albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    roughness_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     light: &Light,
     indices: &glium::index::NoIndices,
     framebuffer: &mut SimpleFrameBuffer,
@@ -513,7 +542,6 @@ fn draw_lighting(
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
     let uniforms = &uniform! {
-        roughnessmap: roughness_uniform,
         heightmap: height_uniform,
         albedomap: albedo_uniform,
         light_pos: light.position,
@@ -542,6 +570,72 @@ fn draw_lighting(
                 },
                 ..Default::default()
             },
+        )
+        .unwrap();
+}
+
+fn draw_reflections(
+    display: &glium::Display<WindowSurface>,
+    lit_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    rougness_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    indices: &glium::index::NoIndices,
+    framebuffer: &mut SimpleFrameBuffer,
+) {
+    let program = glium::Program::from_source(
+        display,
+        REFLECTION_VERTEX_SHADER_SRC,
+        REFLECTION_FRAGMENT_SHADER_SRC,
+        None,
+    )
+    .unwrap();
+
+    let shape = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, -1.0],
+            tex_coords: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, 1.0],
+            tex_coords: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+    ];
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    // TODO: fix placeholder camera position
+    let camera_pos: [f32; 3] = [0.5, 0.5, 0.5];
+
+    let uniforms = &uniform! {
+        albedomap: lit_uniform,
+        heightmap: height_uniform,
+        roughnessmap: rougness_uniform,
+        camera_pos: camera_pos,
+    };
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &program,
+            uniforms,
+            &Default::default(),
         )
         .unwrap();
 }

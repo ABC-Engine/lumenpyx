@@ -10,9 +10,9 @@ fn main() {
     ];
 
     let scene_drawable = DrawableObject::new(
-        "../images/Demo-Scene.png",
+        "../images/Demo-Scene-Albedo.png",
         "../images/Demo-Scene-Heightmap.png",
-        "../images/Demo-Scene.png",
+        "../images/Demo-Scene-Roughnessmap.png",
         &display,
         Transform::new(),
     );
