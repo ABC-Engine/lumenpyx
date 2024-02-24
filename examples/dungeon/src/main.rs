@@ -4,16 +4,9 @@ use rand::Rng;
 fn main() {
     let (event_loop, window, display, indices) = setup_program();
 
-    let paths = vec!["../images/Demo-Scene.png"];
-
     let mut lights = vec![
         Light::new([0.78, 0.28, 1.0], [1.0, 0.76, 0.52], 2.0, 0.02),
-        /*Light::new(
-            [0.22, 0.28, 0.5],
-            [1.0, 0.76, 0.52],
-            2.0,
-            0.02,
-        )*/
+        Light::new([0.22, 0.28, 1.0], [1.0, 0.76, 0.52], 2.0, 0.02),
     ];
 
     let scene_drawable = DrawableObject::new(
@@ -50,7 +43,7 @@ fn main() {
                         let mut rng = rand::thread_rng();
                         t += 0.01 * rng.gen_range(0.0..1.0);
                         for light in lights.iter_mut() {
-                            light.set_position((t.sin() / 2.0) + 0.5, 0.28, 0.5);
+                            //light.set_position((t.sin() / 2.0) + 0.5, 0.28, 0.5);
                             light.set_intensity(1.0 + (t.sin() * 0.5));
                         }
                     }

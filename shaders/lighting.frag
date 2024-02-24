@@ -11,9 +11,6 @@ uniform vec3 light_color;
 uniform float light_intensity;
 uniform float light_falloff;
 
-// Green for now for debugging
-const vec4 UNLIT_COLOR = vec4(0.0, 1.0, 0.0, 1.0);
-
 // the unlit color will be the albedo color dimmed by dimFactor
 const float dimFactor = 0.5;
 const vec2 RESOLUTION = vec2(128.0, 128.0);
@@ -139,17 +136,10 @@ void main() {
     vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * (light_intensity / (light_dist * light_dist));
 
     if (new_v_tex_coords.z < new_light_pos.z && !does_intersect(new_light_pos, new_v_tex_coords)) {
-		if (color == UNLIT_COLOR) {
-			color = shaded_color;
-		}
-		else {
-			color += shaded_color;
-		}
+		color = color + shaded_color;
     }
 	else {
-		color += shaded_color * dimFactor;
-		// TODO: fix this, it currently forms line y = -1.0x + light_pos.y - light_pos.x
-		// color = UNLIT_COLOR;
+		color = color + (shaded_color * dimFactor);
     }
 }
 

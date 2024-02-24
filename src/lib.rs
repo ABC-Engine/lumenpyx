@@ -1,12 +1,9 @@
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
-use glium::glutin::api::wgl::display;
 use glium::glutin::surface::WindowSurface;
 use glium::implement_vertex;
 use glium::uniform;
 use glium::Surface;
-use std::fs;
-use std::path::Path;
 pub use winit;
 use winit::event_loop::EventLoop;
 
@@ -249,6 +246,7 @@ pub fn draw_all(
         let mut height_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &height_texture).unwrap();
         height_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+
         let mut roughness_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &roughness_texture).unwrap();
         roughness_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
@@ -284,6 +282,7 @@ pub fn draw_all(
         lit_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         for light in lights {
+            println!("light x {}", light.position[0]);
             draw_lighting(
                 &display,
                 albedo,
@@ -529,7 +528,20 @@ fn draw_lighting(
             indices,
             &program,
             uniforms,
-            &Default::default(),
+            &glium::DrawParameters {
+                blend: glium::Blend {
+                    color: glium::BlendingFunction::Addition {
+                        source: glium::LinearBlendingFactor::One,
+                        destination: glium::LinearBlendingFactor::One,
+                    },
+                    alpha: glium::BlendingFunction::Addition {
+                        source: glium::LinearBlendingFactor::One,
+                        destination: glium::LinearBlendingFactor::One,
+                    },
+                    constant_value: (0.0, 0.0, 0.0, 0.0),
+                },
+                ..Default::default()
+            },
         )
         .unwrap();
 }
