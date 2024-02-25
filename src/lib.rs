@@ -33,10 +33,14 @@ const REFLECTION_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/reflection
 const UPSCALE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/upscale_shader.vert");
 const UPSCALE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/upscale_shader.frag");
 
+const GENERATE_NORMALS_VERTEX_SHADER_SRC: &str = include_str!("../shaders/normal_generator.vert");
+const GENERATE_NORMALS_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/normal_generator.frag");
+
 pub struct DrawableObject {
     albedo_texture: glium::texture::Texture2d,
     height_texture: glium::texture::Texture2d,
     roughness_texture: glium::texture::Texture2d,
+    normal_texture: glium::texture::Texture2d,
     transform: Transform,
 }
 
@@ -46,6 +50,7 @@ impl DrawableObject {
         height_path: &str,
         roughness_path: &str,
         display: &glium::Display<WindowSurface>,
+        indices: &glium::index::NoIndices,
         transform: Transform,
     ) -> DrawableObject {
         let albedo_image = load_image(albedo_path);
@@ -57,10 +62,35 @@ impl DrawableObject {
         let roughness_image = load_image(roughness_path);
         let roughness_texture = glium::texture::Texture2d::new(display, roughness_image).unwrap();
 
+        let normal_texture = glium::texture::Texture2d::empty_with_format(
+            display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            WINDOW_VIRTUAL_SIZE.0,
+            WINDOW_VIRTUAL_SIZE.1,
+        )
+        .unwrap();
+
+        {
+            let height_uniform = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
+            let albedo_uniform = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
+            let mut normal_framebuffer =
+                glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture).unwrap();
+
+            draw_generate_normals(
+                display,
+                height_uniform,
+                albedo_uniform,
+                indices,
+                &mut normal_framebuffer,
+            )
+        }
+
         DrawableObject {
             albedo_texture,
             height_texture,
             roughness_texture,
+            normal_texture,
             transform,
         }
     }
@@ -204,18 +234,20 @@ pub fn draw_all(
     lights: Vec<&Light>,
     indices: &glium::index::NoIndices,
 ) {
-    // STEP 1:
-    // render every albedo to a texture
-    // render every height to a texture
-    // render every roughness to a texture
-    // STEP 2:
-    // take the textures and feed it into a lighting shader
-    // we do this for every light and then blend the results together
-    // STEP 3:
-    // take the result and feed it into a reflection shader
-    // it uses screen space reflections and lerps between the reflection and the original image based on the roughness
-    // STEP 4:
-    // upscale the result to the screen size
+    /*
+    STEP 1:
+        render every albedo to a texture
+        render every height to a texture
+        render every roughness to a texture
+    STEP 2:
+        take the textures and feed it into a lighting shader
+        we do this for every light and then blend the results together
+    STEP 3:
+        take the result and feed it into a reflection shader
+        it uses screen space reflections and lerps between the reflection and the original image based on the roughness
+    STEP 4:
+        upscale the result to the screen size
+    */
 
     let albedo_texture = glium::texture::Texture2d::empty_with_format(
         display,
@@ -244,6 +276,15 @@ pub fn draw_all(
     )
     .unwrap();
 
+    let normal_texture = glium::texture::Texture2d::empty_with_format(
+        display,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::MipmapsOption::NoMipmap,
+        WINDOW_VIRTUAL_SIZE.0,
+        WINDOW_VIRTUAL_SIZE.1,
+    )
+    .unwrap();
+
     {
         let mut albedo_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &albedo_texture).unwrap();
@@ -257,6 +298,10 @@ pub fn draw_all(
             glium::framebuffer::SimpleFrameBuffer::new(display, &roughness_texture).unwrap();
         roughness_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
+        let mut normal_framebuffer =
+            glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture).unwrap();
+        normal_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+
         for drawable in &drawables {
             draw_ahr(
                 &display,
@@ -265,6 +310,7 @@ pub fn draw_all(
                 &mut albedo_framebuffer,
                 &mut height_framebuffer,
                 &mut roughness_framebuffer,
+                &mut normal_framebuffer,
             );
         }
     }
@@ -310,6 +356,7 @@ pub fn draw_all(
     {
         let roughness = glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR);
         let height = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
+        let normal = glium::uniforms::Sampler(&normal_texture, DEFAULT_BEHAVIOR);
         let lit_sampler = glium::uniforms::Sampler(&lit_texture, DEFAULT_BEHAVIOR);
 
         let mut reflected_framebuffer =
@@ -320,6 +367,7 @@ pub fn draw_all(
             lit_sampler,
             height,
             roughness,
+            normal,
             &indices,
             &mut reflected_framebuffer,
         );
@@ -346,6 +394,7 @@ fn draw_ahr(
     albedo_framebuffer: &mut SimpleFrameBuffer,
     height_framebuffer: &mut SimpleFrameBuffer,
     roughness_framebuffer: &mut SimpleFrameBuffer,
+    normal_framebuffer: &mut SimpleFrameBuffer,
 ) {
     let program = glium::Program::from_source(
         display,
@@ -423,6 +472,21 @@ fn draw_ahr(
         image: image,
     };
     roughness_framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &program,
+            uniform,
+            &Default::default(),
+        )
+        .unwrap();
+
+    image = glium::uniforms::Sampler(&drawable.normal_texture, DEFAULT_BEHAVIOR);
+    let uniform = &uniform! {
+        matrix: matrix,
+        image: image,
+    };
+    normal_framebuffer
         .draw(
             &vertex_buffer,
             indices,
@@ -579,6 +643,7 @@ fn draw_reflections(
     lit_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     rougness_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    normal_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     indices: &glium::index::NoIndices,
     framebuffer: &mut SimpleFrameBuffer,
 ) {
@@ -626,7 +691,68 @@ fn draw_reflections(
         albedomap: lit_uniform,
         heightmap: height_uniform,
         roughnessmap: rougness_uniform,
+        normalmap: normal_uniform,
         camera_pos: camera_pos,
+    };
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &program,
+            uniforms,
+            &Default::default(),
+        )
+        .unwrap();
+}
+
+fn draw_generate_normals(
+    display: &glium::Display<WindowSurface>,
+    height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    indices: &glium::index::NoIndices,
+    framebuffer: &mut SimpleFrameBuffer,
+) {
+    let program = glium::Program::from_source(
+        display,
+        GENERATE_NORMALS_VERTEX_SHADER_SRC,
+        GENERATE_NORMALS_FRAGMENT_SHADER_SRC,
+        None,
+    )
+    .unwrap();
+
+    let shape = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, -1.0],
+            tex_coords: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, 1.0],
+            tex_coords: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+    ];
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        heightmap: height_uniform,
+        albedomap: albedo_uniform,
     };
 
     framebuffer

@@ -6,10 +6,12 @@ out vec4 color;
 uniform sampler2D albedomap;
 uniform sampler2D heightmap;
 uniform sampler2D roughnessmap;
+uniform sampler2D normalmap;
 uniform vec3 camera_pos;
 
 const vec2 RESOLUTION = vec2(128.0, 128.0);
-const vec4 NON_INTERSECT_COLOR = vec4(1000.0, 1000.0, 1000.0, 1000.0);
+const vec4 NON_INTERSECT_COLOR = vec4(0.0, 0.0, 0.0, 0.0);
+const float MAX_ROUGHNESS = 0.5;
 
 // this function is the same as the one in the lighting shader
 vec4 texture_pixel(sampler2D tex, vec2 coords) {
@@ -118,19 +120,25 @@ vec4 find_intersect_color(vec3 p1, vec3 p2) {
 }
 
 /// returns a point that is the reflection that ends at the screen bounds
-vec3 get_reflected_point(vec3 p1, vec3 p2) {
+vec3 get_reflected_point(vec3 p1, vec3 p2, vec3 normal) {
     vec3 dir = normalize(p1-p2);
-    vec3 reflected = reflect(dir, vec3(0.0, 0.0, 1.0));
+    vec3 reflected = reflect(dir, normal);
     return p2 + reflected * (RESOLUTION.y - p2.y);
 }
 
 void main() {
     vec4 albedo = texture(albedomap, v_tex_coords);
-    vec4 roughness = texture(roughnessmap, v_tex_coords);
+    vec3 normal = texture(normalmap, v_tex_coords).xyz;
+    float roughness = texture(roughnessmap, v_tex_coords).r;
+    roughness = min(roughness, MAX_ROUGHNESS);
+    if (roughness <= 0.0) {
+        color = albedo;
+        return;
+    }
 
     vec3 new_camera_pos = vec3(RESOLUTION * (camera_pos.xy), camera_pos.z);
     vec3 new_v_tex_coords = vec3(RESOLUTION * v_tex_coords, texture(heightmap, v_tex_coords).r);
-    vec3 reflection_point = get_reflected_point(new_camera_pos, new_v_tex_coords);
+    vec3 reflection_point = get_reflected_point(new_camera_pos, new_v_tex_coords, normal);
 
     vec4 intersection_color = find_intersect_color(new_v_tex_coords, reflection_point);
 
@@ -139,6 +147,6 @@ void main() {
     }
     else {
         // lerp the intersection color * albedo with the albedo
-        color = mix(albedo, intersection_color, roughness.r);
+        color = mix(albedo, intersection_color, roughness);
     }
 }

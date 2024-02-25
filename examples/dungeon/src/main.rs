@@ -14,6 +14,7 @@ fn main() {
         "../images/Demo-Scene-Heightmap.png",
         "../images/Demo-Scene-Roughnessmap.png",
         &display,
+        &indices,
         Transform::new(),
     );
 
