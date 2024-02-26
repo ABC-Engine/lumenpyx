@@ -381,7 +381,7 @@ pub fn draw_all(
             ..Default::default()
         };
 
-        let finished_texture = glium::uniforms::Sampler(&reflected_texture, behavior);
+        let finished_texture = glium::uniforms::Sampler(&normal_texture, behavior);
         draw_upscale(&display, finished_texture, &indices);
     }
 }
