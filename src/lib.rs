@@ -1,100 +1,28 @@
 use glium;
-use glium::framebuffer::SimpleFrameBuffer;
 use glium::glutin::surface::WindowSurface;
 use glium::implement_vertex;
-use glium::uniform;
 use glium::Surface;
 pub use winit;
 use winit::event_loop::EventLoop;
+mod primitives;
+mod shaders;
+use shaders::*;
+mod drawable_object;
+pub use drawable_object::*;
 
-const WINDOW_VIRTUAL_SIZE: (u32, u32) = (128, 128);
-const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior = glium::uniforms::SamplerBehavior {
-    minify_filter: glium::uniforms::MinifySamplerFilter::Nearest,
-    magnify_filter: glium::uniforms::MagnifySamplerFilter::Nearest,
-    max_anisotropy: 1,
-    wrap_function: (
-        glium::uniforms::SamplerWrapFunction::Mirror,
-        glium::uniforms::SamplerWrapFunction::Mirror,
-        glium::uniforms::SamplerWrapFunction::Mirror,
-    ),
-    depth_texture_comparison: None,
-};
-
-// include the vertex and fragment shaders in the library
-const BASE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/base_shader.vert");
-const BASE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/base_shader.frag");
-
-const LIGHTING_VERTEX_SHADER_SRC: &str = include_str!("../shaders/lighting.vert");
-const LIGHTING_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/lighting.frag");
-
-const REFLECTION_VERTEX_SHADER_SRC: &str = include_str!("../shaders/reflections.vert");
-const REFLECTION_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/reflections.frag");
-
-const UPSCALE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/upscale_shader.vert");
-const UPSCALE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/upscale_shader.frag");
-
-const GENERATE_NORMALS_VERTEX_SHADER_SRC: &str = include_str!("../shaders/normal_generator.vert");
-const GENERATE_NORMALS_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/normal_generator.frag");
-
-pub struct DrawableObject {
-    albedo_texture: glium::texture::Texture2d,
-    height_texture: glium::texture::Texture2d,
-    roughness_texture: glium::texture::Texture2d,
-    normal_texture: glium::texture::Texture2d,
-    transform: Transform,
-}
-
-impl DrawableObject {
-    pub fn new(
-        albedo_path: &str,
-        height_path: &str,
-        roughness_path: &str,
-        display: &glium::Display<WindowSurface>,
-        indices: &glium::index::NoIndices,
-        transform: Transform,
-    ) -> DrawableObject {
-        let albedo_image = load_image(albedo_path);
-        let albedo_texture = glium::texture::Texture2d::new(display, albedo_image).unwrap();
-
-        let height_image = load_image(height_path);
-        let height_texture = glium::texture::Texture2d::new(display, height_image).unwrap();
-
-        let roughness_image = load_image(roughness_path);
-        let roughness_texture = glium::texture::Texture2d::new(display, roughness_image).unwrap();
-
-        let normal_texture = glium::texture::Texture2d::empty_with_format(
-            display,
-            glium::texture::UncompressedFloatFormat::U8U8U8U8,
-            glium::texture::MipmapsOption::NoMipmap,
-            WINDOW_VIRTUAL_SIZE.0,
-            WINDOW_VIRTUAL_SIZE.1,
-        )
-        .unwrap();
-
-        {
-            let height_uniform = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
-            let albedo_uniform = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
-            let mut normal_framebuffer =
-                glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture).unwrap();
-
-            draw_generate_normals(
-                display,
-                height_uniform,
-                albedo_uniform,
-                indices,
-                &mut normal_framebuffer,
-            )
-        }
-
-        DrawableObject {
-            albedo_texture,
-            height_texture,
-            roughness_texture,
-            normal_texture,
-            transform,
-        }
-    }
-}
+pub(crate) const WINDOW_VIRTUAL_SIZE: (u32, u32) = (128, 128);
+pub(crate) const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior =
+    glium::uniforms::SamplerBehavior {
+        minify_filter: glium::uniforms::MinifySamplerFilter::Nearest,
+        magnify_filter: glium::uniforms::MagnifySamplerFilter::Nearest,
+        max_anisotropy: 1,
+        wrap_function: (
+            glium::uniforms::SamplerWrapFunction::Mirror,
+            glium::uniforms::SamplerWrapFunction::Mirror,
+            glium::uniforms::SamplerWrapFunction::Mirror,
+        ),
+        depth_texture_comparison: None,
+    };
 
 #[derive(Copy, Clone)]
 pub struct Transform {
@@ -230,7 +158,7 @@ fn setup_window() -> (
 
 pub fn draw_all(
     display: &glium::Display<WindowSurface>,
-    drawables: Vec<&DrawableObject>,
+    drawables: Vec<&impl Drawable>,
     lights: Vec<&Light>,
     indices: &glium::index::NoIndices,
 ) {
@@ -303,15 +231,14 @@ pub fn draw_all(
         normal_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         for drawable in &drawables {
-            draw_ahr(
+            drawable.draw(
                 &display,
-                drawable,
                 &indices,
                 &mut albedo_framebuffer,
                 &mut height_framebuffer,
                 &mut roughness_framebuffer,
                 &mut normal_framebuffer,
-            );
+            )
         }
     }
 
@@ -381,387 +308,7 @@ pub fn draw_all(
             ..Default::default()
         };
 
-        let finished_texture = glium::uniforms::Sampler(&normal_texture, behavior);
+        let finished_texture = glium::uniforms::Sampler(&reflected_texture, behavior);
         draw_upscale(&display, finished_texture, &indices);
     }
-}
-
-/// draw the albedo, height, or roughness
-fn draw_ahr(
-    display: &glium::Display<WindowSurface>,
-    drawable: &DrawableObject,
-    indices: &glium::index::NoIndices,
-    albedo_framebuffer: &mut SimpleFrameBuffer,
-    height_framebuffer: &mut SimpleFrameBuffer,
-    roughness_framebuffer: &mut SimpleFrameBuffer,
-    normal_framebuffer: &mut SimpleFrameBuffer,
-) {
-    let program = glium::Program::from_source(
-        display,
-        BASE_VERTEX_SHADER_SRC,
-        BASE_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
-
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
-
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
-
-    let matrix = drawable.transform.matrix;
-
-    let mut image = glium::uniforms::Sampler(&drawable.albedo_texture, DEFAULT_BEHAVIOR);
-
-    let uniform = &uniform! {
-        matrix: matrix,
-        image: image,
-    };
-    albedo_framebuffer
-        .draw(
-            &vertex_buffer,
-            indices,
-            &program,
-            uniform,
-            &Default::default(),
-        )
-        .unwrap();
-
-    image = glium::uniforms::Sampler(&drawable.height_texture, DEFAULT_BEHAVIOR);
-    let uniform = &uniform! {
-        matrix: matrix,
-        image: image,
-    };
-    height_framebuffer
-        .draw(
-            &vertex_buffer,
-            indices,
-            &program,
-            uniform,
-            &Default::default(),
-        )
-        .unwrap();
-
-    image = glium::uniforms::Sampler(&drawable.roughness_texture, DEFAULT_BEHAVIOR);
-    let uniform = &uniform! {
-        matrix: matrix,
-        image: image,
-    };
-    roughness_framebuffer
-        .draw(
-            &vertex_buffer,
-            indices,
-            &program,
-            uniform,
-            &Default::default(),
-        )
-        .unwrap();
-
-    image = glium::uniforms::Sampler(&drawable.normal_texture, DEFAULT_BEHAVIOR);
-    let uniform = &uniform! {
-        matrix: matrix,
-        image: image,
-    };
-    normal_framebuffer
-        .draw(
-            &vertex_buffer,
-            indices,
-            &program,
-            uniform,
-            &Default::default(),
-        )
-        .unwrap();
-}
-
-/// upscale the result to the screen size
-fn draw_upscale(
-    display: &glium::Display<WindowSurface>,
-    image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    indices: &glium::index::NoIndices,
-) {
-    let program = glium::Program::from_source(
-        display,
-        UPSCALE_VERTEX_SHADER_SRC,
-        UPSCALE_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
-
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
-
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
-
-    let uniforms = &uniform! {
-        image: image_uniform
-    };
-
-    let mut target = display.draw();
-    target.clear_color(0.0, 0.0, 0.0, 0.0);
-    target
-        .draw(
-            &vertex_buffer,
-            indices,
-            &program,
-            uniforms,
-            &Default::default(),
-        )
-        .unwrap();
-
-    target.finish().unwrap();
-}
-
-/// draw the lighting
-fn draw_lighting(
-    display: &glium::Display<WindowSurface>,
-    albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    light: &Light,
-    indices: &glium::index::NoIndices,
-    framebuffer: &mut SimpleFrameBuffer,
-) {
-    let program = glium::Program::from_source(
-        display,
-        LIGHTING_VERTEX_SHADER_SRC,
-        LIGHTING_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
-
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
-
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
-
-    let uniforms = &uniform! {
-        heightmap: height_uniform,
-        albedomap: albedo_uniform,
-        light_pos: light.position,
-        light_color: light.color,
-        light_intensity: light.intensity,
-        light_falloff: light.falloff,
-    };
-
-    framebuffer
-        .draw(
-            &vertex_buffer,
-            indices,
-            &program,
-            uniforms,
-            &glium::DrawParameters {
-                blend: glium::Blend {
-                    color: glium::BlendingFunction::Addition {
-                        source: glium::LinearBlendingFactor::One,
-                        destination: glium::LinearBlendingFactor::One,
-                    },
-                    alpha: glium::BlendingFunction::Addition {
-                        source: glium::LinearBlendingFactor::One,
-                        destination: glium::LinearBlendingFactor::One,
-                    },
-                    constant_value: (0.0, 0.0, 0.0, 0.0),
-                },
-                ..Default::default()
-            },
-        )
-        .unwrap();
-}
-
-fn draw_reflections(
-    display: &glium::Display<WindowSurface>,
-    lit_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    rougness_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    normal_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    indices: &glium::index::NoIndices,
-    framebuffer: &mut SimpleFrameBuffer,
-) {
-    let program = glium::Program::from_source(
-        display,
-        REFLECTION_VERTEX_SHADER_SRC,
-        REFLECTION_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
-
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
-
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
-
-    // TODO: fix placeholder camera position
-    let camera_pos: [f32; 3] = [0.5, 0.5, 0.5];
-
-    let uniforms = &uniform! {
-        albedomap: lit_uniform,
-        heightmap: height_uniform,
-        roughnessmap: rougness_uniform,
-        normalmap: normal_uniform,
-        camera_pos: camera_pos,
-    };
-
-    framebuffer
-        .draw(
-            &vertex_buffer,
-            indices,
-            &program,
-            uniforms,
-            &Default::default(),
-        )
-        .unwrap();
-}
-
-fn draw_generate_normals(
-    display: &glium::Display<WindowSurface>,
-    height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    indices: &glium::index::NoIndices,
-    framebuffer: &mut SimpleFrameBuffer,
-) {
-    let program = glium::Program::from_source(
-        display,
-        GENERATE_NORMALS_VERTEX_SHADER_SRC,
-        GENERATE_NORMALS_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
-
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
-
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
-
-    let uniforms = &uniform! {
-        heightmap: height_uniform,
-        albedomap: albedo_uniform,
-    };
-
-    framebuffer
-        .draw(
-            &vertex_buffer,
-            indices,
-            &program,
-            uniforms,
-            &Default::default(),
-        )
-        .unwrap();
 }

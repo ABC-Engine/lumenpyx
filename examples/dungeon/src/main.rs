@@ -9,7 +9,7 @@ fn main() {
         Light::new([0.22, 0.28, 1.0], [1.0, 0.76, 0.52], 2.0, 0.02),
     ];
 
-    let scene_drawable = DrawableObject::new(
+    let scene_drawable = Sprite::new(
         "../images/Demo-Scene-Albedo.png",
         "../images/Demo-Scene-Heightmap.png",
         "../images/Demo-Scene-Roughnessmap.png",

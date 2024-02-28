@@ -13,7 +13,8 @@ fn main() {
     let mut lights = vec![Light::new([0.5, 1.0, 1.0], [1.0, 1.0, 1.0], 2.0, 0.01)];
 
     for path in paths {
-        let drawable = DrawableObject::new(path, path, path, &display, &indices, Transform::new());
+        //let drawable = DrawableObject::new(path, path, path, &display, &indices, Transform::new());
+        let drawable = Sprite::new(path, path, path, &display, &indices, Transform::new());
         drawables.push(drawable);
     }
 
@@ -34,7 +35,7 @@ fn main() {
                         lights[0].set_position((t.sin() + 1.0) / 2.0, 0.5, 1.0);
                     }
 
-                    let drawable_refs: Vec<&DrawableObject> = drawables.iter().collect();
+                    let drawable_refs: Vec<&Sprite> = drawables.iter().collect();
                     let light_refs: Vec<&Light> = lights.iter().collect();
                     draw_all(&display, drawable_refs, light_refs, &indices);
                 }

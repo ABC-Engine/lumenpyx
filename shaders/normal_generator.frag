@@ -27,15 +27,6 @@ void main() {
         return;
     }
 
-
-    /*
-    dzdx=(z(x+1,y)-z(x-1,y))/2.0;
-    dzdy=(z(x,y+1)-z(x,y-1))/2.0;
-    direction=(-dzdx,-dzdy,1.0)
-    magnitude=sqrt(direction.x**2 + direction.y**2 + direction.z**2)
-    normal=direction/magnitude
-    */
-
     vec2 new_coords = v_tex_coords * RESOLUTION;
 
     float dzdx = (texture_pixel(heightmap, new_coords + vec2(1.0, 0.0)).r - texture_pixel(heightmap, new_coords - vec2(1.0, 0.0)).r) / 2.0;

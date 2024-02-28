@@ -11,7 +11,7 @@ uniform vec3 camera_pos;
 
 const vec2 RESOLUTION = vec2(128.0, 128.0);
 const vec4 NON_INTERSECT_COLOR = vec4(0.0, 0.0, 0.0, 0.0);
-const float MAX_ROUGHNESS = 0.5;
+const float MAX_ROUGHNESS = 1.0;
 
 // this function is the same as the one in the lighting shader
 vec4 texture_pixel(sampler2D tex, vec2 coords) {
