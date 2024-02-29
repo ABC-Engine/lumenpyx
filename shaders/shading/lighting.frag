@@ -12,10 +12,9 @@ uniform float light_falloff;
 
 // the unlit color will be the albedo color dimmed by dimFactor
 const float dimFactor = 0.5;
-const vec2 RESOLUTION = vec2(128.0, 128.0);
 
 vec4 texture_pixel(sampler2D tex, vec2 coords) {
-    vec2 new_coords = coords / RESOLUTION;
+    vec2 new_coords = coords / textureSize(albedomap, 0);
 	// if the coords are the v_tex_coords or the light_pos, return 0.0
 	if (coords == v_tex_coords || coords == light_pos.xy) {
 		return vec4(0.0, 0.0, 0.0, 0.0);
@@ -127,8 +126,8 @@ void main() {
 		discard;
 	}
 
-    vec3 new_light_pos = vec3(RESOLUTION * (light_pos.xy), light_pos.z);
-    vec3 new_v_tex_coords = vec3(RESOLUTION * v_tex_coords, texture(heightmap, v_tex_coords).r);
+    vec3 new_light_pos = vec3(textureSize(albedomap, 0) * (light_pos.xy), light_pos.z);
+    vec3 new_v_tex_coords = vec3(textureSize(albedomap, 0) * v_tex_coords, texture(heightmap, v_tex_coords).r);
     
 	float light_dist = distance(new_v_tex_coords, new_light_pos);
 	light_dist = max(light_dist * light_falloff, 1.0);

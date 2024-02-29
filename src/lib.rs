@@ -240,6 +240,9 @@ pub fn draw_all(
                 &mut normal_framebuffer,
             )
         }
+
+        // TODO: make a sort of quadtree for the height map
+        // for example, we make a 64x64 height map and then we make a 32x32 height map all the way down to 2x2 or 4x4
     }
 
     let lit_texture = glium::texture::Texture2d::empty_with_format(
