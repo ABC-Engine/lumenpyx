@@ -9,8 +9,9 @@ use glium::glutin::surface::WindowSurface;
 use glium::uniform;
 use glium::Surface;
 
-const BASE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/sprite_ahr_shader.vert");
-const BASE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/sprite_ahr_shader.frag");
+const BASE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/ahr_shaders/sprite_ahr_shader.vert");
+const BASE_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/ahr_shaders/sprite_ahr_shader.frag");
 
 pub trait Drawable {
     /// Draw the object to the screen
@@ -28,8 +29,8 @@ pub trait Drawable {
 pub struct Sprite {
     albedo_texture: glium::texture::Texture2d,
     height_texture: glium::texture::Texture2d,
-    normal_texture: glium::texture::Texture2d,
     roughness_texture: glium::texture::Texture2d,
+    normal_texture: glium::texture::Texture2d,
     transform: Transform,
 }
 
@@ -92,8 +93,8 @@ impl Drawable for Sprite {
         indices: &glium::index::NoIndices,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
         let program = glium::Program::from_source(
             display,

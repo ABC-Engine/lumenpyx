@@ -4,7 +4,7 @@ use glium::implement_vertex;
 use glium::Surface;
 pub use winit;
 use winit::event_loop::EventLoop;
-mod primitives;
+pub mod primitives;
 mod shaders;
 use shaders::*;
 mod drawable_object;
@@ -195,7 +195,7 @@ pub fn draw_all(
     )
     .unwrap();
 
-    let roughness_texture = glium::texture::Texture2d::empty_with_format(
+    let normal_texture = glium::texture::Texture2d::empty_with_format(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
@@ -204,7 +204,7 @@ pub fn draw_all(
     )
     .unwrap();
 
-    let normal_texture = glium::texture::Texture2d::empty_with_format(
+    let roughness_texture = glium::texture::Texture2d::empty_with_format(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
@@ -232,8 +232,8 @@ pub fn draw_all(
 
         for drawable in &drawables {
             drawable.draw(
-                &display,
-                &indices,
+                display,
+                indices,
                 &mut albedo_framebuffer,
                 &mut height_framebuffer,
                 &mut roughness_framebuffer,

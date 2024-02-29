@@ -5,48 +5,23 @@ use glium::glutin::surface::WindowSurface;
 use glium::uniform;
 use glium::Surface;
 
-const GENERATE_CIRCLE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/circle_generator.vert");
-const GENERATE_CIRCLE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/circle_generator.frag");
+const GENERATE_CIRCLE_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/ahr_shaders/circle_ahr_shader.vert");
+const GENERATE_CIRCLE_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/ahr_shaders/circle_ahr_shader.frag");
+
+const GENERATE_SPHERE_HEIGHT_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/ahr_shaders/sphere_height_shader.vert");
+const GENERATE_SPHERE_HEIGHT_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/ahr_shaders/sphere_height_shader.frag");
+
+const GENERATE_SPHERE_NORMAL_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/ahr_shaders/sphere_normal_shader.vert");
+const GENERATE_SPHERE_NORMAL_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/ahr_shaders/sphere_normal_shader.frag");
 
 use crate::Transform;
 use crate::Vertex;
-
-pub struct Circle {
-    color: [f32; 4],
-    radius: f32,
-    transform: Transform,
-}
-
-impl Circle {
-    pub fn new(color: [f32; 4], radius: f32, transform: Transform) -> Circle {
-        Circle {
-            color,
-            radius,
-            transform,
-        }
-    }
-}
-
-impl Drawable for Circle {
-    fn draw(
-        &self,
-        display: &glium::Display<WindowSurface>,
-        indices: &glium::index::NoIndices,
-        albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-    ) {
-        draw_circle(
-            self.color,
-            self.radius,
-            self.transform,
-            display,
-            indices,
-            albedo_framebuffer,
-        );
-    }
-}
 
 pub fn draw_circle(
     color: [f32; 4],
@@ -94,7 +69,7 @@ pub fn draw_circle(
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
     let uniforms = &uniform! {
-        color: color,
+        circle_color: color,
         radius: radius,
         matrix: transform.matrix,
     };
@@ -108,4 +83,202 @@ pub fn draw_circle(
             &Default::default(),
         )
         .unwrap();
+}
+
+pub fn draw_sphere(
+    color: [f32; 4],
+    radius: f32,
+    transform: Transform,
+    display: &glium::Display<WindowSurface>,
+    indices: &glium::index::NoIndices,
+    albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+) {
+    draw_circle(
+        color,
+        radius,
+        transform,
+        display,
+        indices,
+        albedo_framebuffer,
+    );
+
+    let program = glium::Program::from_source(
+        display,
+        GENERATE_SPHERE_HEIGHT_VERTEX_SHADER_SRC,
+        GENERATE_SPHERE_HEIGHT_FRAGMENT_SHADER_SRC,
+        None,
+    );
+
+    let shape = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, -1.0],
+            tex_coords: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, 1.0],
+            tex_coords: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+    ];
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        radius: radius,
+        matrix: transform.matrix,
+    };
+
+    height_framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &program.unwrap(),
+            uniforms,
+            &Default::default(),
+        )
+        .unwrap();
+
+    let normal_program = glium::Program::from_source(
+        display,
+        GENERATE_SPHERE_NORMAL_VERTEX_SHADER_SRC,
+        GENERATE_SPHERE_NORMAL_FRAGMENT_SHADER_SRC,
+        None,
+    );
+
+    let shape = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, -1.0],
+            tex_coords: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, 1.0],
+            tex_coords: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+    ];
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        radius: radius,
+        matrix: transform.matrix,
+    };
+
+    normal_framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &normal_program.unwrap(),
+            uniforms,
+            &Default::default(),
+        )
+        .unwrap();
+}
+
+pub struct Circle {
+    color: [f32; 4],
+    radius: f32,
+    transform: Transform,
+}
+
+impl Circle {
+    pub fn new(color: [f32; 4], radius: f32, transform: Transform) -> Circle {
+        Circle {
+            color,
+            radius,
+            transform,
+        }
+    }
+}
+
+impl Drawable for Circle {
+    fn draw(
+        &self,
+        display: &glium::Display<WindowSurface>,
+        indices: &glium::index::NoIndices,
+        albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        draw_circle(
+            self.color,
+            self.radius,
+            self.transform,
+            display,
+            indices,
+            albedo_framebuffer,
+        );
+    }
+}
+
+pub struct Sphere {
+    color: [f32; 4],
+    radius: f32,
+    transform: Transform,
+}
+
+impl Sphere {
+    pub fn new(color: [f32; 4], radius: f32, transform: Transform) -> Sphere {
+        Sphere {
+            color,
+            radius,
+            transform,
+        }
+    }
+}
+
+impl Drawable for Sphere {
+    fn draw(
+        &self,
+        display: &glium::Display<WindowSurface>,
+        indices: &glium::index::NoIndices,
+        albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        draw_sphere(
+            self.color,
+            self.radius,
+            self.transform,
+            display,
+            indices,
+            albedo_framebuffer,
+            height_framebuffer,
+            normal_framebuffer,
+        );
+    }
 }

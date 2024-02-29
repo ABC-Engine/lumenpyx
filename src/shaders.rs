@@ -7,17 +7,19 @@ use glium::uniform;
 use glium::Surface;
 
 // include the vertex and fragment shaders in the library
-const LIGHTING_VERTEX_SHADER_SRC: &str = include_str!("../shaders/lighting.vert");
-const LIGHTING_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/lighting.frag");
+const LIGHTING_VERTEX_SHADER_SRC: &str = include_str!("../shaders/shading/lighting.vert");
+const LIGHTING_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/shading/lighting.frag");
 
-const REFLECTION_VERTEX_SHADER_SRC: &str = include_str!("../shaders/reflections.vert");
-const REFLECTION_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/reflections.frag");
+const REFLECTION_VERTEX_SHADER_SRC: &str = include_str!("../shaders/shading/reflections.vert");
+const REFLECTION_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/shading/reflections.frag");
 
-const UPSCALE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/upscale_shader.vert");
-const UPSCALE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/upscale_shader.frag");
+const UPSCALE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/shading/upscale_shader.vert");
+const UPSCALE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/shading/upscale_shader.frag");
 
-const GENERATE_NORMALS_VERTEX_SHADER_SRC: &str = include_str!("../shaders/normal_generator.vert");
-const GENERATE_NORMALS_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/normal_generator.frag");
+const GENERATE_NORMALS_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/shading/normal_generator.vert");
+const GENERATE_NORMALS_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/shading/normal_generator.frag");
 
 /// upscale the result to the screen size
 pub(crate) fn draw_upscale(
