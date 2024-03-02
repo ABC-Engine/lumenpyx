@@ -9,6 +9,7 @@ mod shaders;
 use shaders::*;
 mod drawable_object;
 pub use drawable_object::*;
+use glium::uniform;
 
 pub(crate) const WINDOW_VIRTUAL_SIZE: (u32, u32) = (128, 128);
 pub(crate) const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior =
@@ -240,9 +241,51 @@ pub fn draw_all(
                 &mut normal_framebuffer,
             )
         }
+    }
+    // TODO: make a sort of quadtree for the height map
+    // for example, we make a 64x64 height map and then we make a 32x32 height map all the way down to 2x2 or 4x4
 
-        // TODO: make a sort of quadtree for the height map
-        // for example, we make a 64x64 height map and then we make a 32x32 height map all the way down to 2x2 or 4x4
+    let lowest_res_height = glium::texture::Texture2d::empty_with_format(
+        display,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::MipmapsOption::NoMipmap,
+        WINDOW_VIRTUAL_SIZE.0 / 8,
+        WINDOW_VIRTUAL_SIZE.1 / 8,
+    )
+    .unwrap();
+
+    let medium_res_height = glium::texture::Texture2d::empty_with_format(
+        display,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::MipmapsOption::NoMipmap,
+        WINDOW_VIRTUAL_SIZE.0 / 4,
+        WINDOW_VIRTUAL_SIZE.0 / 4,
+    )
+    .unwrap();
+
+    {
+        let height = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
+
+        let mut lowest_res_framebuffer =
+            glium::framebuffer::SimpleFrameBuffer::new(display, &lowest_res_height).unwrap();
+        lowest_res_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+
+        let mut medium_res_framebuffer =
+            glium::framebuffer::SimpleFrameBuffer::new(display, &medium_res_height).unwrap();
+        medium_res_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+
+        // draw local max
+
+        draw_local_max(display, height, &indices, &mut medium_res_framebuffer);
+
+        let medium_res_sampler = glium::uniforms::Sampler(&medium_res_height, DEFAULT_BEHAVIOR);
+
+        draw_local_max(
+            display,
+            medium_res_sampler,
+            &indices,
+            &mut lowest_res_framebuffer,
+        );
     }
 
     let lit_texture = glium::texture::Texture2d::empty_with_format(
@@ -304,14 +347,7 @@ pub fn draw_all(
     }
 
     {
-        let behavior = glium::uniforms::SamplerBehavior {
-            minify_filter: glium::uniforms::MinifySamplerFilter::Nearest,
-            magnify_filter: glium::uniforms::MagnifySamplerFilter::Nearest,
-            max_anisotropy: 1,
-            ..Default::default()
-        };
-
-        let finished_texture = glium::uniforms::Sampler(&reflected_texture, behavior);
+        let finished_texture = glium::uniforms::Sampler(&reflected_texture, DEFAULT_BEHAVIOR);
         draw_upscale(&display, finished_texture, &indices);
     }
 }

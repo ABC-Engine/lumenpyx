@@ -4,21 +4,15 @@ in vec2 v_tex_coords;
 out vec4 color;
 
 uniform sampler2D high_res_image;
-uniform sampler2D low_res_image;
-
-// this function is the same as the one in the lighting shader
-vec4 texture_pixel(sampler2D tex, vec2 coords) {
-    vec2 new_coords = coords / RESOLUTION;
-    return texture(tex, new_coords);
-}
+// the resolution of the low res image an int
+uniform uvec2 new_resolution;
 
 void main() {
     // collect all colors that are in the pixel of the low res image in the high res image
     vec4 new_color = vec4(0.0, 0.0, 0.0, 0.0);
-    vec2 low_res_resolution = textureSize(low_res_image, 0);
     vec2 high_res_resolution = textureSize(high_res_image, 0);
 
-    pixel_size = high_res_resolution / low_res_resolution;
+    vec2 pixel_size = high_res_resolution / new_resolution;
 
     for (int i = 0; i < pixel_size.x; i++) {
         for (int j = 0; j < pixel_size.y; j++) {

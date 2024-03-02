@@ -21,6 +21,11 @@ const GENERATE_NORMALS_VERTEX_SHADER_SRC: &str =
 const GENERATE_NORMALS_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/shading/normal_generator.frag");
 
+const LOCAL_MAX_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/local_max.vert");
+const LOCAL_MAX_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/local_max.frag");
+
 /// upscale the result to the screen size
 pub(crate) fn draw_upscale(
     display: &glium::Display<WindowSurface>,
@@ -277,6 +282,65 @@ pub(crate) fn draw_generate_normals(
     let uniforms = &uniform! {
         heightmap: height_uniform,
         albedomap: albedo_uniform,
+    };
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &program,
+            uniforms,
+            &Default::default(),
+        )
+        .unwrap();
+}
+
+pub(crate) fn draw_local_max(
+    display: &glium::Display<WindowSurface>,
+    sampler: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    indices: &glium::index::NoIndices,
+    framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+) {
+    let program = glium::Program::from_source(
+        display,
+        LOCAL_MAX_VERTEX_SHADER_SRC,
+        LOCAL_MAX_FRAGMENT_SHADER_SRC,
+        None,
+    )
+    .unwrap();
+
+    let shape = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, -1.0],
+            tex_coords: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, 1.0],
+            tex_coords: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+    ];
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        high_res_image: sampler,
+        new_resolution: framebuffer.get_dimensions(),
     };
 
     framebuffer
