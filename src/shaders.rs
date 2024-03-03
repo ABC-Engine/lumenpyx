@@ -1,5 +1,6 @@
 use crate::Light;
 use crate::Vertex;
+use crate::WINDOW_VIRTUAL_SIZE;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::glutin::surface::WindowSurface;
@@ -40,29 +41,49 @@ pub(crate) fn draw_upscale(
     )
     .unwrap();
 
+    let mut target = display.draw();
+    let dimensions = target.get_dimensions();
+    // figure out which dimensions need the black bars
+    let [target_width, target_height] = [dimensions.0 as f32, dimensions.1 as f32];
+    let [image_width, image_height] = [WINDOW_VIRTUAL_SIZE.0 as f32, WINDOW_VIRTUAL_SIZE.1 as f32];
+
+    let mut dim_scales = [image_width / target_width, image_height / target_height];
+    // make the max value 1.0
+    if dim_scales[0] > dim_scales[1] {
+        dim_scales[1] *= 1.0 / dim_scales[0];
+        dim_scales[0] = 1.0;
+    } else {
+        dim_scales[0] *= 1.0 / dim_scales[1];
+        dim_scales[1] = 1.0;
+    }
+
+    //let (target_width, target_height) = (target_width * image_width, target_height * image_height);
+    //let (target_width, target_height) = (target_width as u32, target_height as u32);
+    // change the position of the vertices to fit the screen not the tex_coords
+
     let shape = vec![
         Vertex {
-            position: [-1.0, -1.0],
+            position: [-1.0 * dim_scales[0], -1.0 * dim_scales[1]],
             tex_coords: [0.0, 0.0],
         },
         Vertex {
-            position: [1.0, -1.0],
+            position: [1.0 * dim_scales[0], -1.0 * dim_scales[1]],
             tex_coords: [1.0, 0.0],
         },
         Vertex {
-            position: [1.0, 1.0],
+            position: [1.0 * dim_scales[0], 1.0 * dim_scales[1]],
             tex_coords: [1.0, 1.0],
         },
         Vertex {
-            position: [1.0, 1.0],
+            position: [1.0 * dim_scales[0], 1.0 * dim_scales[1]],
             tex_coords: [1.0, 1.0],
         },
         Vertex {
-            position: [-1.0, 1.0],
+            position: [-1.0 * dim_scales[0], 1.0 * dim_scales[1]],
             tex_coords: [0.0, 1.0],
         },
         Vertex {
-            position: [-1.0, -1.0],
+            position: [-1.0 * dim_scales[0], -1.0 * dim_scales[1]],
             tex_coords: [0.0, 0.0],
         },
     ];
@@ -73,7 +94,6 @@ pub(crate) fn draw_upscale(
         image: image_uniform
     };
 
-    let mut target = display.draw();
     target.clear_color(0.0, 0.0, 0.0, 0.0);
     target
         .draw(

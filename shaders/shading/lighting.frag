@@ -294,10 +294,10 @@ vec3 check_intersection_in_square(vec3 p1, vec3 p2, bool convert_coords, sampler
 	RectIntersection square_intersections = getIntersectionPoints(pixel_pos, p2, bounds);
 	if (square_intersections.p2 == NO_INTERSECTION)
 	{
-		return NO_INTERSECTION;
+		//return NO_INTERSECTION;
 	}
 
-	vec3 intersection = find_intersections_within_bounds(square_intersections.p1, square_intersections.p2, higher_res_heightmap, bounds);
+	vec3 intersection = find_intersections(square_intersections.p1, square_intersections.p2, higher_res_heightmap);
 	if (intersection == NO_INTERSECTION) {
 		return NO_INTERSECTION;
 	}
@@ -323,9 +323,11 @@ bool does_intersect_grid_method(vec3 p1, vec3 p2)
 		vec3 intersection_low_res = find_intersections(last_intersection_low_res, scaled_p2, low_res_heightmap);
 		if (intersection_low_res == NO_INTERSECTION) {
 			// we don't find any intersections, in the entire heightmap
+			color = vec4(1.0, 0.0, 0.0, 0.0);
 			return false;
 		}
 		else {
+			return true;
 			last_intersection_low_res = intersection_low_res;
 			// if the intersection is on the medium res heightmap
 			// we need to check only the points on the pixel that intersect with the low res heightmap
@@ -349,6 +351,7 @@ bool does_intersect_grid_method(vec3 p1, vec3 p2)
 					break;
 				}
 				else {
+					return true;
 					last_intersection_medium_res = intersection_medium_res;
 					// if the intersection is on the full res heightmap
 					// we need to check only the points on the pixel that intersect with the medium res heightmap
@@ -392,7 +395,7 @@ void main() {
 		//color = shaded_color * dimFactor;
 	}
 	else {
-		color = shaded_color;
+		//color = shaded_color;
 		// debugging
 	}
 
