@@ -299,7 +299,11 @@ pub fn draw_all(
 
     {
         let albedo = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
-        let height = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
+        let full_res_height_sampler = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
+        let medium_res_height_sampler =
+            glium::uniforms::Sampler(&medium_res_height, DEFAULT_BEHAVIOR);
+        let lowest_res_height_sampler =
+            glium::uniforms::Sampler(&lowest_res_height, DEFAULT_BEHAVIOR);
 
         let mut lit_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
@@ -309,7 +313,9 @@ pub fn draw_all(
             draw_lighting(
                 &display,
                 albedo,
-                height,
+                full_res_height_sampler,
+                medium_res_height_sampler,
+                lowest_res_height_sampler,
                 light,
                 &indices,
                 &mut lit_framebuffer,
@@ -347,7 +353,7 @@ pub fn draw_all(
     }
 
     {
-        let finished_texture = glium::uniforms::Sampler(&reflected_texture, DEFAULT_BEHAVIOR);
+        let finished_texture = glium::uniforms::Sampler(&lit_texture, DEFAULT_BEHAVIOR);
         draw_upscale(&display, finished_texture, &indices);
     }
 }

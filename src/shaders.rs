@@ -92,7 +92,9 @@ pub(crate) fn draw_upscale(
 pub(crate) fn draw_lighting(
     display: &glium::Display<WindowSurface>,
     albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    full_res_heightmap: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    medium_res_heightmap: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    low_res_heightmap: glium::uniforms::Sampler<glium::texture::Texture2d>,
     light: &Light,
     indices: &glium::index::NoIndices,
     framebuffer: &mut SimpleFrameBuffer,
@@ -135,7 +137,9 @@ pub(crate) fn draw_lighting(
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
     let uniforms = &uniform! {
-        heightmap: height_uniform,
+        full_res_heightmap: full_res_heightmap,
+        medium_res_heightmap: medium_res_heightmap,
+        low_res_heightmap: low_res_heightmap,
         albedomap: albedo_uniform,
         light_pos: light.position,
         light_color: light.color,
