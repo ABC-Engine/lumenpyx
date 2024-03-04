@@ -25,6 +25,56 @@ pub(crate) const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior =
         depth_texture_comparison: None,
     };
 
+pub struct LumenpyxProgram {
+    pub window: winit::window::Window,
+    pub display: glium::Display<WindowSurface>,
+    pub indices: glium::index::NoIndices,
+    pub lighting_shader: glium::Program,
+    pub reflection_shader: glium::Program,
+    pub upscale_shader: glium::Program,
+}
+
+impl LumenpyxProgram {
+    pub fn new() -> (LumenpyxProgram, EventLoop<()>) {
+        let (event_loop, window, display, indices) = setup_program();
+        let lighting_shader = glium::Program::from_source(
+            &display,
+            shaders::LIGHTING_VERTEX_SHADER_SRC,
+            shaders::LIGHTING_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+
+        let reflection_shader = glium::Program::from_source(
+            &display,
+            shaders::REFLECTION_VERTEX_SHADER_SRC,
+            shaders::REFLECTION_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+
+        let upscale_shader = glium::Program::from_source(
+            &display,
+            shaders::UPSCALE_VERTEX_SHADER_SRC,
+            shaders::UPSCALE_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+
+        (
+            LumenpyxProgram {
+                window,
+                display,
+                indices,
+                lighting_shader,
+                reflection_shader,
+                upscale_shader,
+            },
+            event_loop,
+        )
+    }
+}
+
 #[derive(Copy, Clone)]
 pub struct Transform {
     matrix: [[f32; 4]; 4],
@@ -158,10 +208,11 @@ fn setup_window() -> (
 }
 
 pub fn draw_all(
-    display: &glium::Display<WindowSurface>,
-    drawables: Vec<&impl Drawable>,
+    /*display: &glium::Display<WindowSurface>,
+    indices: &glium::index::NoIndices,*/
     lights: Vec<&Light>,
-    indices: &glium::index::NoIndices,
+    drawables: Vec<&impl Drawable>,
+    program: &LumenpyxProgram,
 ) {
     /*
     STEP 1:
@@ -177,6 +228,8 @@ pub fn draw_all(
     STEP 4:
         upscale the result to the screen size
     */
+    let display = &program.display;
+    let indices = &program.indices;
 
     let albedo_texture = glium::texture::Texture2d::empty_with_format(
         display,
@@ -242,51 +295,6 @@ pub fn draw_all(
             )
         }
     }
-    // TODO: make a sort of quadtree for the height map
-    // for example, we make a 64x64 height map and then we make a 32x32 height map all the way down to 2x2 or 4x4
-
-    let lowest_res_height = glium::texture::Texture2d::empty_with_format(
-        display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
-        glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE.0 / 8,
-        WINDOW_VIRTUAL_SIZE.1 / 8,
-    )
-    .unwrap();
-
-    let medium_res_height = glium::texture::Texture2d::empty_with_format(
-        display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
-        glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE.0 / 4,
-        WINDOW_VIRTUAL_SIZE.0 / 4,
-    )
-    .unwrap();
-
-    {
-        let height = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
-
-        let mut lowest_res_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &lowest_res_height).unwrap();
-        lowest_res_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
-
-        let mut medium_res_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &medium_res_height).unwrap();
-        medium_res_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
-
-        // draw local max
-
-        draw_local_max(display, height, &indices, &mut medium_res_framebuffer);
-
-        let medium_res_sampler = glium::uniforms::Sampler(&medium_res_height, DEFAULT_BEHAVIOR);
-
-        draw_local_max(
-            display,
-            medium_res_sampler,
-            &indices,
-            &mut lowest_res_framebuffer,
-        );
-    }
 
     let lit_texture = glium::texture::Texture2d::empty_with_format(
         display,
@@ -299,11 +307,7 @@ pub fn draw_all(
 
     {
         let albedo = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
-        let full_res_height_sampler = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
-        let medium_res_height_sampler =
-            glium::uniforms::Sampler(&medium_res_height, DEFAULT_BEHAVIOR);
-        let lowest_res_height_sampler =
-            glium::uniforms::Sampler(&lowest_res_height, DEFAULT_BEHAVIOR);
+        let height_sampler = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
 
         let mut lit_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
@@ -311,13 +315,10 @@ pub fn draw_all(
 
         for light in lights {
             draw_lighting(
-                &display,
                 albedo,
-                full_res_height_sampler,
-                medium_res_height_sampler,
-                lowest_res_height_sampler,
+                height_sampler,
                 light,
-                &indices,
+                &program,
                 &mut lit_framebuffer,
             );
         }
@@ -342,18 +343,17 @@ pub fn draw_all(
             glium::framebuffer::SimpleFrameBuffer::new(display, &reflected_texture).unwrap();
 
         draw_reflections(
-            &display,
             lit_sampler,
             height,
             roughness,
             normal,
-            &indices,
             &mut reflected_framebuffer,
+            &program,
         );
     }
 
     {
         let finished_texture = glium::uniforms::Sampler(&lit_texture, DEFAULT_BEHAVIOR);
-        draw_upscale(&display, finished_texture, &indices);
+        draw_upscale(finished_texture, &program);
     }
 }

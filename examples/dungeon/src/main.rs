@@ -1,8 +1,9 @@
-use lumenpyx::*;
+use lumenpyx::{winit::event, *};
 use rand::Rng;
 
 fn main() {
-    let (event_loop, window, display, indices) = setup_program();
+    //let (event_loop, window, display, indices) = setup_program();
+    let (lumen_program, event_loop) = LumenpyxProgram::new();
 
     let mut lights = vec![
         Light::new([0.78, 0.28, 1.0], [1.0, 0.76, 0.52], 3.0, 0.02),
@@ -13,8 +14,8 @@ fn main() {
         "../images/Demo-Scene-Albedo.png",
         "../images/Demo-Scene-Heightmap.png",
         "../images/Demo-Scene-Roughnessmap.png",
-        &display,
-        &indices,
+        &lumen_program.display,
+        &lumen_program.indices,
         Transform::new(),
     );
 
@@ -30,7 +31,7 @@ fn main() {
                     window_target.exit();
                 }
                 winit::event::WindowEvent::Resized(physical_size) => {
-                    display.resize(physical_size.into());
+                    lumen_program.display.resize(physical_size.into());
                 }
                 winit::event::WindowEvent::RedrawRequested => {
                     distance_to_60_frame -= 1.0;
@@ -45,21 +46,21 @@ fn main() {
                         t += 0.01 * rng.gen_range(0.0..1.0);
                         for light in lights.iter_mut() {
                             //light.set_position((t.sin() / 2.0) + 0.5, 0.28, 0.5);
-                            light.set_position(0.78, 0.28, (t.sin() / 2.0) + 0.5);
+                            light.set_position(0.78, 0.28, ((t.sin() / 2.0) + 0.5) * 5.0);
                             //light.set_intensity(1.0 + (t.sin() * 0.5));
                         }
                     }
 
                     let drawable_refs = vec![&scene_drawable];
                     let light_refs: Vec<&Light> = lights.iter().collect();
-                    draw_all(&display, drawable_refs, light_refs, &indices);
+                    draw_all(light_refs, drawable_refs, &lumen_program);
                 }
                 _ => (),
             },
             winit::event::Event::AboutToWait => {
                 // RedrawRequested will only trigger once, unless we manually
                 // request it.
-                window.request_redraw();
+                lumen_program.window.request_redraw();
             }
             _ => (),
         })

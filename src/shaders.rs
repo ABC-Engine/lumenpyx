@@ -1,45 +1,44 @@
 use crate::Light;
+use crate::LumenpyxProgram;
 use crate::Vertex;
 use crate::WINDOW_VIRTUAL_SIZE;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::glutin::surface::WindowSurface;
+use glium::program;
 use glium::uniform;
+use glium::Program;
 use glium::Surface;
 
 // include the vertex and fragment shaders in the library
-const LIGHTING_VERTEX_SHADER_SRC: &str = include_str!("../shaders/shading/lighting.vert");
-const LIGHTING_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/shading/lighting.frag");
+pub(crate) const LIGHTING_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/shading/lighting.vert");
+pub(crate) const LIGHTING_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/shading/lighting.frag");
 
-const REFLECTION_VERTEX_SHADER_SRC: &str = include_str!("../shaders/shading/reflections.vert");
-const REFLECTION_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/shading/reflections.frag");
+pub(crate) const REFLECTION_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/shading/reflections.vert");
+pub(crate) const REFLECTION_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/shading/reflections.frag");
 
-const UPSCALE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/shading/upscale_shader.vert");
-const UPSCALE_FRAGMENT_SHADER_SRC: &str = include_str!("../shaders/shading/upscale_shader.frag");
+pub(crate) const UPSCALE_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/shading/upscale_shader.vert");
+pub(crate) const UPSCALE_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/shading/upscale_shader.frag");
 
-const GENERATE_NORMALS_VERTEX_SHADER_SRC: &str =
+pub(crate) const GENERATE_NORMALS_VERTEX_SHADER_SRC: &str =
     include_str!("../shaders/shading/normal_generator.vert");
-const GENERATE_NORMALS_FRAGMENT_SHADER_SRC: &str =
+pub(crate) const GENERATE_NORMALS_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/shading/normal_generator.frag");
-
-const LOCAL_MAX_VERTEX_SHADER_SRC: &str =
-    include_str!("../shaders/technical_shaders/local_max.vert");
-const LOCAL_MAX_FRAGMENT_SHADER_SRC: &str =
-    include_str!("../shaders/technical_shaders/local_max.frag");
 
 /// upscale the result to the screen size
 pub(crate) fn draw_upscale(
-    display: &glium::Display<WindowSurface>,
     image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    indices: &glium::index::NoIndices,
+    lumenpyx_program: &LumenpyxProgram,
 ) {
-    let program = glium::Program::from_source(
-        display,
-        UPSCALE_VERTEX_SHADER_SRC,
-        UPSCALE_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
+    let display = &lumenpyx_program.display;
+    let indices = &lumenpyx_program.indices;
+    let program = &lumenpyx_program.upscale_shader;
 
     let mut target = display.draw();
     let dimensions = target.get_dimensions();
@@ -110,22 +109,15 @@ pub(crate) fn draw_upscale(
 
 /// draw the lighting
 pub(crate) fn draw_lighting(
-    display: &glium::Display<WindowSurface>,
     albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    full_res_heightmap: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    medium_res_heightmap: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    low_res_heightmap: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    heightmap: glium::uniforms::Sampler<glium::texture::Texture2d>,
     light: &Light,
-    indices: &glium::index::NoIndices,
+    program: &LumenpyxProgram,
     framebuffer: &mut SimpleFrameBuffer,
 ) {
-    let program = glium::Program::from_source(
-        display,
-        LIGHTING_VERTEX_SHADER_SRC,
-        LIGHTING_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
+    let display = &program.display;
+    let indices = &program.indices;
+    let shader = &program.lighting_shader;
 
     let shape = vec![
         Vertex {
@@ -157,9 +149,7 @@ pub(crate) fn draw_lighting(
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
     let uniforms = &uniform! {
-        full_res_heightmap: full_res_heightmap,
-        medium_res_heightmap: medium_res_heightmap,
-        low_res_heightmap: low_res_heightmap,
+        heightmap: heightmap,
         albedomap: albedo_uniform,
         light_pos: light.position,
         light_color: light.color,
@@ -171,7 +161,7 @@ pub(crate) fn draw_lighting(
         .draw(
             &vertex_buffer,
             indices,
-            &program,
+            &shader,
             uniforms,
             &glium::DrawParameters {
                 blend: glium::Blend {
@@ -191,22 +181,18 @@ pub(crate) fn draw_lighting(
         .unwrap();
 }
 
+#[no_mangle]
 pub(crate) fn draw_reflections(
-    display: &glium::Display<WindowSurface>,
     lit_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     rougness_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     normal_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    indices: &glium::index::NoIndices,
     framebuffer: &mut SimpleFrameBuffer,
+    program: &LumenpyxProgram,
 ) {
-    let program = glium::Program::from_source(
-        display,
-        REFLECTION_VERTEX_SHADER_SRC,
-        REFLECTION_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
+    let display = &program.display;
+    let indices = &program.indices;
+    let shader = &program.reflection_shader;
 
     let shape = vec![
         Vertex {
@@ -252,7 +238,7 @@ pub(crate) fn draw_reflections(
         .draw(
             &vertex_buffer,
             indices,
-            &program,
+            &shader,
             uniforms,
             &Default::default(),
         )
@@ -306,65 +292,6 @@ pub(crate) fn draw_generate_normals(
     let uniforms = &uniform! {
         heightmap: height_uniform,
         albedomap: albedo_uniform,
-    };
-
-    framebuffer
-        .draw(
-            &vertex_buffer,
-            indices,
-            &program,
-            uniforms,
-            &Default::default(),
-        )
-        .unwrap();
-}
-
-pub(crate) fn draw_local_max(
-    display: &glium::Display<WindowSurface>,
-    sampler: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    indices: &glium::index::NoIndices,
-    framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-) {
-    let program = glium::Program::from_source(
-        display,
-        LOCAL_MAX_VERTEX_SHADER_SRC,
-        LOCAL_MAX_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
-
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
-
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
-
-    let uniforms = &uniform! {
-        high_res_image: sampler,
-        new_resolution: framebuffer.get_dimensions(),
     };
 
     framebuffer
