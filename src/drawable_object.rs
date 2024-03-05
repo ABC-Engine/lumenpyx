@@ -1,5 +1,6 @@
 use crate::load_image;
 use crate::shaders::draw_generate_normals;
+use crate::LumenpyxProgram;
 use crate::Transform;
 use crate::Vertex;
 use crate::DEFAULT_BEHAVIOR;
@@ -17,8 +18,7 @@ pub trait Drawable {
     /// Draw the object to the screen
     fn draw(
         &self,
-        display: &glium::Display<WindowSurface>,
-        indices: &glium::index::NoIndices,
+        program: &LumenpyxProgram,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -56,8 +56,8 @@ impl Sprite {
             display,
             glium::texture::UncompressedFloatFormat::U8U8U8U8,
             glium::texture::MipmapsOption::NoMipmap,
-            WINDOW_VIRTUAL_SIZE.0,
-            WINDOW_VIRTUAL_SIZE.1,
+            WINDOW_VIRTUAL_SIZE[0],
+            WINDOW_VIRTUAL_SIZE[1],
         )
         .unwrap();
 
@@ -89,14 +89,16 @@ impl Sprite {
 impl Drawable for Sprite {
     fn draw(
         &self,
-        display: &glium::Display<WindowSurface>,
-        indices: &glium::index::NoIndices,
+        program: &LumenpyxProgram,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
-        let program = glium::Program::from_source(
+        let indices = &program.indices;
+        let display = &program.display;
+
+        let shader = glium::Program::from_source(
             display,
             BASE_VERTEX_SHADER_SRC,
             BASE_FRAGMENT_SHADER_SRC,
@@ -146,7 +148,7 @@ impl Drawable for Sprite {
             .draw(
                 &vertex_buffer,
                 indices,
-                &program,
+                &shader,
                 uniform,
                 &Default::default(),
             )
@@ -161,7 +163,7 @@ impl Drawable for Sprite {
             .draw(
                 &vertex_buffer,
                 indices,
-                &program,
+                &shader,
                 uniform,
                 &Default::default(),
             )
@@ -176,7 +178,7 @@ impl Drawable for Sprite {
             .draw(
                 &vertex_buffer,
                 indices,
-                &program,
+                &shader,
                 uniform,
                 &Default::default(),
             )
@@ -191,7 +193,7 @@ impl Drawable for Sprite {
             .draw(
                 &vertex_buffer,
                 indices,
-                &program,
+                &shader,
                 uniform,
                 &Default::default(),
             )

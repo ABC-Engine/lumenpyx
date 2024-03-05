@@ -11,7 +11,7 @@ mod drawable_object;
 pub use drawable_object::*;
 use glium::uniform;
 
-pub(crate) const WINDOW_VIRTUAL_SIZE: (u32, u32) = (128, 128);
+pub(crate) const WINDOW_VIRTUAL_SIZE: [u32; 2] = [128, 128];
 pub(crate) const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior =
     glium::uniforms::SamplerBehavior {
         minify_filter: glium::uniforms::MinifySamplerFilter::Nearest,
@@ -235,8 +235,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE.0,
-        WINDOW_VIRTUAL_SIZE.1,
+        WINDOW_VIRTUAL_SIZE[0],
+        WINDOW_VIRTUAL_SIZE[1],
     )
     .unwrap();
 
@@ -244,8 +244,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE.0,
-        WINDOW_VIRTUAL_SIZE.1,
+        WINDOW_VIRTUAL_SIZE[0],
+        WINDOW_VIRTUAL_SIZE[1],
     )
     .unwrap();
 
@@ -253,8 +253,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE.0,
-        WINDOW_VIRTUAL_SIZE.1,
+        WINDOW_VIRTUAL_SIZE[0],
+        WINDOW_VIRTUAL_SIZE[1],
     )
     .unwrap();
 
@@ -262,8 +262,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE.0,
-        WINDOW_VIRTUAL_SIZE.1,
+        WINDOW_VIRTUAL_SIZE[0],
+        WINDOW_VIRTUAL_SIZE[1],
     )
     .unwrap();
 
@@ -286,8 +286,7 @@ pub fn draw_all(
 
         for drawable in &drawables {
             drawable.draw(
-                display,
-                indices,
+                program,
                 &mut albedo_framebuffer,
                 &mut height_framebuffer,
                 &mut roughness_framebuffer,
@@ -300,8 +299,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE.0,
-        WINDOW_VIRTUAL_SIZE.1,
+        WINDOW_VIRTUAL_SIZE[0],
+        WINDOW_VIRTUAL_SIZE[1],
     )
     .expect("Failed to create lit frame buffer");
 
@@ -328,8 +327,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE.0,
-        WINDOW_VIRTUAL_SIZE.1,
+        WINDOW_VIRTUAL_SIZE[0],
+        WINDOW_VIRTUAL_SIZE[1],
     )
     .expect("Failed to create reflected frame buffer");
 

@@ -1,4 +1,5 @@
 use crate::Drawable;
+use crate::LumenpyxProgram;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::glutin::surface::WindowSurface;
@@ -27,11 +28,13 @@ pub fn draw_circle(
     color: [f32; 4],
     radius: f32,
     transform: Transform,
-    display: &glium::Display<WindowSurface>,
-    indices: &glium::index::NoIndices,
+    program: &LumenpyxProgram,
     framebuffer: &mut SimpleFrameBuffer,
 ) {
-    let program = glium::Program::from_source(
+    let display = &program.display;
+    let indices = &program.indices;
+
+    let shader = glium::Program::from_source(
         display,
         GENERATE_CIRCLE_VERTEX_SHADER_SRC,
         GENERATE_CIRCLE_FRAGMENT_SHADER_SRC,
@@ -78,7 +81,7 @@ pub fn draw_circle(
         .draw(
             &vertex_buffer,
             indices,
-            &program,
+            &shader,
             uniforms,
             &Default::default(),
         )
@@ -89,27 +92,23 @@ pub fn draw_sphere(
     color: [f32; 4],
     radius: f32,
     transform: Transform,
-    display: &glium::Display<WindowSurface>,
-    indices: &glium::index::NoIndices,
+    program: &LumenpyxProgram,
     albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
 ) {
-    draw_circle(
-        color,
-        radius,
-        transform,
-        display,
-        indices,
-        albedo_framebuffer,
-    );
+    let display = &program.display;
+    let indices = &program.indices;
+
+    draw_circle(color, radius, transform, program, albedo_framebuffer);
 
     let program = glium::Program::from_source(
         display,
         GENERATE_SPHERE_HEIGHT_VERTEX_SHADER_SRC,
         GENERATE_SPHERE_HEIGHT_FRAGMENT_SHADER_SRC,
         None,
-    );
+    )
+    .unwrap();
 
     let shape = vec![
         Vertex {
@@ -149,7 +148,7 @@ pub fn draw_sphere(
         .draw(
             &vertex_buffer,
             indices,
-            &program.unwrap(),
+            &program,
             uniforms,
             &Default::default(),
         )
@@ -226,8 +225,7 @@ impl Circle {
 impl Drawable for Circle {
     fn draw(
         &self,
-        display: &glium::Display<WindowSurface>,
-        indices: &glium::index::NoIndices,
+        program: &LumenpyxProgram,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -237,8 +235,7 @@ impl Drawable for Circle {
             self.color,
             self.radius,
             self.transform,
-            display,
-            indices,
+            program,
             albedo_framebuffer,
         );
     }
@@ -263,8 +260,7 @@ impl Sphere {
 impl Drawable for Sphere {
     fn draw(
         &self,
-        display: &glium::Display<WindowSurface>,
-        indices: &glium::index::NoIndices,
+        program: &LumenpyxProgram,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -274,8 +270,7 @@ impl Drawable for Sphere {
             self.color,
             self.radius,
             self.transform,
-            display,
-            indices,
+            program,
             albedo_framebuffer,
             height_framebuffer,
             normal_framebuffer,

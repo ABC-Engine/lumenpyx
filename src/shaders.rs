@@ -44,7 +44,8 @@ pub(crate) fn draw_upscale(
     let dimensions = target.get_dimensions();
     // figure out which dimensions need the black bars
     let [target_width, target_height] = [dimensions.0 as f32, dimensions.1 as f32];
-    let [image_width, image_height] = [WINDOW_VIRTUAL_SIZE.0 as f32, WINDOW_VIRTUAL_SIZE.1 as f32];
+    let [image_width, image_height] =
+        [WINDOW_VIRTUAL_SIZE[0] as f32, WINDOW_VIRTUAL_SIZE[1] as f32];
 
     let mut dim_scales = [image_width / target_width, image_height / target_height];
     // make the max value 1.0
