@@ -34,13 +34,7 @@ pub fn draw_circle(
     let display = &program.display;
     let indices = &program.indices;
 
-    let shader = glium::Program::from_source(
-        display,
-        GENERATE_CIRCLE_VERTEX_SHADER_SRC,
-        GENERATE_CIRCLE_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
+    let shader = program.get_shader("circle_ahr_shader").unwrap();
 
     let shape = vec![
         Vertex {
@@ -102,13 +96,8 @@ pub fn draw_sphere(
 
     draw_circle(color, radius, transform, program, albedo_framebuffer);
 
-    let program = glium::Program::from_source(
-        display,
-        GENERATE_SPHERE_HEIGHT_VERTEX_SHADER_SRC,
-        GENERATE_SPHERE_HEIGHT_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
+    let height_shader = program.get_shader("sphere_height_shader").unwrap();
+    let normal_shader = program.get_shader("sphere_normal_shader").unwrap();
 
     let shape = vec![
         Vertex {
@@ -148,18 +137,11 @@ pub fn draw_sphere(
         .draw(
             &vertex_buffer,
             indices,
-            &program,
+            &height_shader,
             uniforms,
             &Default::default(),
         )
         .unwrap();
-
-    let normal_program = glium::Program::from_source(
-        display,
-        GENERATE_SPHERE_NORMAL_VERTEX_SHADER_SRC,
-        GENERATE_SPHERE_NORMAL_FRAGMENT_SHADER_SRC,
-        None,
-    );
 
     let shape = vec![
         Vertex {
@@ -199,7 +181,7 @@ pub fn draw_sphere(
         .draw(
             &vertex_buffer,
             indices,
-            &normal_program.unwrap(),
+            &normal_shader,
             uniforms,
             &Default::default(),
         )
@@ -239,6 +221,22 @@ impl Drawable for Circle {
             albedo_framebuffer,
         );
     }
+
+    fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
+        if program.get_shader("circle_ahr_shader").is_some() {
+            return;
+        }
+
+        let shader = glium::Program::from_source(
+            &program.display,
+            GENERATE_CIRCLE_VERTEX_SHADER_SRC,
+            GENERATE_CIRCLE_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+
+        program.add_shader(shader, "circle_ahr_shader");
+    }
 }
 
 pub struct Sphere {
@@ -275,5 +273,32 @@ impl Drawable for Sphere {
             height_framebuffer,
             normal_framebuffer,
         );
+    }
+
+    fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
+        // this assumes both shaders will always be loaded together
+        if program.get_shader("sphere_height_shader").is_some() {
+            return;
+        }
+
+        let shader = glium::Program::from_source(
+            &program.display,
+            GENERATE_SPHERE_HEIGHT_VERTEX_SHADER_SRC,
+            GENERATE_SPHERE_HEIGHT_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+
+        program.add_shader(shader, "sphere_height_shader");
+
+        let shader = glium::Program::from_source(
+            &program.display,
+            GENERATE_SPHERE_NORMAL_VERTEX_SHADER_SRC,
+            GENERATE_SPHERE_NORMAL_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+
+        program.add_shader(shader, "sphere_normal_shader");
     }
 }

@@ -3,7 +3,7 @@ use rand::Rng;
 
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
-    let (lumen_program, event_loop) = LumenpyxProgram::new();
+    let (mut lumen_program, event_loop) = LumenpyxProgram::new();
 
     let mut lights = vec![
         Light::new([0.78, 0.28, 1.0], [1.0, 0.76, 0.52], 3.0, 0.02),
@@ -53,7 +53,7 @@ fn main() {
 
                     let drawable_refs = vec![&scene_drawable];
                     let light_refs: Vec<&Light> = lights.iter().collect();
-                    draw_all(light_refs, drawable_refs, &lumen_program);
+                    draw_all(light_refs, drawable_refs, &mut lumen_program);
                 }
                 _ => (),
             },

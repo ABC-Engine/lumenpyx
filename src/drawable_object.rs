@@ -1,3 +1,5 @@
+use std::any::TypeId;
+
 use crate::load_image;
 use crate::shaders::draw_generate_normals;
 use crate::LumenpyxProgram;
@@ -24,6 +26,11 @@ pub trait Drawable {
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     );
+
+    /// Load the shaders for the object
+    /// This is called every frame, so make sure to check
+    /// if the shader is already loaded or your performance will suffer
+    fn try_load_shaders(&self, program: &mut LumenpyxProgram);
 }
 
 pub struct Sprite {
@@ -98,13 +105,7 @@ impl Drawable for Sprite {
         let indices = &program.indices;
         let display = &program.display;
 
-        let shader = glium::Program::from_source(
-            display,
-            BASE_VERTEX_SHADER_SRC,
-            BASE_FRAGMENT_SHADER_SRC,
-            None,
-        )
-        .unwrap();
+        let shader = program.get_shader("sprite_shader").unwrap();
 
         let shape = vec![
             Vertex {
@@ -198,5 +199,21 @@ impl Drawable for Sprite {
                 &Default::default(),
             )
             .unwrap();
+    }
+
+    fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
+        if program.get_shader("sprite_shader").is_some() {
+            return;
+        }
+
+        let new_shader = glium::Program::from_source(
+            &program.display,
+            BASE_VERTEX_SHADER_SRC,
+            BASE_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+
+        program.add_shader(new_shader, "sprite_shader");
     }
 }

@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 lumenpyx = { path = "../../../lumenpyx"}
 rand = "0.8.5"
+rustc-hash = "1.1.0"

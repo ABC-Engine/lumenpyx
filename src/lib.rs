@@ -9,7 +9,7 @@ mod shaders;
 use shaders::*;
 mod drawable_object;
 pub use drawable_object::*;
-use glium::uniform;
+use rustc_hash::FxHashMap;
 
 pub(crate) const WINDOW_VIRTUAL_SIZE: [u32; 2] = [128, 128];
 pub(crate) const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior =
@@ -32,6 +32,7 @@ pub struct LumenpyxProgram {
     pub lighting_shader: glium::Program,
     pub reflection_shader: glium::Program,
     pub upscale_shader: glium::Program,
+    other_shaders: FxHashMap<String, glium::Program>,
 }
 
 impl LumenpyxProgram {
@@ -69,9 +70,18 @@ impl LumenpyxProgram {
                 lighting_shader,
                 reflection_shader,
                 upscale_shader,
+                other_shaders: FxHashMap::default(),
             },
             event_loop,
         )
+    }
+
+    pub fn add_shader(&mut self, program: glium::Program, name: &str) {
+        self.other_shaders.insert(name.to_string(), program);
+    }
+
+    pub fn get_shader(&self, name: &str) -> Option<&glium::Program> {
+        self.other_shaders.get(name)
     }
 }
 
@@ -212,8 +222,11 @@ pub fn draw_all(
     indices: &glium::index::NoIndices,*/
     lights: Vec<&Light>,
     drawables: Vec<&impl Drawable>,
-    program: &LumenpyxProgram,
+    program: &mut LumenpyxProgram,
 ) {
+    for drawable in &drawables {
+        drawable.try_load_shaders(program);
+    }
     /*
     STEP 1:
         render every albedo to a texture
