@@ -1,21 +1,13 @@
-use crate::Light;
 use crate::LumenpyxProgram;
 use crate::Vertex;
 use crate::WINDOW_VIRTUAL_SIZE;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::glutin::surface::WindowSurface;
-use glium::program;
 use glium::uniform;
-use glium::Program;
 use glium::Surface;
 
 // include the vertex and fragment shaders in the library
-pub(crate) const LIGHTING_VERTEX_SHADER_SRC: &str =
-    include_str!("../shaders/shading/lighting.vert");
-pub(crate) const LIGHTING_FRAGMENT_SHADER_SRC: &str =
-    include_str!("../shaders/shading/lighting.frag");
-
 pub(crate) const REFLECTION_VERTEX_SHADER_SRC: &str =
     include_str!("../shaders/shading/reflections.vert");
 pub(crate) const REFLECTION_FRAGMENT_SHADER_SRC: &str =
@@ -106,80 +98,6 @@ pub(crate) fn draw_upscale(
         .unwrap();
 
     target.finish().unwrap();
-}
-
-/// draw the lighting
-pub(crate) fn draw_lighting(
-    albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    heightmap: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    light: &Light,
-    program: &LumenpyxProgram,
-    framebuffer: &mut SimpleFrameBuffer,
-) {
-    let display = &program.display;
-    let indices = &program.indices;
-    let shader = &program.lighting_shader;
-
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
-
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
-
-    let uniforms = &uniform! {
-        heightmap: heightmap,
-        albedomap: albedo_uniform,
-        light_pos: light.position,
-        light_color: light.color,
-        light_intensity: light.intensity,
-        light_falloff: light.falloff,
-    };
-
-    framebuffer
-        .draw(
-            &vertex_buffer,
-            indices,
-            &shader,
-            uniforms,
-            &glium::DrawParameters {
-                blend: glium::Blend {
-                    color: glium::BlendingFunction::Addition {
-                        source: glium::LinearBlendingFactor::One,
-                        destination: glium::LinearBlendingFactor::One,
-                    },
-                    alpha: glium::BlendingFunction::Addition {
-                        source: glium::LinearBlendingFactor::One,
-                        destination: glium::LinearBlendingFactor::One,
-                    },
-                    constant_value: (0.0, 0.0, 0.0, 0.0),
-                },
-                ..Default::default()
-            },
-        )
-        .unwrap();
 }
 
 #[no_mangle]

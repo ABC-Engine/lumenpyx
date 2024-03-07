@@ -10,6 +10,7 @@ use shaders::*;
 mod drawable_object;
 pub use drawable_object::*;
 use rustc_hash::FxHashMap;
+pub mod lights;
 
 pub(crate) const WINDOW_VIRTUAL_SIZE: [u32; 2] = [128, 128];
 pub(crate) const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior =
@@ -29,7 +30,6 @@ pub struct LumenpyxProgram {
     pub window: winit::window::Window,
     pub display: glium::Display<WindowSurface>,
     pub indices: glium::index::NoIndices,
-    pub lighting_shader: glium::Program,
     pub reflection_shader: glium::Program,
     pub upscale_shader: glium::Program,
     other_shaders: FxHashMap<String, glium::Program>,
@@ -38,14 +38,6 @@ pub struct LumenpyxProgram {
 impl LumenpyxProgram {
     pub fn new() -> (LumenpyxProgram, EventLoop<()>) {
         let (event_loop, window, display, indices) = setup_program();
-        let lighting_shader = glium::Program::from_source(
-            &display,
-            shaders::LIGHTING_VERTEX_SHADER_SRC,
-            shaders::LIGHTING_FRAGMENT_SHADER_SRC,
-            None,
-        )
-        .unwrap();
-
         let reflection_shader = glium::Program::from_source(
             &display,
             shaders::REFLECTION_VERTEX_SHADER_SRC,
@@ -67,7 +59,6 @@ impl LumenpyxProgram {
                 window,
                 display,
                 indices,
-                lighting_shader,
                 reflection_shader,
                 upscale_shader,
                 other_shaders: FxHashMap::default(),
@@ -129,46 +120,6 @@ impl Transform {
 }
 
 #[derive(Copy, Clone)]
-pub struct Light {
-    position: [f32; 3],
-    color: [f32; 3],
-    intensity: f32,
-    falloff: f32,
-}
-
-impl Light {
-    pub fn new(position: [f32; 3], color: [f32; 3], intensity: f32, falloff: f32) -> Light {
-        Light {
-            position,
-            color,
-            intensity,
-            falloff,
-        }
-    }
-
-    pub fn set_position(&mut self, x: f32, y: f32, z: f32) {
-        self.position = [x, y, z];
-    }
-
-    pub fn get_position(&self) -> [f32; 3] {
-        self.position
-    }
-
-    /// Set the color of the light in 0.0 - 1.0 range
-    pub fn set_color(&mut self, r: f32, g: f32, b: f32) {
-        self.color = [r, g, b];
-    }
-
-    pub fn set_intensity(&mut self, intensity: f32) {
-        self.intensity = intensity;
-    }
-
-    pub fn set_falloff(&mut self, falloff: f32) {
-        self.falloff = falloff;
-    }
-}
-
-#[derive(Copy, Clone)]
 struct Vertex {
     position: [f32; 2],
     tex_coords: [f32; 2],
@@ -221,13 +172,18 @@ fn setup_window() -> (
 pub fn draw_all(
     /*display: &glium::Display<WindowSurface>,
     indices: &glium::index::NoIndices,*/
-    lights: Vec<&Light>,
+    lights: Vec<&dyn lights::LightDrawable>,
     drawables: Vec<&dyn Drawable>,
     program: &mut LumenpyxProgram,
 ) {
+    // this is kind of inefficient, but it works for now
     for drawable in &drawables {
         drawable.try_load_shaders(program);
     }
+    for light in &lights {
+        light.try_load_shaders(program);
+    }
+
     /*
     STEP 1:
         render every albedo to a texture
@@ -320,18 +276,19 @@ pub fn draw_all(
     {
         let albedo = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
         let height_sampler = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
+        let reflection_sampler = glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR);
 
         let mut lit_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
         lit_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         for light in lights {
-            draw_lighting(
-                albedo,
-                height_sampler,
-                light,
-                &program,
+            light.draw(
+                program,
                 &mut lit_framebuffer,
+                height_sampler,
+                albedo,
+                reflection_sampler,
             );
         }
     }
