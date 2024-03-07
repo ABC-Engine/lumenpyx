@@ -21,6 +21,11 @@ const GENERATE_SPHERE_NORMAL_VERTEX_SHADER_SRC: &str =
 const GENERATE_SPHERE_NORMAL_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/ahr_shaders/sphere_normal_shader.frag");
 
+const GENERATE_RECTANGLE_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/ahr_shaders/rectangle_ahr_shader.vert");
+const GENERATE_RECTANGLE_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/ahr_shaders/rectangle_ahr_shader.frag");
+
 use crate::Transform;
 use crate::Vertex;
 
@@ -67,7 +72,7 @@ pub fn draw_circle(
 
     let uniforms = &uniform! {
         circle_color: color,
-        radius: radius,
+        radius_squared: radius.powi(2),
         matrix: transform.matrix,
     };
 
@@ -129,7 +134,7 @@ pub fn draw_sphere(
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
     let uniforms = &uniform! {
-        radius: radius,
+        radius_squared: radius.powi(2),
         matrix: transform.matrix,
     };
 
@@ -173,7 +178,7 @@ pub fn draw_sphere(
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
     let uniforms = &uniform! {
-        radius: radius,
+        radius_squared: radius.powi(2),
         matrix: transform.matrix,
     };
 
@@ -182,6 +187,66 @@ pub fn draw_sphere(
             &vertex_buffer,
             indices,
             &normal_shader,
+            uniforms,
+            &Default::default(),
+        )
+        .unwrap();
+}
+
+fn draw_rectangle(
+    color: [f32; 4],
+    width: f32,
+    height: f32,
+    transform: Transform,
+    program: &LumenpyxProgram,
+    framebuffer: &mut SimpleFrameBuffer,
+) {
+    let display = &program.display;
+    let indices = &program.indices;
+
+    let shader = program.get_shader("rectangle_ahr_shader").unwrap();
+
+    let shape = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, -1.0],
+            tex_coords: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, 1.0],
+            tex_coords: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+    ];
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        rect_color: color,
+        width: width,
+        height: height,
+        matrix: transform.matrix,
+    };
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &shader,
             uniforms,
             &Default::default(),
         )
@@ -300,5 +365,59 @@ impl Drawable for Sphere {
         .unwrap();
 
         program.add_shader(shader, "sphere_normal_shader");
+    }
+}
+
+pub struct Rectangle {
+    color: [f32; 4],
+    width: f32,
+    height: f32,
+    transform: Transform,
+}
+
+impl Rectangle {
+    pub fn new(color: [f32; 4], width: f32, height: f32, transform: Transform) -> Rectangle {
+        Rectangle {
+            color,
+            width,
+            height,
+            transform,
+        }
+    }
+}
+
+impl Drawable for Rectangle {
+    fn draw(
+        &self,
+        program: &LumenpyxProgram,
+        albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        draw_rectangle(
+            self.color,
+            self.width,
+            self.height,
+            self.transform,
+            program,
+            albedo_framebuffer,
+        );
+    }
+
+    fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
+        if program.get_shader("rectangle_ahr_shader").is_some() {
+            return;
+        }
+
+        let shader = glium::Program::from_source(
+            &program.display,
+            GENERATE_RECTANGLE_VERTEX_SHADER_SRC,
+            GENERATE_RECTANGLE_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+
+        program.add_shader(shader, "rectangle_ahr_shader");
     }
 }

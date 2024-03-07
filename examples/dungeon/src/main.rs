@@ -16,7 +16,7 @@ fn main() {
         "../images/Demo-Scene-Roughnessmap.png",
         &lumen_program.display,
         &lumen_program.indices,
-        Transform::new(),
+        Transform::new([0.0, 0.0, 0.0]),
     );
 
     let mut distance_to_60_frame = 0.0;
@@ -51,7 +51,7 @@ fn main() {
                         }
                     }
 
-                    let drawable_refs = vec![&scene_drawable];
+                    let drawable_refs: Vec<&dyn Drawable> = vec![&scene_drawable];
                     let light_refs: Vec<&Light> = lights.iter().collect();
                     draw_all(light_refs, drawable_refs, &mut lumen_program);
                 }

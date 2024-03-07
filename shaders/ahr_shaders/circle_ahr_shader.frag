@@ -4,11 +4,13 @@ in vec2 v_tex_coords;
 out vec4 color;
 
 uniform vec4 circle_color;
-uniform float radius;
+uniform float radius_squared;
 
 void main() {
-    float dist = length(v_tex_coords - vec2(0.5, 0.5));
-    if (dist < radius) {
+    float x = v_tex_coords.x - 0.5;
+    float y = v_tex_coords.y - 0.5;
+    float distance_squared = x * x + y * y;
+    if (distance_squared < radius_squared) {
         color = circle_color;
     } else {
         discard;
