@@ -54,17 +54,25 @@ impl LumenpyxProgram {
         )
         .unwrap();
 
-        (
-            LumenpyxProgram {
-                window,
-                display,
-                indices,
-                reflection_shader,
-                upscale_shader,
-                other_shaders: FxHashMap::default(),
-            },
-            event_loop,
+        let mut program = LumenpyxProgram {
+            window,
+            display,
+            indices,
+            reflection_shader,
+            upscale_shader,
+            other_shaders: FxHashMap::default(),
+        };
+
+        let faster_clear_color_shader = glium::Program::from_source(
+            &program.display,
+            shaders::FASTER_CLEAR_COLOR_VERTEX_SHADER_SRC,
+            shaders::FASTER_CLEAR_COLOR_FRAGMENT_SHADER_SRC,
+            None,
         )
+        .unwrap();
+        program.add_shader(faster_clear_color_shader, "faster_clear_color_shader");
+
+        (program, event_loop)
     }
 
     pub fn add_shader(&mut self, program: glium::Program, name: &str) {
@@ -239,19 +247,19 @@ pub fn draw_all(
     {
         let mut albedo_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &albedo_texture).unwrap();
-        albedo_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+        //shaders::faster_clear_color(&mut albedo_framebuffer, [0.0, 0.0, 0.0, 0.0], &program);
 
         let mut height_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &height_texture).unwrap();
-        height_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+        //shaders::faster_clear_color(&mut height_framebuffer, [0.0, 0.0, 0.0, 0.0], &program);
 
         let mut roughness_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &roughness_texture).unwrap();
-        roughness_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+        //shaders::faster_clear_color(&mut roughness_framebuffer, [0.0, 0.0, 0.0, 0.0], &program);
 
         let mut normal_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture).unwrap();
-        normal_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+        //shaders::faster_clear_color(&mut normal_framebuffer, [0.0, 0.0, 0.0, 0.0], &program);
 
         for drawable in &drawables {
             drawable.draw(
@@ -280,7 +288,7 @@ pub fn draw_all(
 
         let mut lit_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
-        lit_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+        //lit_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         for light in lights {
             light.draw(

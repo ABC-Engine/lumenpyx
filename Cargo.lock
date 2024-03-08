@@ -380,7 +380,6 @@ version = "0.1.0"
 dependencies = [
  "lumenpyx",
  "rand",
- "rustc-hash",
 ]
 
 [[package]]
@@ -761,6 +760,14 @@ dependencies = [
  "bitflags 2.4.1",
  "libc",
  "redox_syscall 0.4.1",
+]
+
+[[package]]
+name = "light_benchmark"
+version = "0.1.0"
+dependencies = [
+ "lumenpyx",
+ "rand",
 ]
 
 [[package]]

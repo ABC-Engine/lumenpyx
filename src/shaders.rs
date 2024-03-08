@@ -23,6 +23,11 @@ pub(crate) const GENERATE_NORMALS_VERTEX_SHADER_SRC: &str =
 pub(crate) const GENERATE_NORMALS_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/shading/normal_generator.frag");
 
+pub(crate) const FASTER_CLEAR_COLOR_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/clear_color.vert");
+pub(crate) const FASTER_CLEAR_COLOR_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/clear_color.frag");
+
 /// upscale the result to the screen size
 pub(crate) fn draw_upscale(
     image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
@@ -218,6 +223,61 @@ pub(crate) fn draw_generate_normals(
             &vertex_buffer,
             indices,
             &program,
+            uniforms,
+            &Default::default(),
+        )
+        .unwrap();
+}
+
+// Profiling seems to indicate that the glium clear color is the slowest part of the rendering
+// process. So this this is a simpler and faster version of the clear color function
+pub(crate) fn faster_clear_color(
+    framebuffer: &mut SimpleFrameBuffer,
+    color: [f32; 4],
+    program: &LumenpyxProgram,
+) {
+    let display = &program.display;
+    let indices = &program.indices;
+    let shader = &program.get_shader("faster_clear_color_shader").unwrap();
+
+    let shape = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, -1.0],
+            tex_coords: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, 1.0],
+            tex_coords: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+    ];
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        new_color: color,
+    };
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &shader,
             uniforms,
             &Default::default(),
         )
