@@ -1,6 +1,5 @@
 use crate::LumenpyxProgram;
 use crate::Vertex;
-use crate::WINDOW_VIRTUAL_SIZE;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::glutin::surface::WindowSurface;

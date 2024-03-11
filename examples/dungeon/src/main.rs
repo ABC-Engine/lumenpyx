@@ -3,19 +3,19 @@ use rand::Rng;
 
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
-    let (mut lumen_program, event_loop) = LumenpyxProgram::new();
+    let (mut lumen_program, event_loop) = LumenpyxProgram::new([248, 128]);
 
-    let mut lights: Vec<Box<dyn LightDrawable>> = vec![
+    let mut lights = vec![
         Box::new(lights::PointLight::new(
             [0.78, 0.28, 1.0],
             [1.0, 0.76, 0.52],
-            1.5,
+            2.0,
             0.02,
         )),
         Box::new(lights::PointLight::new(
             [0.22, 0.28, 1.0],
             [1.0, 0.76, 0.52],
-            1.5,
+            2.0,
             0.02,
         )),
     ];
@@ -52,18 +52,16 @@ fn main() {
                     }
 
                     {
-                        let mut rng = rand::thread_rng();
-                        t += 0.01 * rng.gen_range(0.0..1.0);
                         for light in lights.iter_mut() {
-                            //light.set_position((t.sin() / 2.0) + 0.5, 0.28, 0.5);
-                            // light.set_position(0.78, 0.28, ((t.sin() / 2.0) + 0.5) * 5.0);
-                            //light.set_intensity(1.0 + (t.sin() * 0.5));
+                            let mut rng = rand::thread_rng();
+                            t += rng.gen_range(0.0..0.01);
+                            light.set_intensity(2.0 + (t.sin() * 0.5) as f32);
                         }
                     }
 
                     let drawable_refs: Vec<&dyn Drawable> = vec![&scene_drawable];
                     let light_refs: Vec<&dyn LightDrawable> =
-                        lights.iter().map(|l| l.as_ref()).collect();
+                        lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
                     draw_all(light_refs, drawable_refs, &mut lumen_program);
                 }
                 _ => (),

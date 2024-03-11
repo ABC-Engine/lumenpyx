@@ -1,6 +1,5 @@
 use crate::LumenpyxProgram;
 use crate::Vertex;
-use crate::WINDOW_VIRTUAL_SIZE;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::glutin::surface::WindowSurface;
@@ -35,14 +34,16 @@ pub(crate) fn draw_upscale(
 ) {
     let display = &lumenpyx_program.display;
     let indices = &lumenpyx_program.indices;
-    let program = &lumenpyx_program.upscale_shader;
+    let upscale_shader = &lumenpyx_program.upscale_shader;
 
     let mut target = display.draw();
     let dimensions = target.get_dimensions();
     // figure out which dimensions need the black bars
     let [target_width, target_height] = [dimensions.0 as f32, dimensions.1 as f32];
-    let [image_width, image_height] =
-        [WINDOW_VIRTUAL_SIZE[0] as f32, WINDOW_VIRTUAL_SIZE[1] as f32];
+    let [image_width, image_height] = [
+        lumenpyx_program.dimensions[0] as f32,
+        lumenpyx_program.dimensions[1] as f32,
+    ];
 
     let mut dim_scales = [image_width / target_width, image_height / target_height];
     // make the max value 1.0
@@ -96,7 +97,7 @@ pub(crate) fn draw_upscale(
         .draw(
             &vertex_buffer,
             indices,
-            &program,
+            &upscale_shader,
             uniforms,
             &Default::default(),
         )

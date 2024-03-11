@@ -3,7 +3,7 @@ use lumenpyx::primitives::*;
 use lumenpyx::*;
 
 fn main() {
-    let (mut lumen_program, event_loop) = LumenpyxProgram::new();
+    let (mut lumen_program, event_loop) = LumenpyxProgram::new([128, 128]);
 
     let mut drawables: Vec<Box<dyn Drawable>> = vec![];
     let mut lights: Vec<Box<dyn LightDrawable>> = vec![Box::new(lights::PointLight::new(

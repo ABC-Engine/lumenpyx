@@ -11,7 +11,7 @@ uniform float light_intensity;
 uniform float light_falloff;
 
 // the unlit color will be the albedo color dimmed by dimFactor
-const float dimFactor = 0.7;
+const float dimFactor = 0.5;
 
 vec4 texture_pixel(sampler2D tex, vec2 coords) {
     vec2 new_coords = coords / textureSize(tex, 0);

@@ -12,7 +12,6 @@ pub use drawable_object::*;
 use rustc_hash::FxHashMap;
 pub mod lights;
 
-pub(crate) const WINDOW_VIRTUAL_SIZE: [u32; 2] = [128, 128];
 pub(crate) const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior =
     glium::uniforms::SamplerBehavior {
         minify_filter: glium::uniforms::MinifySamplerFilter::Nearest,
@@ -33,10 +32,11 @@ pub struct LumenpyxProgram {
     pub reflection_shader: glium::Program,
     pub upscale_shader: glium::Program,
     other_shaders: FxHashMap<String, glium::Program>,
+    dimensions: [u32; 2],
 }
 
 impl LumenpyxProgram {
-    pub fn new() -> (LumenpyxProgram, EventLoop<()>) {
+    pub fn new(resolution: [u32; 2]) -> (LumenpyxProgram, EventLoop<()>) {
         let (event_loop, window, display, indices) = setup_program();
         let reflection_shader = glium::Program::from_source(
             &display,
@@ -54,23 +54,15 @@ impl LumenpyxProgram {
         )
         .unwrap();
 
-        let mut program = LumenpyxProgram {
+        let program = LumenpyxProgram {
             window,
             display,
             indices,
             reflection_shader,
             upscale_shader,
             other_shaders: FxHashMap::default(),
+            dimensions: resolution,
         };
-
-        let faster_clear_color_shader = glium::Program::from_source(
-            &program.display,
-            shaders::FASTER_CLEAR_COLOR_VERTEX_SHADER_SRC,
-            shaders::FASTER_CLEAR_COLOR_FRAGMENT_SHADER_SRC,
-            None,
-        )
-        .unwrap();
-        program.add_shader(faster_clear_color_shader, "faster_clear_color_shader");
 
         (program, event_loop)
     }
@@ -212,8 +204,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE[0],
-        WINDOW_VIRTUAL_SIZE[1],
+        program.dimensions[0],
+        program.dimensions[1],
     )
     .unwrap();
 
@@ -221,8 +213,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE[0],
-        WINDOW_VIRTUAL_SIZE[1],
+        program.dimensions[0],
+        program.dimensions[1],
     )
     .unwrap();
 
@@ -230,8 +222,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE[0],
-        WINDOW_VIRTUAL_SIZE[1],
+        program.dimensions[0],
+        program.dimensions[1],
     )
     .unwrap();
 
@@ -239,8 +231,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE[0],
-        WINDOW_VIRTUAL_SIZE[1],
+        program.dimensions[0],
+        program.dimensions[1],
     )
     .unwrap();
 
@@ -276,8 +268,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE[0],
-        WINDOW_VIRTUAL_SIZE[1],
+        program.dimensions[0],
+        program.dimensions[1],
     )
     .expect("Failed to create lit frame buffer");
 
@@ -305,8 +297,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        WINDOW_VIRTUAL_SIZE[0],
-        WINDOW_VIRTUAL_SIZE[1],
+        program.dimensions[0],
+        program.dimensions[1],
     )
     .expect("Failed to create reflected frame buffer");
 

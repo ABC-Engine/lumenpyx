@@ -6,7 +6,6 @@ use crate::LumenpyxProgram;
 use crate::Transform;
 use crate::Vertex;
 use crate::DEFAULT_BEHAVIOR;
-use crate::WINDOW_VIRTUAL_SIZE;
 use glium;
 use glium::glutin::surface::WindowSurface;
 use glium::uniform;
@@ -63,8 +62,10 @@ impl Sprite {
             display,
             glium::texture::UncompressedFloatFormat::U8U8U8U8,
             glium::texture::MipmapsOption::NoMipmap,
-            WINDOW_VIRTUAL_SIZE[0],
-            WINDOW_VIRTUAL_SIZE[1],
+            albedo_texture.get_width(),
+            albedo_texture
+                .get_height()
+                .expect("Failed to get height of albedo texture"),
         )
         .unwrap();
 
@@ -93,6 +94,40 @@ impl Sprite {
     }
 }
 
+fn generate_shape(dims_1: [u32; 2], dims_2: [u32; 2]) -> Vec<Vertex> {
+    let scaling_factor = [
+        dims_2[0] as f32 / dims_1[0] as f32,
+        dims_2[1] as f32 / dims_1[1] as f32,
+    ];
+
+    vec![
+        Vertex {
+            position: [-1.0 * scaling_factor[0], -1.0 * scaling_factor[1]],
+            tex_coords: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0 * scaling_factor[0], -1.0 * scaling_factor[1]],
+            tex_coords: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0 * scaling_factor[0], 1.0 * scaling_factor[1]],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0 * scaling_factor[0], 1.0 * scaling_factor[1]],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0 * scaling_factor[0], 1.0 * scaling_factor[1]],
+            tex_coords: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0 * scaling_factor[0], -1.0 * scaling_factor[1]],
+            tex_coords: [0.0, 0.0],
+        },
+    ]
+}
+
 impl Drawable for Sprite {
     fn draw(
         &self,
@@ -106,33 +141,12 @@ impl Drawable for Sprite {
         let display = &program.display;
 
         let shader = program.get_shader("sprite_shader").unwrap();
-
-        let shape = vec![
-            Vertex {
-                position: [-1.0, -1.0],
-                tex_coords: [0.0, 0.0],
-            },
-            Vertex {
-                position: [1.0, -1.0],
-                tex_coords: [1.0, 0.0],
-            },
-            Vertex {
-                position: [1.0, 1.0],
-                tex_coords: [1.0, 1.0],
-            },
-            Vertex {
-                position: [1.0, 1.0],
-                tex_coords: [1.0, 1.0],
-            },
-            Vertex {
-                position: [-1.0, 1.0],
-                tex_coords: [0.0, 1.0],
-            },
-            Vertex {
-                position: [-1.0, -1.0],
-                tex_coords: [0.0, 0.0],
-            },
+        let sprite_dimensions = [
+            self.albedo_texture.get_width(),
+            self.albedo_texture.get_height().unwrap(),
         ];
+
+        let shape = generate_shape(program.dimensions, sprite_dimensions);
 
         let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
