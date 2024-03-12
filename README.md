@@ -9,7 +9,6 @@ This is the best example I have for now, the renderer is capable of much more th
 ## Rendering a Sprite
 ```rust
 use lumenpyx::{lights::LightDrawable, winit::event, *};
-use rand::Rng;
 
 fn main() {
     // setup your program at any resolution you would like
@@ -29,9 +28,9 @@ fn main() {
 
     // We make a new sprite passing in the display and indices
     let scene_drawable = Sprite::new(
-        "../images/Demo-Scene-Albedo.png",
-        "../images/Demo-Scene-Heightmap.png",
-        "../images/Demo-Scene-Roughnessmap.png",
+        "examples/images/Demo-Scene-Albedo.png",
+        "examples/images/Demo-Scene-Heightmap.png",
+        "examples/images/Demo-Scene-Roughnessmap.png",
         &lumen_program.display,
         &lumen_program.indices,
         Transform::new([0.0, 0.0, 0.0]),
@@ -41,7 +40,6 @@ fn main() {
     let mut distance_to_60_frame = 0.0;
     let mut start_of_60_frame = std::time::Instant::now();
 
-    let mut t: f32 = 0.0;
     // all of this will mostly be unchanged, I will probably change this to be more elegant later
     event_loop
         .run(move |ev, window_target| match ev {
@@ -86,3 +84,131 @@ fn main() {
         .unwrap();
 }
 ```
+
+## Creating custom drawable objects
+This is definitely not neccesary to do, the default drawables that come with the library should be enough for most. However, if you have a solid understanding of opengl here is how you make a custom drawable.
+
+```rust
+use lumenpyx::Drawable;
+use lumenpyx::LumenpyxProgram;
+use glium::framebuffer::SimpleFrameBuffer;
+use glium::uniform;
+use glium::Surface;
+use lumenpyx::Transform;
+use lumenpyx::Vertex;
+
+// put your glsl shader in a file and reference it here
+// if you don't do this the shader won't be including in the binary and it will panic
+const GENERATE_CIRCLE_VERTEX_SHADER_SRC: &str =
+    include_str!(r"examples\shaders\ahr_shaders\circle_ahr_shader.vert");
+const GENERATE_CIRCLE_FRAGMENT_SHADER_SRC: &str =
+    include_str!(r"examples\shaders\ahr_shaders\circle_ahr_shader.frag");
+
+
+pub struct Circle {
+    color: [f32; 4],
+    radius: f32,
+    transform: Transform,
+}
+
+impl Drawable for Circle {
+    fn draw(
+        &self,
+        program: &LumenpyxProgram,
+        matrix_transform: [[f32; 4]; 4],
+        albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let color = self.color;
+        let radius = self.radius;
+        let transform = self.transform;
+
+        let display = &program.display;
+        let indices = &program.indices;
+
+        // attempt to load the shader
+        // as long as the load_shaders function was setup correctly, this shouldn't panic
+        let shader = program.get_shader("circle_ahr_shader").unwrap();
+
+        // this is a whole screen shape
+        let shape = vec![
+            Vertex {
+                position: [-1.0, -1.0],
+                tex_coords: [0.0, 0.0],
+            },
+            Vertex {
+                position: [1.0, -1.0],
+                tex_coords: [1.0, 0.0],
+            },
+            Vertex {
+                position: [1.0, 1.0],
+                tex_coords: [1.0, 1.0],
+            },
+            Vertex {
+                position: [1.0, 1.0],
+                tex_coords: [1.0, 1.0],
+            },
+            Vertex {
+                position: [-1.0, 1.0],
+                tex_coords: [0.0, 1.0],
+            },
+            Vertex {
+                position: [-1.0, -1.0],
+                tex_coords: [0.0, 0.0],
+            },
+        ];
+
+        let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+        // these are setup by name in the glsl shader file at the top of the file
+        // ex.
+        // ```glsl
+        // uniform vec4 circle color
+        // ```
+        let uniforms = &uniform! {
+            circle_color: color,
+            radius_squared: radius.powi(2),
+            matrix: matrix_transform,
+        };
+
+        albedo_framebuffer
+            .draw(
+                &vertex_buffer,
+                indices,
+                &shader,
+                uniforms,
+                &Default::default(),
+            )
+            .unwrap();
+    }
+
+    // this is called every frame, so make sure to check if the shader is already loaded
+    fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
+        // check if the shader is loaded
+        if program.get_shader("circle_ahr_shader").is_some() {
+            // if it is we are done
+            return;
+        }
+
+        // if not we create the shader
+        let shader = glium::Program::from_source(
+            &program.display,
+            GENERATE_CIRCLE_VERTEX_SHADER_SRC,
+            GENERATE_CIRCLE_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+
+        // then we add the shader to the program to be accessed later
+        program.add_shader(shader, "circle_ahr_shader");
+    }
+
+    // this is so that objects scale properly with camera movement and dimensions
+    fn get_position(&self) -> [[f32; 4]; 4] {
+        self.transform.get_matrix()
+    }
+}
+```
+

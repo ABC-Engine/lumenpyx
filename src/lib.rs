@@ -11,6 +11,7 @@ mod drawable_object;
 pub use drawable_object::*;
 use rustc_hash::FxHashMap;
 pub mod lights;
+#[doc = include_str!("../README.md")]
 
 pub(crate) const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior =
     glium::uniforms::SamplerBehavior {
@@ -94,6 +95,10 @@ impl Transform {
         }
     }
 
+    pub fn get_matrix(&self) -> [[f32; 4]; 4] {
+        self.matrix
+    }
+
     pub fn translate(&mut self, x: f32, y: f32, z: f32) {
         self.matrix[3][0] = x * 2.0;
         self.matrix[3][1] = y * 2.0;
@@ -120,7 +125,7 @@ impl Transform {
 }
 
 #[derive(Copy, Clone)]
-struct Vertex {
+pub struct Vertex {
     position: [f32; 2],
     tex_coords: [f32; 2],
 }
@@ -239,19 +244,15 @@ pub fn draw_all(
     {
         let mut albedo_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &albedo_texture).unwrap();
-        //shaders::faster_clear_color(&mut albedo_framebuffer, [0.0, 0.0, 0.0, 0.0], &program);
 
         let mut height_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &height_texture).unwrap();
-        //shaders::faster_clear_color(&mut height_framebuffer, [0.0, 0.0, 0.0, 0.0], &program);
 
         let mut roughness_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &roughness_texture).unwrap();
-        //shaders::faster_clear_color(&mut roughness_framebuffer, [0.0, 0.0, 0.0, 0.0], &program);
 
         let mut normal_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture).unwrap();
-        //shaders::faster_clear_color(&mut normal_framebuffer, [0.0, 0.0, 0.0, 0.0], &program);
 
         for drawable in &drawables {
             let mut new_matrix = drawable.get_position();

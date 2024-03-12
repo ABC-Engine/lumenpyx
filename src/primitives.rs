@@ -2,7 +2,6 @@ use crate::Drawable;
 use crate::LumenpyxProgram;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
-use glium::glutin::surface::WindowSurface;
 use glium::uniform;
 use glium::Surface;
 
