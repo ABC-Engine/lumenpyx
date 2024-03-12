@@ -273,6 +273,7 @@ impl Drawable for Circle {
     fn draw(
         &self,
         program: &LumenpyxProgram,
+        matrix_transform: [[f32; 4]; 4],
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -302,6 +303,10 @@ impl Drawable for Circle {
 
         program.add_shader(shader, "circle_ahr_shader");
     }
+
+    fn get_position(&self) -> [[f32; 4]; 4] {
+        self.transform.matrix
+    }
 }
 
 pub struct Sphere {
@@ -324,6 +329,7 @@ impl Drawable for Sphere {
     fn draw(
         &self,
         program: &LumenpyxProgram,
+        matrix_transform: [[f32; 4]; 4],
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -366,6 +372,10 @@ impl Drawable for Sphere {
 
         program.add_shader(shader, "sphere_normal_shader");
     }
+
+    fn get_position(&self) -> [[f32; 4]; 4] {
+        self.transform.matrix
+    }
 }
 
 pub struct Rectangle {
@@ -390,6 +400,7 @@ impl Drawable for Rectangle {
     fn draw(
         &self,
         program: &LumenpyxProgram,
+        matrix_transform: [[f32; 4]; 4],
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -419,5 +430,9 @@ impl Drawable for Rectangle {
         .unwrap();
 
         program.add_shader(shader, "rectangle_ahr_shader");
+    }
+
+    fn get_position(&self) -> [[f32; 4]; 4] {
+        self.transform.matrix
     }
 }

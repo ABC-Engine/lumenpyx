@@ -3,17 +3,18 @@ use rand::Rng;
 
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
-    let (mut lumen_program, event_loop) = LumenpyxProgram::new([248, 128]);
+    let (mut lumen_program, event_loop) =
+        LumenpyxProgram::new([(128.0 * (16.0 / 9.0)) as u32, 128]);
 
     let mut lights = vec![
         Box::new(lights::PointLight::new(
-            [0.78, 0.28, 1.0],
+            [0.56, -0.44, 1.0],
             [1.0, 0.76, 0.52],
             2.0,
             0.02,
         )),
         Box::new(lights::PointLight::new(
-            [0.22, 0.28, 1.0],
+            [-0.545, -0.44, 1.0],
             [1.0, 0.76, 0.52],
             2.0,
             0.02,
@@ -56,6 +57,7 @@ fn main() {
                             let mut rng = rand::thread_rng();
                             t += rng.gen_range(0.0..0.01);
                             light.set_intensity(2.0 + (t.sin() * 0.5) as f32);
+                            //light.set_position((t.sin() * 0.5) as f32, (t.cos() * 0.5) as f32, 1.0);
                         }
                     }
 

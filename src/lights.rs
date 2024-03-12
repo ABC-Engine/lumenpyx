@@ -20,12 +20,14 @@ pub trait LightDrawable {
     fn draw(
         &self,
         program: &LumenpyxProgram,
+        matrix_transform: [[f32; 4]; 4],
         albedo_framebuffer: &mut SimpleFrameBuffer,
         height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         reflection_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     );
     fn try_load_shaders(&self, program: &mut LumenpyxProgram);
+    fn get_transform(&self) -> [[f32; 4]; 4];
 }
 
 #[derive(Copy, Clone)]
@@ -72,6 +74,7 @@ impl LightDrawable for PointLight {
     fn draw(
         &self,
         program: &LumenpyxProgram,
+        matrix_transform: [[f32; 4]; 4],
         albedo_framebuffer: &mut SimpleFrameBuffer,
         height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
@@ -80,9 +83,10 @@ impl LightDrawable for PointLight {
         draw_lighting(
             albedo_uniform,
             height_uniform,
-            &self,
-            program,
             albedo_framebuffer,
+            program,
+            &self,
+            matrix_transform,
         )
     }
 
@@ -98,6 +102,15 @@ impl LightDrawable for PointLight {
 
             program.add_shader(shader, "point_light_shader");
         }
+    }
+
+    fn get_transform(&self) -> [[f32; 4]; 4] {
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [self.position[0], self.position[1], self.position[2], 0.0],
+        ]
     }
 }
 
@@ -163,6 +176,7 @@ impl LightDrawable for AreaLight {
     fn draw(
         &self,
         program: &LumenpyxProgram,
+        matrix_transform: [[f32; 4]; 4],
         albedo_framebuffer: &mut SimpleFrameBuffer,
         height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
@@ -174,6 +188,7 @@ impl LightDrawable for AreaLight {
             albedo_uniform,
             height_uniform,
             &self,
+            matrix_transform,
         )
     }
 
@@ -190,15 +205,25 @@ impl LightDrawable for AreaLight {
             program.add_shader(shader, "rectangle_light_shader");
         }
     }
+
+    fn get_transform(&self) -> [[f32; 4]; 4] {
+        [
+            [self.width, 0.0, 0.0, 0.0],
+            [0.0, self.height, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [self.position[0], self.position[1], self.position[2], 1.0],
+        ]
+    }
 }
 
 /// draw the lighting
 pub(crate) fn draw_lighting(
     albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     heightmap: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    light: &PointLight,
-    program: &LumenpyxProgram,
     framebuffer: &mut SimpleFrameBuffer,
+    program: &LumenpyxProgram,
+    light: &PointLight,
+    matrix_transform: [[f32; 4]; 4],
 ) {
     let display = &program.display;
     let indices = &program.indices;
@@ -231,12 +256,19 @@ pub(crate) fn draw_lighting(
         },
     ];
 
+    // the magic numbers are to transform the light position from -1.0 to 1.0 to 0.0 to 1.0
+    let light_pos = [
+        ((light.position[0] * matrix_transform[0][0]) + 1.0) * 0.5,
+        ((light.position[1] * matrix_transform[1][1]) + 1.0) * 0.5,
+        light.position[2] * matrix_transform[2][2],
+    ];
+
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
     let uniforms = &uniform! {
         heightmap: heightmap,
         albedomap: albedo_uniform,
-        light_pos: light.position,
+        light_pos: light_pos,
         light_color: light.color,
         light_intensity: light.intensity,
         light_falloff: light.falloff,
@@ -272,6 +304,7 @@ fn draw_area_light(
     albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     light: &AreaLight,
+    matrix_transform: [[f32; 4]; 4],
 ) {
     let display = &program.display;
     let indices = &program.indices;
@@ -304,15 +337,25 @@ fn draw_area_light(
         },
     ];
 
+    let light_pos = [
+        ((light.position[0] * matrix_transform[0][0]) + 1.0) * 0.5,
+        ((light.position[1] * matrix_transform[1][1]) + 1.0) * 0.5,
+        light.position[2] * matrix_transform[2][2],
+    ];
+    let light_width = light.width * matrix_transform[0][0];
+    let light_height = light.height * matrix_transform[1][1];
+
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
     let uniforms = &uniform! {
         heightmap: height_uniform,
         albedomap: albedo_uniform,
-        light_pos: light.position,
+        light_pos: light_pos,
         light_color: light.color,
         light_intensity: light.intensity,
         light_falloff: light.falloff,
+        width: light_width,
+        height: light_height,
     };
 
     framebuffer

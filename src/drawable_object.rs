@@ -20,6 +20,7 @@ pub trait Drawable {
     fn draw(
         &self,
         program: &LumenpyxProgram,
+        transform_matrix: [[f32; 4]; 4],
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -30,6 +31,8 @@ pub trait Drawable {
     /// This is called every frame, so make sure to check
     /// if the shader is already loaded or your performance will suffer
     fn try_load_shaders(&self, program: &mut LumenpyxProgram);
+
+    fn get_position(&self) -> [[f32; 4]; 4];
 }
 
 pub struct Sprite {
@@ -94,44 +97,11 @@ impl Sprite {
     }
 }
 
-fn generate_shape(dims_1: [u32; 2], dims_2: [u32; 2]) -> Vec<Vertex> {
-    let scaling_factor = [
-        dims_2[0] as f32 / dims_1[0] as f32,
-        dims_2[1] as f32 / dims_1[1] as f32,
-    ];
-
-    vec![
-        Vertex {
-            position: [-1.0 * scaling_factor[0], -1.0 * scaling_factor[1]],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0 * scaling_factor[0], -1.0 * scaling_factor[1]],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0 * scaling_factor[0], 1.0 * scaling_factor[1]],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0 * scaling_factor[0], 1.0 * scaling_factor[1]],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0 * scaling_factor[0], 1.0 * scaling_factor[1]],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0 * scaling_factor[0], -1.0 * scaling_factor[1]],
-            tex_coords: [0.0, 0.0],
-        },
-    ]
-}
-
 impl Drawable for Sprite {
     fn draw(
         &self,
         program: &LumenpyxProgram,
+        transform_matrix: [[f32; 4]; 4],
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -146,16 +116,39 @@ impl Drawable for Sprite {
             self.albedo_texture.get_height().unwrap(),
         ];
 
-        let shape = generate_shape(program.dimensions, sprite_dimensions);
+        let shape = vec![
+            Vertex {
+                position: [-1.0, -1.0],
+                tex_coords: [0.0, 0.0],
+            },
+            Vertex {
+                position: [1.0, -1.0],
+                tex_coords: [1.0, 0.0],
+            },
+            Vertex {
+                position: [1.0, 1.0],
+                tex_coords: [1.0, 1.0],
+            },
+            Vertex {
+                position: [1.0, 1.0],
+                tex_coords: [1.0, 1.0],
+            },
+            Vertex {
+                position: [-1.0, 1.0],
+                tex_coords: [0.0, 1.0],
+            },
+            Vertex {
+                position: [-1.0, -1.0],
+                tex_coords: [0.0, 0.0],
+            },
+        ];
 
         let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
-
-        let matrix = self.transform.matrix;
 
         let mut image = glium::uniforms::Sampler(&self.albedo_texture, DEFAULT_BEHAVIOR);
 
         let uniform = &uniform! {
-            matrix: matrix,
+            matrix: transform_matrix,
             image: image,
         };
 
@@ -171,7 +164,7 @@ impl Drawable for Sprite {
 
         image = glium::uniforms::Sampler(&self.height_texture, DEFAULT_BEHAVIOR);
         let uniform = &uniform! {
-            matrix: matrix,
+            matrix: transform_matrix,
             image: image,
         };
         height_framebuffer
@@ -186,7 +179,7 @@ impl Drawable for Sprite {
 
         image = glium::uniforms::Sampler(&self.roughness_texture, DEFAULT_BEHAVIOR);
         let uniform = &uniform! {
-            matrix: matrix,
+            matrix: transform_matrix,
             image: image,
         };
         roughness_framebuffer
@@ -201,7 +194,7 @@ impl Drawable for Sprite {
 
         image = glium::uniforms::Sampler(&self.normal_texture, DEFAULT_BEHAVIOR);
         let uniform = &uniform! {
-            matrix: matrix,
+            matrix: transform_matrix,
             image: image,
         };
         normal_framebuffer
@@ -229,5 +222,9 @@ impl Drawable for Sprite {
         .unwrap();
 
         program.add_shader(new_shader, "sprite_shader");
+    }
+
+    fn get_position(&self) -> [[f32; 4]; 4] {
+        self.transform.matrix
     }
 }

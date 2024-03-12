@@ -254,8 +254,17 @@ pub fn draw_all(
         //shaders::faster_clear_color(&mut normal_framebuffer, [0.0, 0.0, 0.0, 0.0], &program);
 
         for drawable in &drawables {
+            let mut new_matrix = drawable.get_position();
+            // scale off the resolution
+            if program.dimensions[0] > program.dimensions[1] {
+                new_matrix[0][0] *= program.dimensions[1] as f32 / program.dimensions[0] as f32;
+            } else {
+                new_matrix[1][1] *= program.dimensions[0] as f32 / program.dimensions[1] as f32;
+            }
+
             drawable.draw(
                 program,
+                new_matrix,
                 &mut albedo_framebuffer,
                 &mut height_framebuffer,
                 &mut roughness_framebuffer,
@@ -283,8 +292,16 @@ pub fn draw_all(
         //lit_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         for light in lights {
+            let mut new_matrix = light.get_transform();
+            if program.dimensions[0] > program.dimensions[1] {
+                new_matrix[0][0] *= program.dimensions[1] as f32 / program.dimensions[0] as f32;
+            } else {
+                new_matrix[1][1] *= program.dimensions[0] as f32 / program.dimensions[1] as f32;
+            }
+
             light.draw(
                 program,
+                new_matrix,
                 &mut lit_framebuffer,
                 height_sampler,
                 albedo,
