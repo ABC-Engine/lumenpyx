@@ -31,7 +31,7 @@ use crate::Vertex;
 pub fn draw_circle(
     color: [f32; 4],
     radius: f32,
-    transform: Transform,
+    matrix_transform: [[f32; 4]; 4],
     program: &LumenpyxProgram,
     framebuffer: &mut SimpleFrameBuffer,
 ) {
@@ -72,7 +72,7 @@ pub fn draw_circle(
     let uniforms = &uniform! {
         circle_color: color,
         radius_squared: radius.powi(2),
-        matrix: transform.matrix,
+        matrix: matrix_transform,
     };
 
     framebuffer
@@ -89,7 +89,7 @@ pub fn draw_circle(
 pub fn draw_sphere(
     color: [f32; 4],
     radius: f32,
-    transform: Transform,
+    matrix_transform: [[f32; 4]; 4],
     program: &LumenpyxProgram,
     albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -98,7 +98,7 @@ pub fn draw_sphere(
     let display = &program.display;
     let indices = &program.indices;
 
-    draw_circle(color, radius, transform, program, albedo_framebuffer);
+    draw_circle(color, radius, matrix_transform, program, albedo_framebuffer);
 
     let height_shader = program.get_shader("sphere_height_shader").unwrap();
     let normal_shader = program.get_shader("sphere_normal_shader").unwrap();
@@ -134,7 +134,7 @@ pub fn draw_sphere(
 
     let uniforms = &uniform! {
         radius_squared: radius.powi(2),
-        matrix: transform.matrix,
+        matrix: matrix_transform,
     };
 
     height_framebuffer
@@ -178,7 +178,7 @@ pub fn draw_sphere(
 
     let uniforms = &uniform! {
         radius_squared: radius.powi(2),
-        matrix: transform.matrix,
+        matrix: matrix_transform,
     };
 
     normal_framebuffer
@@ -196,7 +196,7 @@ fn draw_rectangle(
     color: [f32; 4],
     width: f32,
     height: f32,
-    transform: Transform,
+    matrix_transform: [[f32; 4]; 4],
     program: &LumenpyxProgram,
     framebuffer: &mut SimpleFrameBuffer,
 ) {
@@ -238,7 +238,7 @@ fn draw_rectangle(
         rect_color: color,
         width: width,
         height: height,
-        matrix: transform.matrix,
+        matrix: matrix_transform,
     };
 
     framebuffer
@@ -281,7 +281,7 @@ impl Drawable for Circle {
         draw_circle(
             self.color,
             self.radius,
-            self.transform,
+            matrix_transform,
             program,
             albedo_framebuffer,
         );
@@ -337,7 +337,7 @@ impl Drawable for Sphere {
         draw_sphere(
             self.color,
             self.radius,
-            self.transform,
+            matrix_transform,
             program,
             albedo_framebuffer,
             height_framebuffer,
@@ -409,7 +409,7 @@ impl Drawable for Rectangle {
             self.color,
             self.width,
             self.height,
-            self.transform,
+            matrix_transform,
             program,
             albedo_framebuffer,
         );
