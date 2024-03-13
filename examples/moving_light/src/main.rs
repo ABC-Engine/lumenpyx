@@ -20,9 +20,9 @@ fn main() {
     for path in paths {
         //let drawable = DrawableObject::new(path, path, path, &display, &indices, Transform::new());
         let drawable = Sprite::new(
-            path,
-            path,
-            path,
+            path.into(),
+            path.into(),
+            path.into(),
             &lumen_program.display,
             &lumen_program.indices,
             Transform::new([0.0, 0.0, 0.0]),

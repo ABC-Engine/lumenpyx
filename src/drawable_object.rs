@@ -35,6 +35,23 @@ pub trait Drawable {
     fn get_position(&self) -> [[f32; 4]; 4];
 }
 
+pub enum Texture<'a> {
+    Path(&'a str),
+    Solid([f32; 4]),
+}
+
+impl<'a> From<&'a str> for Texture<'a> {
+    fn from(path: &'a str) -> Self {
+        Texture::Path(path)
+    }
+}
+
+impl From<[f32; 4]> for Texture<'_> {
+    fn from(color: [f32; 4]) -> Self {
+        Texture::Solid(color)
+    }
+}
+
 pub struct Sprite {
     albedo_texture: glium::texture::Texture2d,
     height_texture: glium::texture::Texture2d,
@@ -45,21 +62,43 @@ pub struct Sprite {
 
 impl Sprite {
     pub fn new(
-        albedo_path: &str,
-        height_path: &str,
-        roughness_path: &str,
+        albedo: Texture,
+        height_path: Texture,
+        roughness_path: Texture,
         display: &glium::Display<WindowSurface>,
         indices: &glium::index::NoIndices,
         transform: Transform,
     ) -> Sprite {
-        let albedo_image = load_image(albedo_path);
-        let albedo_texture = glium::texture::Texture2d::new(display, albedo_image).unwrap();
-
-        let height_image = load_image(height_path);
-        let height_texture = glium::texture::Texture2d::new(display, height_image).unwrap();
-
-        let roughness_image = load_image(roughness_path);
-        let roughness_texture = glium::texture::Texture2d::new(display, roughness_image).unwrap();
+        let albedo_texture = match albedo {
+            Texture::Path(path) => {
+                let image = load_image(path);
+                glium::texture::Texture2d::new(display, image).unwrap()
+            }
+            Texture::Solid(color) => {
+                let image = glium::texture::RawImage2d::from_raw_rgba(color.to_vec(), (1, 1));
+                glium::texture::Texture2d::new(display, image).unwrap()
+            }
+        };
+        let height_texture = match height_path {
+            Texture::Path(path) => {
+                let image = load_image(path);
+                glium::texture::Texture2d::new(display, image).unwrap()
+            }
+            Texture::Solid(color) => {
+                let image = glium::texture::RawImage2d::from_raw_rgba(color.to_vec(), (1, 1));
+                glium::texture::Texture2d::new(display, image).unwrap()
+            }
+        };
+        let roughness_texture = match roughness_path {
+            Texture::Path(path) => {
+                let image = load_image(path);
+                glium::texture::Texture2d::new(display, image).unwrap()
+            }
+            Texture::Solid(color) => {
+                let image = glium::texture::RawImage2d::from_raw_rgba(color.to_vec(), (1, 1));
+                glium::texture::Texture2d::new(display, image).unwrap()
+            }
+        };
 
         let normal_texture = glium::texture::Texture2d::empty_with_format(
             display,

@@ -1,3 +1,4 @@
+use lumenpyx::Texture;
 use lumenpyx::{lights::LightDrawable, winit::event, *};
 use rand::Rng;
 
@@ -22,9 +23,9 @@ fn main() {
     ];
 
     let scene_drawable = Sprite::new(
-        "../images/Demo-Scene-Albedo.png",
-        "../images/Demo-Scene-Heightmap.png",
-        "../images/Demo-Scene-Roughnessmap.png",
+        "../images/Demo-Scene-Albedo.png".into(),
+        "../images/Demo-Scene-Heightmap.png".into(),
+        "../images/Demo-Scene-Roughnessmap.png".into(),
         &lumen_program.display,
         &lumen_program.indices,
         Transform::new([0.0, 0.0, 0.0]),
