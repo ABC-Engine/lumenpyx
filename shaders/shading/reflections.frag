@@ -122,7 +122,7 @@ vec4 find_intersect_color(vec3 p1, vec3 p2) {
 vec3 get_reflected_point(vec3 p1, vec3 p2, vec3 normal) {
     vec3 dir = normalize(p1-p2);
     vec3 reflected = reflect(dir, normal);
-    return p2 + reflected * (textureSize(albedomap, 0).y - p2.y);
+    return p2 - (p1 - p2) + reflected;
 }
 
 void main() {
@@ -137,7 +137,7 @@ void main() {
 
     vec3 new_camera_pos = vec3(textureSize(albedomap, 0) * (camera_pos.xy), camera_pos.z);
     vec3 new_v_tex_coords = vec3(textureSize(albedomap, 0) * v_tex_coords, texture(heightmap, v_tex_coords).r);
-    vec3 reflection_point = get_reflected_point(new_camera_pos, new_v_tex_coords, normal);
+    vec3 reflection_point = get_reflected_point(new_v_tex_coords, new_camera_pos , normal);
 
     vec4 intersection_color = find_intersect_color(new_v_tex_coords, reflection_point);
 

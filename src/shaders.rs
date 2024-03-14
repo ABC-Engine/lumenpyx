@@ -1,3 +1,4 @@
+use crate::Camera;
 use crate::LumenpyxProgram;
 use crate::Vertex;
 use glium;
@@ -108,6 +109,7 @@ pub(crate) fn draw_upscale(
 
 #[no_mangle]
 pub(crate) fn draw_reflections(
+    camera: Camera,
     lit_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     rougness_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
@@ -148,8 +150,7 @@ pub(crate) fn draw_reflections(
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
-    // TODO: fix placeholder camera position
-    let camera_pos: [f32; 3] = [0.5, 0.5, 0.5];
+    let camera_pos = camera.position;
 
     let uniforms = &uniform! {
         albedomap: lit_uniform,

@@ -24,7 +24,7 @@ pub trait LightDrawable {
         albedo_framebuffer: &mut SimpleFrameBuffer,
         height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-        reflection_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        roughness_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     );
     fn try_load_shaders(&self, program: &mut LumenpyxProgram);
     fn get_transform(&self) -> [[f32; 4]; 4];

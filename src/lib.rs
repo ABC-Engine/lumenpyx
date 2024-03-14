@@ -174,12 +174,23 @@ fn setup_window() -> (
     (event_loop, display, window, indices)
 }
 
+pub struct Camera {
+    pub position: [f32; 3],
+}
+
+impl Camera {
+    pub fn new(position: [f32; 3]) -> Camera {
+        Camera { position }
+    }
+}
+
 pub fn draw_all(
     /*display: &glium::Display<WindowSurface>,
     indices: &glium::index::NoIndices,*/
     lights: Vec<&dyn lights::LightDrawable>,
     drawables: Vec<&dyn Drawable>,
     program: &mut LumenpyxProgram,
+    camera: Camera,
 ) {
     // this is kind of inefficient, but it works for now
     for drawable in &drawables {
@@ -262,6 +273,10 @@ pub fn draw_all(
             } else {
                 new_matrix[1][1] *= program.dimensions[0] as f32 / program.dimensions[1] as f32;
             }
+            // adjust off the camera
+            new_matrix[3][0] -= camera.position[0];
+            new_matrix[3][1] -= camera.position[1];
+            new_matrix[3][2] -= camera.position[2];
 
             drawable.draw(
                 program,
@@ -286,11 +301,10 @@ pub fn draw_all(
     {
         let albedo = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
         let height_sampler = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
-        let reflection_sampler = glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR);
+        let roughness_sampler = glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR);
 
         let mut lit_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
-        //lit_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         for light in lights {
             let mut new_matrix = light.get_transform();
@@ -299,6 +313,9 @@ pub fn draw_all(
             } else {
                 new_matrix[1][1] *= program.dimensions[0] as f32 / program.dimensions[1] as f32;
             }
+            new_matrix[3][0] -= camera.position[0];
+            new_matrix[3][1] -= camera.position[1];
+            new_matrix[3][2] -= camera.position[2];
 
             light.draw(
                 program,
@@ -306,7 +323,7 @@ pub fn draw_all(
                 &mut lit_framebuffer,
                 height_sampler,
                 albedo,
-                reflection_sampler,
+                roughness_sampler,
             );
         }
     }
@@ -330,6 +347,7 @@ pub fn draw_all(
             glium::framebuffer::SimpleFrameBuffer::new(display, &reflected_texture).unwrap();
 
         draw_reflections(
+            camera,
             lit_sampler,
             height,
             roughness,
@@ -340,7 +358,7 @@ pub fn draw_all(
     }
 
     {
-        let finished_texture = glium::uniforms::Sampler(&lit_texture, DEFAULT_BEHAVIOR);
+        let finished_texture = glium::uniforms::Sampler(&reflected_texture, DEFAULT_BEHAVIOR);
         draw_upscale(finished_texture, &program);
     }
 }

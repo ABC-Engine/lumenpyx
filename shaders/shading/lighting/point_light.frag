@@ -141,7 +141,7 @@ void main() {
     vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * (light_intensity / (light_dist * light_dist));
 
 
-    if (new_v_tex_coords.z < new_light_pos.z && !find_intersections(new_light_pos, new_v_tex_coords)) {
+    if (!find_intersections(new_light_pos, new_v_tex_coords)) {
 		color = shaded_color;
     }
 	else {

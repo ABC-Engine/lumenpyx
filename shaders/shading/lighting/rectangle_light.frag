@@ -145,16 +145,17 @@ void main() {
     vec3 new_light_pos = vec3(textureSize(albedomap, 0) * (light_pos.xy), light_pos.z);
     vec3 new_v_tex_coords = vec3(textureSize(albedomap, 0) * v_tex_coords, texture(heightmap, v_tex_coords).r);
     
-	float light_dist = distance(new_v_tex_coords, new_light_pos);
-	light_dist = max(light_dist * light_falloff, 1.0);
-    vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * (light_intensity / (light_dist * light_dist));
 
     vec2 bmin = light_pos.xy - (vec2(width, height) / 2.0);
     vec2 bmax = light_pos.xy + (vec2(width, height) / 2.0);
     vec2 closest_point = closest_point_on_box(v_tex_coords, bmin, bmax) * textureSize(albedomap, 0);
     vec3 closest_point_3d = vec3(closest_point, texture(heightmap, closest_point).r);
 
-    if (new_v_tex_coords.z < closest_point_3d.z && !find_intersections(closest_point_3d, new_v_tex_coords)) {
+	float light_dist = distance(new_v_tex_coords, closest_point_3d);
+	light_dist = max(light_dist * light_falloff, 1.0);
+    vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * (light_intensity / (light_dist * light_dist));
+
+    if (!find_intersections(closest_point_3d, new_v_tex_coords)) {
 		color = shaded_color;
     }
 	else {
