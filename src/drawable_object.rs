@@ -2,6 +2,7 @@ use std::any::TypeId;
 
 use crate::load_image;
 use crate::shaders::draw_generate_normals;
+use crate::shaders::FULL_SCREEN_QUAD;
 use crate::LumenpyxProgram;
 use crate::Transform;
 use crate::Vertex;
@@ -11,8 +12,9 @@ use glium::glutin::surface::WindowSurface;
 use glium::uniform;
 use glium::Surface;
 
-const BASE_VERTEX_SHADER_SRC: &str = include_str!("../shaders/ahr_shaders/sprite_ahr_shader.vert");
-const BASE_FRAGMENT_SHADER_SRC: &str =
+pub(crate) const BASE_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/ahr_shaders/sprite_ahr_shader.vert");
+pub(crate) const BASE_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/ahr_shaders/sprite_ahr_shader.frag");
 
 pub trait Drawable {
@@ -154,37 +156,8 @@ impl Drawable for Sprite {
         let display = &program.display;
 
         let shader = program.get_shader("sprite_shader").unwrap();
-        let sprite_dimensions = [
-            self.albedo_texture.get_width(),
-            self.albedo_texture.get_height().unwrap(),
-        ];
 
-        let shape = vec![
-            Vertex {
-                position: [-1.0, -1.0],
-                tex_coords: [0.0, 0.0],
-            },
-            Vertex {
-                position: [1.0, -1.0],
-                tex_coords: [1.0, 0.0],
-            },
-            Vertex {
-                position: [1.0, 1.0],
-                tex_coords: [1.0, 1.0],
-            },
-            Vertex {
-                position: [1.0, 1.0],
-                tex_coords: [1.0, 1.0],
-            },
-            Vertex {
-                position: [-1.0, 1.0],
-                tex_coords: [0.0, 1.0],
-            },
-            Vertex {
-                position: [-1.0, -1.0],
-                tex_coords: [0.0, 0.0],
-            },
-        ];
+        let shape = FULL_SCREEN_QUAD;
 
         let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 

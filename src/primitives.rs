@@ -25,8 +25,8 @@ const GENERATE_RECTANGLE_VERTEX_SHADER_SRC: &str =
 const GENERATE_RECTANGLE_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/ahr_shaders/rectangle_ahr_shader.frag");
 
+use crate::shaders::FULL_SCREEN_QUAD;
 use crate::Transform;
-use crate::Vertex;
 
 pub fn draw_circle(
     color: [f32; 4],
@@ -40,32 +40,7 @@ pub fn draw_circle(
 
     let shader = program.get_shader("circle_ahr_shader").unwrap();
 
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
+    let shape = FULL_SCREEN_QUAD;
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
@@ -103,32 +78,7 @@ pub fn draw_sphere(
     let height_shader = program.get_shader("sphere_height_shader").unwrap();
     let normal_shader = program.get_shader("sphere_normal_shader").unwrap();
 
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
+    let shape = FULL_SCREEN_QUAD;
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
@@ -147,32 +97,7 @@ pub fn draw_sphere(
         )
         .unwrap();
 
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
+    let shape = FULL_SCREEN_QUAD;
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
@@ -205,32 +130,7 @@ fn draw_rectangle(
 
     let shader = program.get_shader("rectangle_ahr_shader").unwrap();
 
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
+    let shape = FULL_SCREEN_QUAD;
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 

@@ -1,6 +1,8 @@
 use crate::Camera;
 use crate::LumenpyxProgram;
 use crate::Vertex;
+use crate::BASE_FRAGMENT_SHADER_SRC;
+use crate::BASE_VERTEX_SHADER_SRC;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::glutin::surface::WindowSurface;
@@ -33,6 +35,33 @@ pub(crate) const RECIEVE_SHADOWS_VERTEX_SHADER_SRC: &str =
 
 pub(crate) const RECIEVE_SHADOWS_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/technical_shaders/set_recieve_shadows.frag");
+
+pub const FULL_SCREEN_QUAD: [Vertex; 6] = [
+    Vertex {
+        position: [-1.0, -1.0],
+        tex_coords: [0.0, 0.0],
+    },
+    Vertex {
+        position: [1.0, -1.0],
+        tex_coords: [1.0, 0.0],
+    },
+    Vertex {
+        position: [1.0, 1.0],
+        tex_coords: [1.0, 1.0],
+    },
+    Vertex {
+        position: [1.0, 1.0],
+        tex_coords: [1.0, 1.0],
+    },
+    Vertex {
+        position: [-1.0, 1.0],
+        tex_coords: [0.0, 1.0],
+    },
+    Vertex {
+        position: [-1.0, -1.0],
+        tex_coords: [0.0, 0.0],
+    },
+];
 
 /// upscale the result to the screen size
 pub(crate) fn draw_upscale(
@@ -127,32 +156,7 @@ pub(crate) fn draw_reflections(
     let indices = &program.indices;
     let shader = &program.reflection_shader;
 
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
+    let shape = FULL_SCREEN_QUAD;
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
@@ -192,32 +196,7 @@ pub(crate) fn draw_generate_normals(
     )
     .unwrap();
 
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
+    let shape = FULL_SCREEN_QUAD;
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
@@ -248,32 +227,7 @@ pub(crate) fn faster_clear_color(
     let indices = &program.indices;
     let shader = &program.get_shader("faster_clear_color_shader").unwrap();
 
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
+    let shape = FULL_SCREEN_QUAD;
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
@@ -303,32 +257,7 @@ pub(crate) fn draw_recieve_shadows(
     let indices = &program.indices;
     let shader = &program.get_shader("recieve_shadows_shader").unwrap();
 
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
+    let shape = FULL_SCREEN_QUAD;
 
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
@@ -350,14 +279,29 @@ pub(crate) fn draw_recieve_shadows(
 }
 
 pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
-    let display = &program.display;
-    let set_recieve_shadows_shader = glium::Program::from_source(
-        display,
-        RECIEVE_SHADOWS_VERTEX_SHADER_SRC,
-        RECIEVE_SHADOWS_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .expect("Failed to load recieve shadows shader");
+    {
+        let display = &program.display;
+        let set_recieve_shadows_shader = glium::Program::from_source(
+            display,
+            RECIEVE_SHADOWS_VERTEX_SHADER_SRC,
+            RECIEVE_SHADOWS_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .expect("Failed to load recieve shadows shader");
 
-    program.add_shader(set_recieve_shadows_shader, "recieve_shadows_shader");
+        program.add_shader(set_recieve_shadows_shader, "recieve_shadows_shader");
+    }
+
+    {
+        let display = &program.display;
+        let sprite_shader = glium::Program::from_source(
+            display,
+            BASE_VERTEX_SHADER_SRC,
+            BASE_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .expect("Failed to load sprite shader");
+
+        program.add_shader(sprite_shader, "sprite_shader");
+    }
 }

@@ -27,14 +27,18 @@ fn main() {
     ];
 
     // We make a new sprite passing in the display and indices
+    // alternatively we can do a solid color for any of these by passing in [r: f32, g: f32, b: f32, a: f32].into()
     let scene_drawable = Sprite::new(
-        "examples/images/Demo-Scene-Albedo.png",
-        "examples/images/Demo-Scene-Heightmap.png",
-        "examples/images/Demo-Scene-Roughnessmap.png",
+        "examples/images/Demo-Scene-Albedo.png".into(),
+        "examples/images/Demo-Scene-Heightmap.png".into(),
+        "examples/images/Demo-Scene-Roughnessmap.png".into(),
         &lumen_program.display,
         &lumen_program.indices,
         Transform::new([0.0, 0.0, 0.0]),
     );
+
+    // make a camera, to specify the position we would like to view everything from
+    let camera = Camera::new([0.0,0.0,0.0]);
 
     // set this up to check performance
     let mut distance_to_60_frame = 0.0;
@@ -70,7 +74,7 @@ fn main() {
                         lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
 
                     // Finally, we draw all of them, this needs to happen every frame
-                    draw_all(light_refs, drawable_refs, &mut lumen_program);
+                    draw_all(light_refs, drawable_refs, &mut lumen_program, &camera);
                 }
                 _ => (),
             },
@@ -133,32 +137,7 @@ impl Drawable for Circle {
         let shader = program.get_shader("circle_ahr_shader").unwrap();
 
         // this is a whole screen shape
-        let shape = vec![
-            Vertex {
-                position: [-1.0, -1.0],
-                tex_coords: [0.0, 0.0],
-            },
-            Vertex {
-                position: [1.0, -1.0],
-                tex_coords: [1.0, 0.0],
-            },
-            Vertex {
-                position: [1.0, 1.0],
-                tex_coords: [1.0, 1.0],
-            },
-            Vertex {
-                position: [1.0, 1.0],
-                tex_coords: [1.0, 1.0],
-            },
-            Vertex {
-                position: [-1.0, 1.0],
-                tex_coords: [0.0, 1.0],
-            },
-            Vertex {
-                position: [-1.0, -1.0],
-                tex_coords: [0.0, 0.0],
-            },
-        ];
+        let shape = lumenpyx::shaders::FULL_SCREEN_QUAD;
 
         let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 

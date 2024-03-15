@@ -1,3 +1,4 @@
+use crate::shaders::FULL_SCREEN_QUAD;
 use crate::LumenpyxProgram;
 use crate::Vertex;
 use glium;
@@ -235,32 +236,7 @@ pub(crate) fn draw_lighting(
     let indices = &program.indices;
     let shader = &program.get_shader("point_light_shader").unwrap();
 
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
+    let shape = FULL_SCREEN_QUAD;
 
     // the magic numbers are to transform the light position from -1.0 to 1.0 to 0.0 to 1.0
     let light_pos = [
@@ -318,32 +294,7 @@ fn draw_area_light(
     let indices = &program.indices;
     let shader = &program.get_shader("rectangle_light_shader").unwrap();
 
-    let shape = vec![
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, -1.0],
-            tex_coords: [1.0, 0.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            tex_coords: [1.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, 1.0],
-            tex_coords: [0.0, 1.0],
-        },
-        Vertex {
-            position: [-1.0, -1.0],
-            tex_coords: [0.0, 0.0],
-        },
-    ];
+    let shape = FULL_SCREEN_QUAD;
 
     let light_pos = [
         ((light.position[0] * matrix_transform[0][0]) + 1.0) * 0.5,

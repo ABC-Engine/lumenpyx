@@ -5,7 +5,7 @@ use glium::Surface;
 pub use winit;
 use winit::event_loop::EventLoop;
 pub mod primitives;
-mod shaders;
+pub mod shaders;
 use shaders::*;
 mod drawable_object;
 pub use drawable_object::*;
@@ -273,7 +273,7 @@ pub fn draw_all(
         )
         .unwrap();
 
-        let last_drawable_framebuffer =
+        let mut last_drawable_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &last_drawable_texture).unwrap();
 
         let last_drawable_sampler =
@@ -328,14 +328,14 @@ pub fn draw_all(
                 this_drawable_sampler,
             );
 
-            // now set the last drawable to this drawable
+            // copy the albedo to the last drawable framebuffer
             albedo_framebuffer.blit_whole_color_to(
                 &last_drawable_framebuffer,
                 &glium::BlitTarget {
                     left: 0,
                     bottom: 0,
-                    width: last_drawable_framebuffer.get_dimensions().0 as i32,
-                    height: last_drawable_framebuffer.get_dimensions().1 as i32,
+                    width: program.dimensions[0] as i32,
+                    height: program.dimensions[1] as i32,
                 },
                 glium::uniforms::MagnifySamplerFilter::Nearest,
             );
