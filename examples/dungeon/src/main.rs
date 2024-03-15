@@ -33,6 +33,7 @@ fn main() {
 
     let mut distance_to_60_frame = 0.0;
     let mut start_of_60_frame = std::time::Instant::now();
+    let camera = Camera::new([0.0, 0.0, 0.0]);
 
     // TODO: make this a little more elegant for the user
     let mut t: f32 = 0.0;
@@ -65,7 +66,7 @@ fn main() {
                     let drawable_refs: Vec<&dyn Drawable> = vec![&scene_drawable];
                     let light_refs: Vec<&dyn LightDrawable> =
                         lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
-                    draw_all(light_refs, drawable_refs, &mut lumen_program);
+                    draw_all(light_refs, drawable_refs, &mut lumen_program, &camera);
                 }
                 _ => (),
             },

@@ -55,7 +55,7 @@ impl LumenpyxProgram {
         )
         .unwrap();
 
-        let program = LumenpyxProgram {
+        let mut program = LumenpyxProgram {
             window,
             display,
             indices,
@@ -64,6 +64,8 @@ impl LumenpyxProgram {
             other_shaders: FxHashMap::default(),
             dimensions: resolution,
         };
+
+        shaders::load_all_system_shaders(&mut program);
 
         (program, event_loop)
     }
@@ -190,7 +192,7 @@ pub fn draw_all(
     lights: Vec<&dyn lights::LightDrawable>,
     drawables: Vec<&dyn Drawable>,
     program: &mut LumenpyxProgram,
-    camera: Camera,
+    camera: &Camera,
 ) {
     // this is kind of inefficient, but it works for now
     for drawable in &drawables {
@@ -252,7 +254,33 @@ pub fn draw_all(
     )
     .unwrap();
 
+    let shadow_strength_texture = glium::texture::Texture2d::empty_with_format(
+        display,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::MipmapsOption::NoMipmap,
+        program.dimensions[0],
+        program.dimensions[1],
+    )
+    .unwrap();
+
     {
+        let last_drawable_texture = glium::texture::Texture2d::empty_with_format(
+            display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            program.dimensions[0],
+            program.dimensions[1],
+        )
+        .unwrap();
+
+        let last_drawable_framebuffer =
+            glium::framebuffer::SimpleFrameBuffer::new(display, &last_drawable_texture).unwrap();
+
+        let last_drawable_sampler =
+            glium::uniforms::Sampler(&last_drawable_texture, DEFAULT_BEHAVIOR);
+
+        let this_drawable_sampler = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
+
         let mut albedo_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &albedo_texture).unwrap();
 
@@ -264,6 +292,9 @@ pub fn draw_all(
 
         let mut normal_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture).unwrap();
+
+        let mut shadow_strength_framebuffer =
+            glium::framebuffer::SimpleFrameBuffer::new(display, &shadow_strength_texture).unwrap();
 
         for drawable in &drawables {
             let mut new_matrix = drawable.get_position();
@@ -285,7 +316,29 @@ pub fn draw_all(
                 &mut height_framebuffer,
                 &mut roughness_framebuffer,
                 &mut normal_framebuffer,
-            )
+            );
+
+            let shadow_strength = drawable.get_recieve_shadows_strength();
+
+            shaders::draw_recieve_shadows(
+                &mut shadow_strength_framebuffer,
+                &program,
+                shadow_strength,
+                last_drawable_sampler,
+                this_drawable_sampler,
+            );
+
+            // now set the last drawable to this drawable
+            albedo_framebuffer.blit_whole_color_to(
+                &last_drawable_framebuffer,
+                &glium::BlitTarget {
+                    left: 0,
+                    bottom: 0,
+                    width: last_drawable_framebuffer.get_dimensions().0 as i32,
+                    height: last_drawable_framebuffer.get_dimensions().1 as i32,
+                },
+                glium::uniforms::MagnifySamplerFilter::Nearest,
+            );
         }
     }
 
@@ -302,6 +355,8 @@ pub fn draw_all(
         let albedo = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
         let height_sampler = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
         let roughness_sampler = glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR);
+        let shadow_strength_sampler =
+            glium::uniforms::Sampler(&shadow_strength_texture, DEFAULT_BEHAVIOR);
 
         let mut lit_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
@@ -324,6 +379,7 @@ pub fn draw_all(
                 height_sampler,
                 albedo,
                 roughness_sampler,
+                shadow_strength_sampler,
             );
         }
     }

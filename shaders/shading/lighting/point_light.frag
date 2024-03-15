@@ -5,13 +5,11 @@ out vec4 color;
 
 uniform sampler2D heightmap;
 uniform sampler2D albedomap;
+uniform sampler2D shadow_strength_map;
 uniform vec3 light_pos;
 uniform vec3 light_color;
 uniform float light_intensity;
 uniform float light_falloff;
-
-// the unlit color will be the albedo color dimmed by dimFactor
-const float dimFactor = 0.5;
 
 vec4 texture_pixel(sampler2D tex, vec2 coords) {
     vec2 new_coords = coords / textureSize(tex, 0);
@@ -129,6 +127,7 @@ bool find_intersections(vec3 p1, vec3 p2) {
 
 void main() {
 	vec4 albedo_color = texture(albedomap, v_tex_coords);
+	float dimFactor = texture(shadow_strength_map, v_tex_coords).r;
 	if (albedo_color.a == 0.0) {
 		discard;
 	}

@@ -54,7 +54,7 @@ fn main() {
                         light_refs,
                         drawable_refs,
                         &mut lumen_program,
-                        Camera::new([t.sin(), 0.0, 0.0]),
+                        &Camera::new([t.sin(), 0.0, 0.0]),
                     );
                 }
                 _ => (),

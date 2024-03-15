@@ -25,6 +25,7 @@ pub trait LightDrawable {
         height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         roughness_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     );
     fn try_load_shaders(&self, program: &mut LumenpyxProgram);
     fn get_transform(&self) -> [[f32; 4]; 4];
@@ -79,10 +80,12 @@ impl LightDrawable for PointLight {
         height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         reflection_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     ) {
         draw_lighting(
             albedo_uniform,
             height_uniform,
+            shadow_strength_uniform,
             albedo_framebuffer,
             program,
             &self,
@@ -181,12 +184,14 @@ impl LightDrawable for AreaLight {
         height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         reflection_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     ) {
         draw_area_light(
             program,
             albedo_framebuffer,
             albedo_uniform,
             height_uniform,
+            shadow_strength_uniform,
             &self,
             matrix_transform,
         )
@@ -220,6 +225,7 @@ impl LightDrawable for AreaLight {
 pub(crate) fn draw_lighting(
     albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     heightmap: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     framebuffer: &mut SimpleFrameBuffer,
     program: &LumenpyxProgram,
     light: &PointLight,
@@ -268,6 +274,7 @@ pub(crate) fn draw_lighting(
     let uniforms = &uniform! {
         heightmap: heightmap,
         albedomap: albedo_uniform,
+        shadow_strength_map: shadow_strength_uniform,
         light_pos: light_pos,
         light_color: light.color,
         light_intensity: light.intensity,
@@ -303,6 +310,7 @@ fn draw_area_light(
     framebuffer: &mut SimpleFrameBuffer,
     albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     light: &AreaLight,
     matrix_transform: [[f32; 4]; 4],
 ) {

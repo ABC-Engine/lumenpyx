@@ -28,6 +28,12 @@ pub(crate) const FASTER_CLEAR_COLOR_VERTEX_SHADER_SRC: &str =
 pub(crate) const FASTER_CLEAR_COLOR_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/technical_shaders/clear_color.frag");
 
+pub(crate) const RECIEVE_SHADOWS_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/set_recieve_shadows.vert");
+
+pub(crate) const RECIEVE_SHADOWS_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/set_recieve_shadows.frag");
+
 /// upscale the result to the screen size
 pub(crate) fn draw_upscale(
     image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
@@ -109,7 +115,7 @@ pub(crate) fn draw_upscale(
 
 #[no_mangle]
 pub(crate) fn draw_reflections(
-    camera: Camera,
+    camera: &Camera,
     lit_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     rougness_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
@@ -284,4 +290,74 @@ pub(crate) fn faster_clear_color(
             &Default::default(),
         )
         .unwrap();
+}
+
+pub(crate) fn draw_recieve_shadows(
+    framebuffer: &mut SimpleFrameBuffer,
+    program: &LumenpyxProgram,
+    recieve_shadows_strength: f32,
+    last_frame_sampler: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    this_frame_sampler: glium::uniforms::Sampler<glium::texture::Texture2d>,
+) {
+    let display = &program.display;
+    let indices = &program.indices;
+    let shader = &program.get_shader("recieve_shadows_shader").unwrap();
+
+    let shape = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, -1.0],
+            tex_coords: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+            tex_coords: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, 1.0],
+            tex_coords: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, -1.0],
+            tex_coords: [0.0, 0.0],
+        },
+    ];
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        last_draw: last_frame_sampler,
+        this_draw: this_frame_sampler,
+        shadow_strength: recieve_shadows_strength,
+    };
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &shader,
+            uniforms,
+            &Default::default(),
+        )
+        .unwrap();
+}
+
+pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
+    let display = &program.display;
+    let set_recieve_shadows_shader = glium::Program::from_source(
+        display,
+        RECIEVE_SHADOWS_VERTEX_SHADER_SRC,
+        RECIEVE_SHADOWS_FRAGMENT_SHADER_SRC,
+        None,
+    )
+    .expect("Failed to load recieve shadows shader");
+
+    program.add_shader(set_recieve_shadows_shader, "recieve_shadows_shader");
 }

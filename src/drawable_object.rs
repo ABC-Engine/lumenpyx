@@ -33,6 +33,10 @@ pub trait Drawable {
     fn try_load_shaders(&self, program: &mut LumenpyxProgram);
 
     fn get_position(&self) -> [[f32; 4]; 4];
+
+    fn get_recieve_shadows_strength(&self) -> f32 {
+        0.5
+    }
 }
 
 pub enum Texture<'a> {
