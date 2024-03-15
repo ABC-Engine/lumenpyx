@@ -77,6 +77,34 @@ impl LumenpyxProgram {
     pub fn get_shader(&self, name: &str) -> Option<&glium::Program> {
         self.other_shaders.get(name)
     }
+
+    pub fn run<F>(&mut self, event_loop: EventLoop<()>, mut update: F)
+    where
+        F: FnMut(&mut Self),
+    {
+        event_loop
+            .run(move |ev, window_target| match ev {
+                winit::event::Event::WindowEvent { event, .. } => match event {
+                    winit::event::WindowEvent::CloseRequested => {
+                        window_target.exit();
+                    }
+                    winit::event::WindowEvent::Resized(physical_size) => {
+                        self.display.resize(physical_size.into());
+                    }
+                    winit::event::WindowEvent::RedrawRequested => {
+                        update(self);
+                    }
+                    _ => (),
+                },
+                winit::event::Event::AboutToWait => {
+                    // RedrawRequested will only trigger once, unless we manually
+                    // request it.
+                    self.window.request_redraw();
+                }
+                _ => (),
+            })
+            .unwrap();
+    }
 }
 
 #[derive(Copy, Clone)]

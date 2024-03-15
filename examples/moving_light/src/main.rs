@@ -10,7 +10,7 @@ fn main() {
     ];
 
     let mut drawables: Vec<Box<dyn Drawable>> = vec![];
-    let mut lights: Vec<Box<dyn LightDrawable>> = vec![Box::new(lights::PointLight::new(
+    let mut lights = vec![Box::new(lights::PointLight::new(
         [0.5, 1.0, 1.0],
         [1.0, 1.0, 1.0],
         2.0,
@@ -30,42 +30,22 @@ fn main() {
         drawables.push(Box::new(drawable));
     }
 
-    // TODO: make this a little more elegant for the user
     let mut t: f32 = 0.0;
-    event_loop
-        .run(move |ev, window_target| match ev {
-            winit::event::Event::WindowEvent { event, .. } => match event {
-                winit::event::WindowEvent::CloseRequested => {
-                    window_target.exit();
-                }
-                winit::event::WindowEvent::Resized(physical_size) => {
-                    lumen_program.display.resize(physical_size.into());
-                }
-                winit::event::WindowEvent::RedrawRequested => {
-                    {
-                        //t += 0.001;
-                        //lights[0].set_position((t.sin() + 1.0) / 2.0, 0.5, 1.0);
-                    }
+    lumen_program.run(event_loop, |mut program| {
+        {
+            t += 0.001;
+            lights[0].set_position((t.sin() + 1.0) / 2.0, 0.5, 1.0);
+        }
 
-                    let drawable_refs: Vec<&dyn Drawable> =
-                        drawables.iter().map(|d| d.as_ref()).collect();
-                    let light_refs: Vec<&dyn LightDrawable> =
-                        lights.iter().map(|l| l.as_ref()).collect();
-                    draw_all(
-                        light_refs,
-                        drawable_refs,
-                        &mut lumen_program,
-                        &Camera::new([0.0, 0.0, 0.0]),
-                    );
-                }
-                _ => (),
-            },
-            winit::event::Event::AboutToWait => {
-                // RedrawRequested will only trigger once, unless we manually
-                // request it.
-                lumen_program.window.request_redraw();
-            }
-            _ => (),
-        })
-        .unwrap();
+        let drawable_refs: Vec<&dyn Drawable> = drawables.iter().map(|d| d.as_ref()).collect();
+        let light_refs: Vec<&dyn LightDrawable> =
+            lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
+
+        draw_all(
+            light_refs,
+            drawable_refs,
+            &mut program,
+            &Camera::new([0.0, 0.0, 0.0]),
+        );
+    });
 }

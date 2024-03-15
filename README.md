@@ -44,48 +44,27 @@ fn main() {
     let mut distance_to_60_frame = 0.0;
     let mut start_of_60_frame = std::time::Instant::now();
 
-    // all of this will mostly be unchanged, I will probably change this to be more elegant later
-    event_loop
-        .run(move |ev, window_target| match ev {
-            winit::event::Event::WindowEvent { event, .. } => match event {
-                winit::event::WindowEvent::CloseRequested => {
-                    // don't change this
-                    window_target.exit();
-                }
-                winit::event::WindowEvent::Resized(physical_size) => {
-                    // don't change this
-                    lumen_program.display.resize(physical_size.into());
-                }
-                winit::event::WindowEvent::RedrawRequested => {
-                    // This is the part we want to change, it is called every frame.
+    // this is to run the program for forever or until returned
+    lumen_program.run(event_loop, |mut program| {
+        // all of the code inside this function will be run every frame
 
-                    // This part is optional for measuring performance
-                    distance_to_60_frame -= 1.0;
-                    if distance_to_60_frame < 0.0 {
-                        println!("FPS: {}", 60.0 / start_of_60_frame.elapsed().as_secs_f32());
-                        distance_to_60_frame = 60.0;
-                        start_of_60_frame = std::time::Instant::now();
-                    }
+        // This part is optional for measuring performance
+        distance_to_60_frame -= 1.0;
+        if distance_to_60_frame < 0.0 {
+            println!("FPS: {}", 60.0 / start_of_60_frame.elapsed().as_secs_f32());
+            distance_to_60_frame = 60.0;
+            start_of_60_frame = std::time::Instant::now();
+        }
 
-                    // We turn the lights and the drawables into their respective traits.
-                    // I will show you how to create these later.
-                    let drawable_refs: Vec<&dyn Drawable> = vec![&scene_drawable];
-                    let light_refs: Vec<&dyn LightDrawable> =
-                        lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
+        // We turn the lights and the drawables into their respective traits.
+        // I will show you how to create these later.
+        let drawable_refs: Vec<&dyn Drawable> = vec![&scene_drawable];
+        let light_refs: Vec<&dyn LightDrawable> =
+            lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
 
-                    // Finally, we draw all of them, this needs to happen every frame
-                    draw_all(light_refs, drawable_refs, &mut lumen_program, &camera);
-                }
-                _ => (),
-            },
-            winit::event::Event::AboutToWait => {
-                // RedrawRequested will only trigger once, unless we manually
-                // request it.
-                lumen_program.window.request_redraw();
-            }
-            _ => (),
-        })
-        .unwrap();
+        // Finally, we draw all of them, this needs to happen every frame
+        draw_all(light_refs, drawable_refs, &mut program, &camera);
+    });
 }
 ```
 
@@ -190,4 +169,3 @@ impl Drawable for Circle {
     }
 }
 ```
-
