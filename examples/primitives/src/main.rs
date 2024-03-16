@@ -10,7 +10,7 @@ fn main() {
         [0.5, 1.0, 0.5],
         [1.0, 1.0, 1.0],
         2.0,
-        0.01,
+        0.02,
     ))];
 
     // this hightlights an issue, the radius seems to be 2x what it should be
@@ -30,17 +30,24 @@ fn main() {
         0.2,
         Transform::new([0.2, 0.0, 0.0]),
     )));
+    drawables.push(Box::new(Cylinder::new(
+        [1.0, 0.0, 0.0, 1.0],
+        0.1,
+        0.4,
+        Transform::new([0.4, -0.2, 0.0]),
+    )));
 
     let mut t: f32 = 0.0;
     lumen_program.run(event_loop, |mut program| {
         {
             t += 0.001;
-            lights[0].set_position((t.sin() + 1.0) / 2.0, 0.5, 1.0);
+            lights[0].set_position(t.sin(), 0.5, 0.5);
         }
 
         let drawable_refs: Vec<&dyn Drawable> = drawables.iter().map(|d| d.as_ref()).collect();
         let light_refs: Vec<&dyn LightDrawable> =
             lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
+
         draw_all(
             light_refs,
             drawable_refs,

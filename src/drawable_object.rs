@@ -13,9 +13,9 @@ use glium::uniform;
 use glium::Surface;
 
 pub(crate) const BASE_VERTEX_SHADER_SRC: &str =
-    include_str!("../shaders/ahr_shaders/sprite_ahr_shader.vert");
+    include_str!("../shaders/primitives/sprite_ahr_shader.vert");
 pub(crate) const BASE_FRAGMENT_SHADER_SRC: &str =
-    include_str!("../shaders/ahr_shaders/sprite_ahr_shader.frag");
+    include_str!("../shaders/primitives/sprite_ahr_shader.frag");
 
 pub trait Drawable {
     /// Draw the object to the screen
