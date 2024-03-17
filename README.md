@@ -1,4 +1,7 @@
-# lumenpyx
+<p align="center">
+  <img src="https://github.com/NoodlesOfWrath/lumenpyx/assets/76850177/0a55cd7b-1a5c-4fcb-9e40-2c77099aefbd">
+</p>
+
 A unique 2D-pixel art renderer with heightmaps to simulate 3d shadows.
 
 # Examples
