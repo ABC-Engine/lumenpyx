@@ -17,6 +17,11 @@ pub(crate) const RECTANGLE_LIGHT_VERTEX_SHADER_SRC: &str =
 pub(crate) const RECTANGLE_LIGHT_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/shading/lighting/rectangle_light.frag");
 
+pub(crate) const DIRECTIONAL_LIGHT_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/shading/lighting/directional_light.vert");
+pub(crate) const DIRECTIONAL_LIGHT_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/shading/lighting/directional_light.frag");
+
 pub trait LightDrawable {
     fn draw(
         &self,
@@ -83,7 +88,7 @@ impl LightDrawable for PointLight {
         reflection_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
         shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     ) {
-        draw_lighting(
+        draw_point_light(
             albedo_uniform,
             height_uniform,
             shadow_strength_uniform,
@@ -222,8 +227,121 @@ impl LightDrawable for AreaLight {
     }
 }
 
-/// draw the lighting
-pub(crate) fn draw_lighting(
+pub struct DirectionalLight {
+    position: [f32; 3],
+    direction: [f32; 3],
+    color: [f32; 3],
+    intensity: f32,
+    angular_falloff: f32,
+    distance_falloff: f32,
+}
+
+impl Default for DirectionalLight {
+    fn default() -> Self {
+        DirectionalLight {
+            position: [0.0, 0.0, 0.0],
+            direction: [0.0, 0.0, 1.0],
+            color: [1.0, 1.0, 1.0],
+            intensity: 1.0,
+            angular_falloff: 0.001,
+            distance_falloff: 0.0,
+        }
+    }
+}
+
+impl DirectionalLight {
+    pub fn new(
+        position: [f32; 3],
+        direction: [f32; 3],
+        color: [f32; 3],
+        intensity: f32,
+        angular_falloff: f32,
+        distance_falloff: f32,
+    ) -> DirectionalLight {
+        DirectionalLight {
+            position,
+            direction,
+            color,
+            intensity,
+            angular_falloff,
+            distance_falloff,
+        }
+    }
+
+    pub fn set_direction(&mut self, x: f32, y: f32, z: f32) {
+        self.direction = [x, y, z];
+    }
+
+    pub fn get_direction(&self) -> [f32; 3] {
+        self.direction
+    }
+
+    /// Set the color of the light in 0.0 - 1.0 range
+    pub fn set_color(&mut self, r: f32, g: f32, b: f32) {
+        self.color = [r, g, b];
+    }
+
+    pub fn set_intensity(&mut self, intensity: f32) {
+        self.intensity = intensity;
+    }
+
+    pub fn set_angular_falloff(&mut self, angular_falloff: f32) {
+        self.angular_falloff = angular_falloff;
+    }
+
+    pub fn set_distance_falloff(&mut self, distance_falloff: f32) {
+        self.distance_falloff = distance_falloff;
+    }
+}
+
+impl LightDrawable for DirectionalLight {
+    fn draw(
+        &self,
+        program: &LumenpyxProgram,
+        matrix_transform: [[f32; 4]; 4],
+        albedo_framebuffer: &mut SimpleFrameBuffer,
+        height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        reflection_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    ) {
+        draw_directional_light(
+            program,
+            albedo_framebuffer,
+            albedo_uniform,
+            height_uniform,
+            shadow_strength_uniform,
+            &self,
+            matrix_transform,
+        )
+    }
+
+    fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
+        if program.get_shader("directional_light_shader").is_none() {
+            let shader = glium::Program::from_source(
+                &program.display,
+                DIRECTIONAL_LIGHT_VERTEX_SHADER_SRC,
+                DIRECTIONAL_LIGHT_FRAGMENT_SHADER_SRC,
+                None,
+            )
+            .unwrap();
+
+            program.add_shader(shader, "directional_light_shader");
+        }
+    }
+
+    fn get_transform(&self) -> [[f32; 4]; 4] {
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [self.position[0], self.position[1], self.position[2], 1.0],
+        ]
+    }
+}
+
+/// draw the point light
+pub(crate) fn draw_point_light(
     albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     heightmap: glium::uniforms::Sampler<glium::texture::Texture2d>,
     shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
@@ -316,6 +434,65 @@ fn draw_area_light(
         light_falloff: light.falloff,
         width: light_width,
         height: light_height,
+    };
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &shader,
+            uniforms,
+            &glium::DrawParameters {
+                blend: glium::Blend {
+                    color: glium::BlendingFunction::Addition {
+                        source: glium::LinearBlendingFactor::One,
+                        destination: glium::LinearBlendingFactor::One,
+                    },
+                    alpha: glium::BlendingFunction::Addition {
+                        source: glium::LinearBlendingFactor::One,
+                        destination: glium::LinearBlendingFactor::One,
+                    },
+                    constant_value: (0.0, 0.0, 0.0, 0.0),
+                },
+                ..Default::default()
+            },
+        )
+        .unwrap();
+}
+
+fn draw_directional_light(
+    program: &LumenpyxProgram,
+    framebuffer: &mut SimpleFrameBuffer,
+    albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    light: &DirectionalLight,
+    matrix_transform: [[f32; 4]; 4],
+) {
+    let display = &program.display;
+    let indices = &program.indices;
+    let shader = &program.get_shader("directional_light_shader").unwrap();
+
+    let shape = FULL_SCREEN_QUAD;
+
+    let light_pos = [
+        ((light.position[0] * matrix_transform[0][0]) + 1.0) * 0.5,
+        ((light.position[1] * matrix_transform[1][1]) + 1.0) * 0.5,
+        light.position[2] * matrix_transform[2][2],
+    ];
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        heightmap: height_uniform,
+        albedomap: albedo_uniform,
+        shadow_strength_map: shadow_strength_uniform,
+        light_pos: light_pos,
+        light_color: light.color,
+        light_intensity: light.intensity,
+        light_distance_falloff: light.distance_falloff,
+        light_angular_falloff: light.angular_falloff,
+        light_direction: light.direction,
     };
 
     framebuffer

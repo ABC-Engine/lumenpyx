@@ -19,7 +19,6 @@ fn main() {
     let mut distance_to_60_frame = 0.0;
     let mut start_of_60_frame = std::time::Instant::now();
 
-    let mut t: f32 = 0.0;
     lumen_program.run(event_loop, |mut program| {
         distance_to_60_frame -= 1.0;
         if distance_to_60_frame < 0.0 {
@@ -31,9 +30,9 @@ fn main() {
             distance_to_60_frame = 60.0;
 
             let random_position = [
-                rand::thread_rng().gen_range(0.0..1.0),
-                rand::thread_rng().gen_range(0.0..1.0),
-                rand::thread_rng().gen_range(0.0..1.0),
+                rand::thread_rng().gen_range(-1.0..1.0),
+                rand::thread_rng().gen_range(-1.0..1.0),
+                rand::thread_rng().gen_range(-1.0..1.0),
             ];
 
             /*lights.push(Box::new(lights::PointLight::new(

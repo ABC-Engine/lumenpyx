@@ -10,10 +10,13 @@ fn main() {
     ];
 
     let mut drawables: Vec<Box<dyn Drawable>> = vec![];
-    let mut lights = vec![Box::new(lights::PointLight::new(
-        [0.5, 1.0, 1.0],
+
+    let mut lights = vec![Box::new(lights::DirectionalLight::new(
+        [0.0, 0.0, 1.0],
+        [1.0, 1.0, 1.0],
         [1.0, 1.0, 1.0],
         2.0,
+        0.001,
         0.01,
     ))];
 
@@ -22,7 +25,7 @@ fn main() {
         let drawable = Sprite::new(
             path.into(),
             path.into(),
-            path.into(),
+            [0.0, 0.0, 0.0, 0.0].into(),
             &lumen_program.display,
             &lumen_program.indices,
             Transform::new([0.0, 0.0, 0.0]),
@@ -33,8 +36,8 @@ fn main() {
     let mut t: f32 = 0.0;
     lumen_program.run(event_loop, |mut program| {
         {
-            t += 0.001;
-            lights[0].set_position((t.sin() + 1.0) / 2.0, 0.5, 1.0);
+            t += 0.01;
+            lights[0].set_direction(t.cos(), t.sin(), 1.0);
         }
 
         let drawable_refs: Vec<&dyn Drawable> = drawables.iter().map(|d| d.as_ref()).collect();
