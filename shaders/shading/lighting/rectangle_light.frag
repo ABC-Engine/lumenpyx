@@ -5,15 +5,13 @@ out vec4 color;
 
 uniform sampler2D heightmap;
 uniform sampler2D albedomap;
+uniform sampler2D shadow_strength_map;
 uniform vec3 light_pos;
 uniform float width;
 uniform float height;
 uniform vec3 light_color;
 uniform float light_intensity;
 uniform float light_falloff;
-
-// the unlit color will be the albedo color dimmed by dimFactor
-const float dimFactor = 0.7;
 
 vec4 texture_pixel(sampler2D tex, vec2 coords) {
     vec2 new_coords = coords / textureSize(tex, 0);
@@ -26,33 +24,8 @@ vec4 texture_pixel(sampler2D tex, vec2 coords) {
 
 /// Linearly interpolates between two points, P1 and P2 are the endpoints, and P3 is the point to interpolate to
 float lerp(vec3 P1, vec3 P2, vec2 P3) {
-	if (P1.xy == P3) {
-		return 1000.0;
-	}
-	else if (P2.xy == P3) {
-		return 1000.0;
-	}
-
-	if (P1 == P2) {
-		return P2.z;
-	}
-	else if (abs(P1.x - P2.x) > abs(P1.y - P2.y)) {
-		float t = (P3.x - P2.x) / (P1.x - P2.x);
-
-		if (t < 0.0 || t > 1.0) {
-			return 1000.0;
-		}
-		return P2.z + t * (P1.z - P2.z);
-	}
-	else {
-		float t = (P3.y - P2.y) / (P1.y - P2.y);
-
-		if (t < 0.0 || t > 1.0) {
-			return 1000.0;
-		}
-
-		return P2.z + t * (P1.z - P2.z);
-	}
+	float t = clamp((dot(P3 - P1.xy, P2.xy - P1.xy) / dot(P2.xy - P1.xy, P2.xy - P1.xy)), 0.0, 1.0);
+	return mix(P1.z, P2.z, t);
 }
 
 // most this code attributed to https://gist.github.com/nowke/965fed0d5191bf373f1262be584207bb
@@ -138,6 +111,7 @@ vec2 closest_point_on_box(vec2 p, vec2 bmin, vec2 bmax) {
 
 void main() {
 	vec4 albedo_color = texture(albedomap, v_tex_coords);
+	float dimFactor = texture(shadow_strength_map, v_tex_coords).r;
 	if (albedo_color.a == 0.0) {
 		discard;
 	}

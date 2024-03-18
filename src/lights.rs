@@ -309,6 +309,7 @@ fn draw_area_light(
     let uniforms = &uniform! {
         heightmap: height_uniform,
         albedomap: albedo_uniform,
+        shadow_strength_map: shadow_strength_uniform,
         light_pos: light_pos,
         light_color: light.color,
         light_intensity: light.intensity,
