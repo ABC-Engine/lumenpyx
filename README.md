@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://github.com/NoodlesOfWrath/lumenpyx/assets/76850177/0a55cd7b-1a5c-4fcb-9e40-2c77099aefbd">
+  <img src="https://github.com/ABC-Engine/lumenpyx/assets/76850177/0f7de667-ee5e-4f72-bbc3-440b12cbf7d1">
 </p>
+<h2 align="center"> A unique 2D-pixel art renderer with heightmaps to simulate 3d shadows. </h2>
 
-A unique 2D-pixel art renderer with heightmaps to simulate 3d shadows.
 
 # Examples
 This is the best example I have for now, the renderer is capable of much more than this, but I'm not a great artist.
