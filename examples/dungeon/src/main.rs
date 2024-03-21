@@ -26,8 +26,7 @@ fn main() {
         "../images/Demo-Scene-Albedo.png".into(),
         "../images/Demo-Scene-Heightmap.png".into(),
         "../images/Demo-Scene-Roughnessmap.png".into(),
-        &lumen_program.display,
-        &lumen_program.indices,
+        &lumen_program,
         Transform::new([0.0, 0.0, 0.0]),
     );
 

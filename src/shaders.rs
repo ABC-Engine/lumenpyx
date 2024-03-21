@@ -167,7 +167,7 @@ pub(crate) fn draw_reflections(
         heightmap: height_uniform,
         roughnessmap: rougness_uniform,
         normalmap: normal_uniform,
-        camera_pos: camera_pos,
+        camera_z: camera_pos[2],
     };
 
     framebuffer
@@ -182,19 +182,15 @@ pub(crate) fn draw_reflections(
 }
 
 pub(crate) fn draw_generate_normals(
-    display: &glium::Display<WindowSurface>,
+    program: &LumenpyxProgram,
     height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    indices: &glium::index::NoIndices,
     framebuffer: &mut SimpleFrameBuffer,
 ) {
-    let program = glium::Program::from_source(
-        display,
-        GENERATE_NORMALS_VERTEX_SHADER_SRC,
-        GENERATE_NORMALS_FRAGMENT_SHADER_SRC,
-        None,
-    )
-    .unwrap();
+    let display = &program.display;
+    let indices = &program.indices;
+
+    let shader = program.get_shader("generate_normals_shader").unwrap();
 
     let shape = FULL_SCREEN_QUAD;
 
@@ -209,7 +205,7 @@ pub(crate) fn draw_generate_normals(
         .draw(
             &vertex_buffer,
             indices,
-            &program,
+            &shader,
             uniforms,
             &Default::default(),
         )
@@ -303,5 +299,18 @@ pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
         .expect("Failed to load sprite shader");
 
         program.add_shader(sprite_shader, "sprite_shader");
+    }
+
+    {
+        let display = &program.display;
+        let generate_normals_shader = glium::Program::from_source(
+            display,
+            GENERATE_NORMALS_VERTEX_SHADER_SRC,
+            GENERATE_NORMALS_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .expect("Failed to load generate normals shader");
+
+        program.add_shader(generate_normals_shader, "generate_normals_shader");
     }
 }

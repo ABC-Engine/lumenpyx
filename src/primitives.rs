@@ -1,8 +1,12 @@
+use crate::draw_generate_normals;
 use crate::Drawable;
 use crate::LumenpyxProgram;
+use crate::DEFAULT_BEHAVIOR;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
+use glium::BlitTarget;
+use glium::Rect;
 use glium::Surface;
 
 const GENERATE_CIRCLE_VERTEX_SHADER_SRC: &str =
@@ -29,6 +33,11 @@ const GENERATE_CYLINDER_HEIGHT_VERTEX_SHADER_SRC: &str =
     include_str!("../shaders/primitives/cylinder_height.vert");
 const GENERATE_CYLINDER_HEIGHT_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/primitives/cylinder_height.frag");
+
+const GENERATE_CYLINDER_NORMAL_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/primitives/cylinder_normal.vert");
+const GENERATE_CYLINDER_NORMAL_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/primitives/cylinder_normal.frag");
 
 use crate::shaders::FULL_SCREEN_QUAD;
 use crate::Transform;
@@ -80,46 +89,57 @@ pub fn draw_sphere(
 
     draw_circle(color, radius, matrix_transform, program, albedo_framebuffer);
 
-    let height_shader = program.get_shader("sphere_height_shader").unwrap();
-    let normal_shader = program.get_shader("sphere_normal_shader").unwrap();
+    {
+        let height_shader = program.get_shader("sphere_height_shader").unwrap();
 
-    let shape = FULL_SCREEN_QUAD;
+        let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+        let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
-    let uniforms = &uniform! {
-        radius_squared: radius.powi(2),
-        matrix: matrix_transform,
-    };
+        let uniforms = &uniform! {
+            matrix: matrix_transform,
+            radius_squared: radius.powi(2),
+        };
 
-    height_framebuffer
-        .draw(
-            &vertex_buffer,
-            indices,
-            &height_shader,
-            uniforms,
-            &Default::default(),
-        )
-        .unwrap();
+        height_framebuffer
+            .draw(
+                &vertex_buffer,
+                indices,
+                &height_shader,
+                uniforms,
+                &Default::default(),
+            )
+            .unwrap();
+    }
 
-    let shape = FULL_SCREEN_QUAD;
+    {
+        let normal_shader = program.get_shader("sphere_normal_shader").unwrap();
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+        let shape = FULL_SCREEN_QUAD;
 
-    let uniforms = &uniform! {
-        radius_squared: radius.powi(2),
-        matrix: matrix_transform,
-    };
+        let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+        let resolution = [
+            albedo_framebuffer.get_dimensions().0 as f32,
+            albedo_framebuffer.get_dimensions().1 as f32,
+        ];
+        let radius_squared = radius.powi(2);
 
-    normal_framebuffer
-        .draw(
-            &vertex_buffer,
-            indices,
-            &normal_shader,
-            uniforms,
-            &Default::default(),
-        )
-        .unwrap();
+        let uniforms = &uniform! {
+            matrix: matrix_transform,
+            radius_squared: radius_squared,
+            resolution: resolution,
+        };
+
+        normal_framebuffer
+            .draw(
+                &vertex_buffer,
+                indices,
+                &normal_shader,
+                uniforms,
+                &Default::default(),
+            )
+            .unwrap();
+    }
 }
 
 fn draw_rectangle(
@@ -252,29 +272,41 @@ impl Drawable for Sphere {
 
     fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
         // this assumes both shaders will always be loaded together
-        if program.get_shader("sphere_height_shader").is_some() {
-            return;
+        if program.get_shader("sphere_height_shader").is_none() {
+            let shader = glium::Program::from_source(
+                &program.display,
+                GENERATE_SPHERE_HEIGHT_VERTEX_SHADER_SRC,
+                GENERATE_SPHERE_HEIGHT_FRAGMENT_SHADER_SRC,
+                None,
+            )
+            .unwrap();
+
+            program.add_shader(shader, "sphere_height_shader");
         }
 
-        let shader = glium::Program::from_source(
-            &program.display,
-            GENERATE_SPHERE_HEIGHT_VERTEX_SHADER_SRC,
-            GENERATE_SPHERE_HEIGHT_FRAGMENT_SHADER_SRC,
-            None,
-        )
-        .unwrap();
+        if program.get_shader("circle_ahr_shader").is_none() {
+            let shader = glium::Program::from_source(
+                &program.display,
+                GENERATE_CIRCLE_VERTEX_SHADER_SRC,
+                GENERATE_CIRCLE_FRAGMENT_SHADER_SRC,
+                None,
+            )
+            .unwrap();
 
-        program.add_shader(shader, "sphere_height_shader");
+            program.add_shader(shader, "circle_ahr_shader");
+        }
 
-        let shader = glium::Program::from_source(
-            &program.display,
-            GENERATE_SPHERE_NORMAL_VERTEX_SHADER_SRC,
-            GENERATE_SPHERE_NORMAL_FRAGMENT_SHADER_SRC,
-            None,
-        )
-        .unwrap();
+        if program.get_shader("sphere_normal_shader").is_none() {
+            let shader = glium::Program::from_source(
+                &program.display,
+                GENERATE_SPHERE_NORMAL_VERTEX_SHADER_SRC,
+                GENERATE_SPHERE_NORMAL_FRAGMENT_SHADER_SRC,
+                None,
+            )
+            .unwrap();
 
-        program.add_shader(shader, "sphere_normal_shader");
+            program.add_shader(shader, "sphere_normal_shader");
+        }
     }
 
     fn get_position(&self) -> [[f32; 4]; 4] {
@@ -377,6 +409,7 @@ impl Drawable for Cylinder {
             program,
             albedo_framebuffer,
             height_framebuffer,
+            normal_framebuffer,
         );
     }
 
@@ -404,6 +437,18 @@ impl Drawable for Cylinder {
 
             program.add_shader(shader, "cylinder_height_shader");
         }
+
+        if program.get_shader("cylinder_normal_shader").is_none() {
+            let shader = glium::Program::from_source(
+                &program.display,
+                GENERATE_CYLINDER_NORMAL_VERTEX_SHADER_SRC,
+                GENERATE_CYLINDER_NORMAL_FRAGMENT_SHADER_SRC,
+                None,
+            )
+            .unwrap();
+
+            program.add_shader(shader, "cylinder_normal_shader");
+        }
     }
 
     fn get_position(&self) -> [[f32; 4]; 4] {
@@ -419,6 +464,7 @@ fn draw_cylinder(
     program: &LumenpyxProgram,
     albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
 ) {
     draw_rectangle(
         color,
@@ -449,6 +495,34 @@ fn draw_cylinder(
             &vertex_buffer,
             indices,
             &shader,
+            uniforms,
+            &Default::default(),
+        )
+        .unwrap();
+
+    let normal_shader = program.get_shader("cylinder_normal_shader").unwrap();
+
+    let shape = FULL_SCREEN_QUAD;
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let resolution = [
+        normal_framebuffer.get_dimensions().0 as f32,
+        normal_framebuffer.get_dimensions().1 as f32,
+    ];
+
+    let uniforms = &uniform! {
+        width: radius * 2.0,
+        height: height,
+        resolution: resolution,
+        matrix: matrix_transform,
+    };
+
+    normal_framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &normal_shader,
             uniforms,
             &Default::default(),
         )

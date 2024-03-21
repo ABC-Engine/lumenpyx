@@ -71,10 +71,12 @@ impl Sprite {
         albedo: Texture,
         height_path: Texture,
         roughness_path: Texture,
-        display: &glium::Display<WindowSurface>,
-        indices: &glium::index::NoIndices,
+        program: &LumenpyxProgram,
         transform: Transform,
     ) -> Sprite {
+        let display = &program.display;
+        let indices = &program.indices;
+
         let albedo_texture = match albedo {
             Texture::Path(path) => {
                 let image = load_image(path);
@@ -124,10 +126,9 @@ impl Sprite {
                 glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture).unwrap();
 
             draw_generate_normals(
-                display,
+                program,
                 height_uniform,
                 albedo_uniform,
-                &indices,
                 &mut normal_framebuffer,
             )
         }

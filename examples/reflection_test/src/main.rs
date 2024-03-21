@@ -19,8 +19,7 @@ fn main() {
         "../images/Test Grid Color.png".into(),
         "../images/Test Grid Color Heightmap.png".into(),
         "../images/Test Grid Color Roughnessmap.png".into(),
-        &lumen_program.display,
-        &lumen_program.indices,
+        &lumen_program,
         Transform::new([0.0, 0.0, 0.0]),
     );
 
@@ -31,7 +30,10 @@ fn main() {
     lumen_program.run(event_loop, |mut program| {
         distance_to_60_frame -= 1.0;
         if distance_to_60_frame < 0.0 {
-            println!("FPS: {}", 60.0 / start_of_60_frame.elapsed().as_secs_f32());
+            println!(
+                "FPS: {}",
+                (60.0 / start_of_60_frame.elapsed().as_secs_f32()) as u32
+            );
             distance_to_60_frame = 60.0;
             start_of_60_frame = std::time::Instant::now();
         }
@@ -44,7 +46,7 @@ fn main() {
             light_refs,
             drawable_refs,
             &mut program,
-            &Camera::new([t.sin(), 0.0, 0.0]),
+            &Camera::new([t.sin(), 0.0, 1.0]),
         );
     });
 }

@@ -321,6 +321,8 @@ pub fn draw_all(
         let mut normal_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture).unwrap();
 
+        normal_framebuffer.clear_color(0.0, 0.0, 1.0, 1.0);
+
         let mut shadow_strength_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &shadow_strength_texture).unwrap();
 

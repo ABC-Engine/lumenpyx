@@ -26,8 +26,7 @@ fn main() {
             path.into(),
             path.into(),
             [0.0, 0.0, 0.0, 0.0].into(),
-            &lumen_program.display,
-            &lumen_program.indices,
+            &lumen_program,
             Transform::new([0.0, 0.0, 0.0]),
         );
         drawables.push(Box::new(drawable));

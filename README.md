@@ -35,8 +35,7 @@ fn main() {
         "examples/images/Demo-Scene-Albedo.png".into(),
         "examples/images/Demo-Scene-Heightmap.png".into(),
         "examples/images/Demo-Scene-Roughnessmap.png".into(),
-        &lumen_program.display,
-        &lumen_program.indices,
+        &lumen_program,
         Transform::new([0.0, 0.0, 0.0]),
     );
 
@@ -103,7 +102,10 @@ impl Drawable for Circle {
         program: &LumenpyxProgram,
         matrix_transform: [[f32; 4]; 4],
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        // we won't use this as we are making a 2d circle so the height will be constant
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        // the normal and roughness are only needed if this drawable is going to be reflecting things,
+        // otherwise just don't draw to them
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
@@ -143,27 +145,30 @@ impl Drawable for Circle {
                 &Default::default(),
             )
             .unwrap();
+
+        // if we wanted a constant height for our heightmap we could do
+        // height is normally from 0-1
+        let height = 0.5;
+        // last term is alpha so it should always be 1.0
+        height_framebuffer.clear_color(height, height, height, 1.0)
     }
 
     // this is called every frame, so make sure to check if the shader is already loaded
     fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
         // check if the shader is loaded
-        if program.get_shader("circle_ahr_shader").is_some() {
-            // if it is we are done
-            return;
+        if program.get_shader("circle_ahr_shader").is_none() {
+            // if not we create the shader
+            let shader = glium::Program::from_source(
+                &program.display,
+                GENERATE_CIRCLE_VERTEX_SHADER_SRC,
+                GENERATE_CIRCLE_FRAGMENT_SHADER_SRC,
+                None,
+            )
+            .unwrap();
+    
+            // then we add the shader to the program to be accessed later
+            program.add_shader(shader, "circle_ahr_shader");
         }
-
-        // if not we create the shader
-        let shader = glium::Program::from_source(
-            &program.display,
-            GENERATE_CIRCLE_VERTEX_SHADER_SRC,
-            GENERATE_CIRCLE_FRAGMENT_SHADER_SRC,
-            None,
-        )
-        .unwrap();
-
-        // then we add the shader to the program to be accessed later
-        program.add_shader(shader, "circle_ahr_shader");
     }
 
     // this is so that objects scale properly with camera movement and dimensions
