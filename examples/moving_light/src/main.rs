@@ -1,7 +1,7 @@
 use lumenpyx::{lights::LightDrawable, *};
 
 fn main() {
-    let (mut lumen_program, event_loop) = LumenpyxProgram::new([128, 128]);
+    let (mut lumen_program, event_loop) = LumenpyxProgram::new([128, 128], "moving_light");
 
     let paths = vec![
         "../images/bricks_pixelated.png",

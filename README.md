@@ -16,7 +16,7 @@ use lumenpyx::{lights::LightDrawable, winit::event, *};
 fn main() {
     // setup your program at any resolution you would like
     let (mut lumen_program, event_loop) =
-        LumenpyxProgram::new([(128.0 * (16.0 / 9.0)) as u32, 128]);
+        LumenpyxProgram::new([(128.0 * (16.0 / 9.0)) as u32, 128], "name of your program");
 
     // put a light in the scene to illuminate things, [0.0, 0.0, 1.0] will be in the middle
     // the falloff is also specified here we want virtually no falloff for this example so we do 0.02 with an intensity of 2.0

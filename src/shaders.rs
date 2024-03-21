@@ -70,7 +70,9 @@ pub(crate) fn draw_upscale(
 ) {
     let display = &lumenpyx_program.display;
     let indices = &lumenpyx_program.indices;
-    let upscale_shader = &lumenpyx_program.upscale_shader;
+    let upscale_shader = &lumenpyx_program
+        .get_shader("upscale_shader")
+        .expect("Failed to load upscale shader");
 
     let mut target = display.draw();
     let dimensions = target.get_dimensions();
@@ -154,7 +156,9 @@ pub(crate) fn draw_reflections(
 ) {
     let display = &program.display;
     let indices = &program.indices;
-    let shader = &program.reflection_shader;
+    let shader = &program
+        .get_shader("reflection_shader")
+        .expect("Failed to load reflection shader");
 
     let shape = FULL_SCREEN_QUAD;
 
@@ -190,7 +194,9 @@ pub(crate) fn draw_generate_normals(
     let display = &program.display;
     let indices = &program.indices;
 
-    let shader = program.get_shader("generate_normals_shader").unwrap();
+    let shader = program
+        .get_shader("generate_normals_shader")
+        .expect("Failed to load generate normals shader");
 
     let shape = FULL_SCREEN_QUAD;
 
@@ -312,5 +318,31 @@ pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
         .expect("Failed to load generate normals shader");
 
         program.add_shader(generate_normals_shader, "generate_normals_shader");
+    }
+
+    {
+        let display = &program.display;
+        let upscale_shader = glium::Program::from_source(
+            display,
+            UPSCALE_VERTEX_SHADER_SRC,
+            UPSCALE_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .expect("Failed to load upscale shader");
+
+        program.add_shader(upscale_shader, "upscale_shader");
+    }
+
+    {
+        let display = &program.display;
+        let reflection_shader = glium::Program::from_source(
+            display,
+            REFLECTION_VERTEX_SHADER_SRC,
+            REFLECTION_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .expect("Failed to load reflection shader");
+
+        program.add_shader(reflection_shader, "reflection_shader");
     }
 }

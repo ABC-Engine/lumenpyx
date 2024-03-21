@@ -5,7 +5,7 @@ use rand::Rng;
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
     let (mut lumen_program, event_loop) =
-        LumenpyxProgram::new([(128.0 * (16.0 / 9.0)) as u32, 128]);
+        LumenpyxProgram::new([(128.0 * (16.0 / 9.0)) as u32, 128], "dungeon");
 
     let mut lights = vec![
         Box::new(lights::PointLight::new(
@@ -32,7 +32,7 @@ fn main() {
 
     let mut distance_to_60_frame = 0.0;
     let mut start_of_60_frame = std::time::Instant::now();
-    let camera = Camera::new([0.0, 0.0, 0.0]);
+    let mut camera = Camera::new([0.0, 0.0, 3.0]);
 
     let mut t: f32 = 0.0;
     lumen_program.run(event_loop, |mut program| {
@@ -47,7 +47,7 @@ fn main() {
             for light in lights.iter_mut() {
                 let mut rng = rand::thread_rng();
                 t += rng.gen_range(0.0..0.01);
-                light.set_intensity(2.0 + (t.sin() * 0.5) as f32);
+                light.set_intensity(1.0 + (t.sin() * 0.5) as f32);
                 //light.set_position((t.sin() * 0.5) as f32, (t.cos() * 0.5) as f32, 1.0);
             }
         }

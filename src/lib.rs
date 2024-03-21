@@ -30,40 +30,23 @@ pub struct LumenpyxProgram {
     pub window: winit::window::Window,
     pub display: glium::Display<WindowSurface>,
     pub indices: glium::index::NoIndices,
-    pub reflection_shader: glium::Program,
-    pub upscale_shader: glium::Program,
-    other_shaders: FxHashMap<String, glium::Program>,
+    shaders: FxHashMap<String, glium::Program>,
     dimensions: [u32; 2],
 }
 
 impl LumenpyxProgram {
-    pub fn new(resolution: [u32; 2]) -> (LumenpyxProgram, EventLoop<()>) {
+    pub fn new(resolution: [u32; 2], name: &str) -> (LumenpyxProgram, EventLoop<()>) {
         let (event_loop, window, display, indices) = setup_program();
-        let reflection_shader = glium::Program::from_source(
-            &display,
-            shaders::REFLECTION_VERTEX_SHADER_SRC,
-            shaders::REFLECTION_FRAGMENT_SHADER_SRC,
-            None,
-        )
-        .unwrap();
-
-        let upscale_shader = glium::Program::from_source(
-            &display,
-            shaders::UPSCALE_VERTEX_SHADER_SRC,
-            shaders::UPSCALE_FRAGMENT_SHADER_SRC,
-            None,
-        )
-        .unwrap();
 
         let mut program = LumenpyxProgram {
             window,
             display,
             indices,
-            reflection_shader,
-            upscale_shader,
-            other_shaders: FxHashMap::default(),
+            shaders: FxHashMap::default(),
             dimensions: resolution,
         };
+
+        program.set_name(name);
 
         shaders::load_all_system_shaders(&mut program);
 
@@ -71,11 +54,19 @@ impl LumenpyxProgram {
     }
 
     pub fn add_shader(&mut self, program: glium::Program, name: &str) {
-        self.other_shaders.insert(name.to_string(), program);
+        self.shaders.insert(name.to_string(), program);
     }
 
     pub fn get_shader(&self, name: &str) -> Option<&glium::Program> {
-        self.other_shaders.get(name)
+        self.shaders.get(name)
+    }
+
+    pub fn remove_shader(&mut self, name: &str) {
+        self.shaders.remove(name);
+    }
+
+    pub fn set_name(&mut self, name: &str) {
+        self.window.set_title(name);
     }
 
     pub fn run<F>(&mut self, event_loop: EventLoop<()>, mut update: F)
@@ -301,7 +292,7 @@ pub fn draw_all(
         )
         .unwrap();
 
-        let mut last_drawable_framebuffer =
+        let last_drawable_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &last_drawable_texture).unwrap();
 
         let last_drawable_sampler =
@@ -334,10 +325,9 @@ pub fn draw_all(
             } else {
                 new_matrix[1][1] *= program.dimensions[0] as f32 / program.dimensions[1] as f32;
             }
-            // adjust off the camera
+            // adjust off the camera no need to translate the z, it would just mess up the height map's interaction with the light
             new_matrix[3][0] -= camera.position[0];
             new_matrix[3][1] -= camera.position[1];
-            new_matrix[3][2] -= camera.position[2];
 
             drawable.draw(
                 program,
@@ -398,9 +388,9 @@ pub fn draw_all(
             } else {
                 new_matrix[1][1] *= program.dimensions[0] as f32 / program.dimensions[1] as f32;
             }
+            // adjust off the camera no need to translate the z, it would just mess up the height map's interaction with the light
             new_matrix[3][0] -= camera.position[0];
             new_matrix[3][1] -= camera.position[1];
-            new_matrix[3][2] -= camera.position[2];
 
             light.draw(
                 program,

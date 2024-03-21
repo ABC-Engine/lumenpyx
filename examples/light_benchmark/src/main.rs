@@ -3,7 +3,7 @@ use rand::Rng;
 
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
-    let (mut lumen_program, event_loop) = LumenpyxProgram::new([128, 128]);
+    let (mut lumen_program, event_loop) = LumenpyxProgram::new([128, 128], "light_benchmark");
 
     let mut lights: Vec<Box<dyn LightDrawable>> = vec![];
 

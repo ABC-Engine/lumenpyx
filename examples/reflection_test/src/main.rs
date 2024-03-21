@@ -4,7 +4,7 @@ use lumenpyx::{lights::LightDrawable, winit::event, *};
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
     let (mut lumen_program, event_loop) =
-        LumenpyxProgram::new([(128.0 * (16.0 / 9.0)) as u32, 128]);
+        LumenpyxProgram::new([(128.0 * (16.0 / 9.0)) as u32, 128], "reflection_test");
 
     let lights = vec![Box::new(lights::AreaLight::new(
         [0.0, 0.0, 0.0],
