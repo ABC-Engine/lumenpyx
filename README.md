@@ -9,4 +9,4 @@ This is the best example I have for now, the renderer is capable of much more th
 ![image](https://github.com/NoodlesOfWrath/lumenpyx/assets/76850177/def2e27c-ffaf-4a3c-908e-d65e376b5600)
 
 # Getting Started
-Check out the wiki, I put some docs in there. I will keep updated as time goes on. If there is anything that you would like a docs page for let me know!
+Check out the wiki, I put some docs in there. I will keep updated as time goes on. If there is anything that you would like a docs page for let me know! [Check it out here!](https://github.com/ABC-Engine/lumenpyx/wiki)
