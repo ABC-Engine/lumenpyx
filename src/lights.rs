@@ -1,9 +1,7 @@
 use crate::shaders::FULL_SCREEN_QUAD;
 use crate::LumenpyxProgram;
-use crate::Vertex;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
-use glium::glutin::surface::WindowSurface;
 use glium::uniform;
 use glium::Surface;
 
@@ -358,8 +356,8 @@ pub(crate) fn draw_point_light(
 
     // the magic numbers are to transform the light position from -1.0 to 1.0 to 0.0 to 1.0
     let light_pos = [
-        ((light.position[0] * matrix_transform[0][0]) + 1.0) * 0.5,
-        ((light.position[1] * matrix_transform[1][1]) + 1.0) * 0.5,
+        ((matrix_transform[3][0]) + 1.0) * 0.5,
+        ((matrix_transform[3][1]) + 1.0) * 0.5,
         light.position[2] * matrix_transform[2][2],
     ];
 

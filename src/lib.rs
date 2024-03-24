@@ -164,7 +164,7 @@ pub fn setup_program() -> (
     (event_loop, window, display, indices)
 }
 
-fn load_image(path: &str) -> glium::texture::RawImage2d<u8> {
+fn load_image(path: &str) -> glium::texture::RawImage2d<f32> {
     let img = image::open(path).unwrap();
     img.flipv();
     let path = format!("{}", path);
@@ -173,7 +173,7 @@ fn load_image(path: &str) -> glium::texture::RawImage2d<u8> {
         image::ImageFormat::Png,
     )
     .unwrap()
-    .to_rgba8();
+    .to_rgba32f();
     let image_dimensions = image.dimensions();
     let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image, image_dimensions);
     image
@@ -239,7 +239,7 @@ pub fn draw_all(
 
     let albedo_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::UncompressedFloatFormat::F32F32F32F32,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -248,7 +248,7 @@ pub fn draw_all(
 
     let height_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::UncompressedFloatFormat::F32F32F32F32,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -257,7 +257,7 @@ pub fn draw_all(
 
     let normal_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::UncompressedFloatFormat::F32F32F32F32,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -266,7 +266,7 @@ pub fn draw_all(
 
     let roughness_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::UncompressedFloatFormat::F32F32F32F32,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -275,7 +275,7 @@ pub fn draw_all(
 
     let shadow_strength_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::UncompressedFloatFormat::F32F32F32F32,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -285,7 +285,7 @@ pub fn draw_all(
     {
         let last_drawable_texture = glium::texture::Texture2d::empty_with_format(
             display,
-            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::UncompressedFloatFormat::F32F32F32F32,
             glium::texture::MipmapsOption::NoMipmap,
             program.dimensions[0],
             program.dimensions[1],
@@ -364,7 +364,7 @@ pub fn draw_all(
 
     let lit_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::UncompressedFloatFormat::F32F32F32F32,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -406,7 +406,7 @@ pub fn draw_all(
 
     let reflected_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::UncompressedFloatFormat::F32F32F32F32,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],

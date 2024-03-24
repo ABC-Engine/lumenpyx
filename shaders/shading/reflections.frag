@@ -154,11 +154,12 @@ void main() {
 
 	vec4 new_color = find_intersect_color(new_v_tex_coords * scaling, (new_v_tex_coords + reflected) * scaling);
 	
+	vec4 albedo = texture(albedomap, v_tex_coords);
 	if (new_color == NON_INTERSECT_COLOR) {
-		vec4 albedo = texture(albedomap, v_tex_coords);
 		color = albedo;
 	}
-	else{
-		color = new_color;
+	else {
+		vec4 roughness = texture(roughnessmap, v_tex_coords);
+		color = new_color * roughness.r + albedo * (1.0 - roughness.r);
 	}
 }

@@ -5,7 +5,6 @@ use crate::BASE_FRAGMENT_SHADER_SRC;
 use crate::BASE_VERTEX_SHADER_SRC;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
-use glium::glutin::surface::WindowSurface;
 use glium::uniform;
 use glium::Surface;
 
@@ -70,6 +69,7 @@ pub(crate) fn draw_upscale(
 ) {
     let display = &lumenpyx_program.display;
     let indices = &lumenpyx_program.indices;
+
     let upscale_shader = &lumenpyx_program
         .get_shader("upscale_shader")
         .expect("Failed to load upscale shader");

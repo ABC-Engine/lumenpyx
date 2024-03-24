@@ -28,10 +28,10 @@ float lerp(vec3 P1, vec3 P2, vec2 P3) {
 
 // most this code attributed to https://gist.github.com/nowke/965fed0d5191bf373f1262be584207bb
 bool find_intersections(vec3 p1, vec3 p2) {
-    int x1 = int(round(p1.x));
-    int y1 = int(round(p1.y));
-    int x2 = int(round(p2.x));
-    int y2 = int(round(p2.y));
+    int x1 = int(p1.x);
+    int y1 = int(p1.y);
+    int x2 = int(p2.x);
+    int y2 = int(p2.y);
 
 	int dx, dy, i, e;
 	int incx, incy, inc1, inc2;
@@ -48,6 +48,11 @@ bool find_intersections(vec3 p1, vec3 p2) {
 	if (y2 < y1) incy = -1;
 	x = x1; y = y1;
 	if (dx > dy) {
+		// if it hits the last point, return false
+		// because it hits the pixel
+		if (vec2(x, y) == vec2(x2, y2)) {
+			return false;
+		}
         // linear interpolation between the two points to get the height of the line at the current x and y
         // TODO: double check the interpolation
 		float height_of_line = lerp(p1, p2, vec2(x, y));
@@ -67,6 +72,9 @@ bool find_intersections(vec3 p1, vec3 p2) {
 			    e += inc2;
 			x += incx;
 
+			if (vec2(x, y) == vec2(x2, y2)) {
+				return false;
+			}
 			float height_of_line = lerp(p1, p2, vec2(x, y));
             if (texture_pixel(heightmap, vec2(x, y)).r > height_of_line) {
                 return true;
@@ -74,6 +82,9 @@ bool find_intersections(vec3 p1, vec3 p2) {
 		}
 
 	} else {
+		if (vec2(x, y) == vec2(x2, y2)) {
+			return false;
+		}
 		float height_of_line = lerp(p1, p2, vec2(x, y));
         if (texture_pixel(heightmap, vec2(x, y)).r > height_of_line) {
             return true;
@@ -91,6 +102,9 @@ bool find_intersections(vec3 p1, vec3 p2) {
 				e += inc2;
 			y += incy;
 
+			if (vec2(x, y) == vec2(x2, y2)) {
+				return false;
+			}
 			float height_of_line = lerp(p1, p2, vec2(x, y));
             if (texture_pixel(heightmap, vec2(x, y)).r > height_of_line) {
                 return true;

@@ -1,12 +1,8 @@
-use crate::draw_generate_normals;
 use crate::Drawable;
 use crate::LumenpyxProgram;
-use crate::DEFAULT_BEHAVIOR;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
-use glium::BlitTarget;
-use glium::Rect;
 use glium::Surface;
 
 const GENERATE_CIRCLE_VERTEX_SHADER_SRC: &str =

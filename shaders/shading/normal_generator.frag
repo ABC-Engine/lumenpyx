@@ -18,8 +18,9 @@ void main() {
         discard;
     }
 
-    float height = texture(heightmap, v_tex_coords).r;
-    vec2 dir =  -vec2(dFdx(height), dFdy(height))* textureSize(heightmap, 0);
+    float dx = texture(heightmap, v_tex_coords + vec2(1.0/textureSize(heightmap, 0).x, 0.0)).r - texture(heightmap, v_tex_coords - vec2(1.0/textureSize(heightmap, 0).x, 0.0)).r;
+    float dy = texture(heightmap, v_tex_coords + vec2(0.0, 1.0/textureSize(heightmap, 0).y)).r - texture(heightmap, v_tex_coords - vec2(0.0, 1.0/textureSize(heightmap, 0).y)).r;
+    vec2 dir = -vec2(dx, dy)* textureSize(heightmap, 0) * 0.5;
 
     vec3 normal = normalize(vec3(dir, 1.0));
     color = vec4(normal, 1.0);

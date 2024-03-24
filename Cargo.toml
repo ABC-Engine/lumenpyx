@@ -1,4 +1,4 @@
-workspace = { members = ["examples/dungeon", "examples/light_benchmark", "examples/moving_light", "examples/primitives", "examples/reflection_test"] }
+workspace = { members = ["examples/dungeon", "examples/fully_featured_scene", "examples/light_benchmark", "examples/moving_light", "examples/primitives", "examples/reflection_test"] }
 [package]
 name = "lumenpyx"
 version = "0.1.0"
