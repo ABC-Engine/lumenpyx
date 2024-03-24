@@ -125,9 +125,9 @@ void main() {
     vec3 new_v_tex_coords = vec3(textureSize(albedomap, 0) * v_tex_coords, texture(heightmap, v_tex_coords).r);
     
 	float light_dist = distance(new_v_tex_coords, new_light_pos);
-	light_dist = max(light_dist * light_falloff, 1.0);
-    vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * (light_intensity / (light_dist * light_dist));
-
+	light_dist = light_dist * light_falloff;
+	float falloff = (light_intensity / (1.0 + light_dist * light_dist));
+    vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * falloff;
 
     if (!find_intersections(new_light_pos, new_v_tex_coords)) {
 		color = shaded_color;

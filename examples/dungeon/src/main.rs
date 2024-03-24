@@ -56,6 +56,12 @@ fn main() {
         let drawable_refs: Vec<&dyn Drawable> = vec![&scene_drawable];
         let light_refs: Vec<&dyn LightDrawable> =
             lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
-        draw_all(light_refs, drawable_refs, &mut program, &camera);
+        draw_all(
+            light_refs,
+            drawable_refs,
+            &mut program,
+            &camera,
+            DebugOption::None,
+        );
     });
 }

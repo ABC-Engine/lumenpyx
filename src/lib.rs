@@ -26,6 +26,28 @@ pub(crate) const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior =
         depth_texture_comparison: None,
     };
 
+/// The debug option is used to determine what to display on the screen
+pub enum DebugOption {
+    /// Display the final image
+    None,
+    /// Display the albedo texture
+    Albedo,
+    /// Display the height texture
+    Height,
+    /// Display the roughness texture
+    Roughness,
+    /// Display the normal texture
+    Normal,
+    /// Display the internal shadow strength texture
+    ShadowStrength,
+}
+
+impl Default for DebugOption {
+    fn default() -> Self {
+        DebugOption::None
+    }
+}
+
 pub struct LumenpyxProgram {
     pub window: winit::window::Window,
     pub display: glium::Display<WindowSurface>,
@@ -212,6 +234,7 @@ pub fn draw_all(
     drawables: Vec<&dyn Drawable>,
     program: &mut LumenpyxProgram,
     camera: &Camera,
+    debug: DebugOption,
 ) {
     // this is kind of inefficient, but it works for now
     for drawable in &drawables {
@@ -239,7 +262,7 @@ pub fn draw_all(
 
     let albedo_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::F32F32F32F32,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -248,7 +271,7 @@ pub fn draw_all(
 
     let height_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::F32F32F32F32,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -257,7 +280,7 @@ pub fn draw_all(
 
     let normal_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::F32F32F32F32,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -266,7 +289,7 @@ pub fn draw_all(
 
     let roughness_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::F32F32F32F32,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -275,7 +298,7 @@ pub fn draw_all(
 
     let shadow_strength_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::F32F32F32F32,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -285,7 +308,7 @@ pub fn draw_all(
     {
         let last_drawable_texture = glium::texture::Texture2d::empty_with_format(
             display,
-            glium::texture::UncompressedFloatFormat::F32F32F32F32,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
             glium::texture::MipmapsOption::NoMipmap,
             program.dimensions[0],
             program.dimensions[1],
@@ -364,7 +387,7 @@ pub fn draw_all(
 
     let lit_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::F32F32F32F32,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -406,7 +429,7 @@ pub fn draw_all(
 
     let reflected_texture = glium::texture::Texture2d::empty_with_format(
         display,
-        glium::texture::UncompressedFloatFormat::F32F32F32F32,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
         program.dimensions[0],
         program.dimensions[1],
@@ -434,7 +457,18 @@ pub fn draw_all(
     }
 
     {
-        let finished_texture = glium::uniforms::Sampler(&reflected_texture, DEFAULT_BEHAVIOR);
+        let finished_texture = match debug {
+            DebugOption::None => glium::uniforms::Sampler(&reflected_texture, DEFAULT_BEHAVIOR),
+            DebugOption::Albedo => glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR),
+            DebugOption::Height => glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR),
+            DebugOption::Roughness => {
+                glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR)
+            }
+            DebugOption::Normal => glium::uniforms::Sampler(&normal_texture, DEFAULT_BEHAVIOR),
+            DebugOption::ShadowStrength => {
+                glium::uniforms::Sampler(&shadow_strength_texture, DEFAULT_BEHAVIOR)
+            }
+        };
         draw_upscale(finished_texture, &program);
     }
 }

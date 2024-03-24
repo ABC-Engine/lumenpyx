@@ -8,15 +8,15 @@ fn main() {
 
     let mut lights = vec![
         Box::new(lights::PointLight::new(
-            [0.56, 0.5, 2.0],
+            [-1.52, 0.545, 2.0],
             [1.0, 0.76, 0.52],
-            1.0,
+            2.0,
             0.01,
         )),
         Box::new(lights::PointLight::new(
-            [-0.545, 0.5, 2.0],
+            [1.49, 0.545, 2.0],
             [1.0, 0.76, 0.52],
-            1.0,
+            2.0,
             0.01,
         )),
     ];
@@ -50,15 +50,19 @@ fn main() {
                 let mut rng = rand::thread_rng();
                 t += rng.gen_range(0.0..0.01);
                 light.set_intensity(1.0 + ((t * 0.1).sin() * 0.5) as f32);
-                //light.set_position((t.sin() * 0.5) as f32, (t.cos() * 0.5) as f32, 1.0);
                 camera.position = [(t * 0.1).sin(), 0.0, 200.0];
-                println!("{:?}", camera.position);
             }
         }
 
         let drawable_refs: Vec<&dyn Drawable> = vec![&scene_drawable];
         let light_refs: Vec<&dyn LightDrawable> =
             lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
-        draw_all(light_refs, drawable_refs, &mut program, &camera);
+        draw_all(
+            light_refs,
+            drawable_refs,
+            &mut program,
+            &camera,
+            DebugOption::None,
+        );
     });
 }

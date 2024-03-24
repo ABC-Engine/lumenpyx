@@ -62,6 +62,7 @@ fn main() {
             drawable_refs,
             &mut program,
             &Camera::new([0.0, 0.0, 0.0]),
+            DebugOption::None,
         );
     });
 }
