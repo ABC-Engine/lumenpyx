@@ -8,24 +8,34 @@ fn main() {
 
     let mut lights = vec![
         Box::new(lights::PointLight::new(
-            [-1.52, 0.545, 2.0],
+            [-1.52, 0.545, 1.0],
             [1.0, 0.76, 0.52],
-            2.0,
+            1.0,
             0.01,
         )),
         Box::new(lights::PointLight::new(
-            [1.49, 0.545, 2.0],
+            [1.49, 0.545, 1.0],
             [1.0, 0.76, 0.52],
-            2.0,
+            1.0,
             0.01,
         )),
     ];
 
     // adapted from https://cainos.itch.io/pixel-art-platformer-village-props
     // Huge thank you to Cainos for the free assets!
-    let scene_drawable = Sprite::new(
-        "../images/Demo_Town/Demo-town-albedo.png".into(),
-        "../images/Demo_Town/Demo-town-Heightmap.png".into(),
+    let mut scene_drawable_bottom = Sprite::new(
+        "../images/Demo_Town/Demo-town-albedo-bottom.png".into(),
+        "../images/Demo_Town/Demo-town-Heightmap-Bottom.png".into(),
+        [0.0, 0.0, 0.0, 1.0].into(),
+        [0.01, 0.96, 0.48, 1.0].into(),
+        &lumen_program,
+        Transform::new([0.0, 0.0, 0.0]),
+    );
+    scene_drawable_bottom.set_shadow_strength(0.0);
+
+    let scene_drawable_top = Sprite::new(
+        "../images/Demo_Town/Demo-town-albedo-Top.png".into(),
+        "../images/Demo_Town/Demo-town-Heightmap-Top.png".into(),
         "../images/Demo_Town/Demo-town-roughness.png".into(),
         [0.01, 0.96, 0.48, 1.0].into(),
         &lumen_program,
@@ -46,15 +56,13 @@ fn main() {
         }
 
         {
-            for light in lights.iter_mut() {
-                let mut rng = rand::thread_rng();
-                t += rng.gen_range(0.0..0.01);
-                light.set_intensity(1.0 + ((t * 0.1).sin() * 0.5) as f32);
-                camera.position = [(t * 0.1).sin(), 0.0, 200.0];
-            }
+            t += 0.005;
+            camera.position = [(t * 0.1).sin(), 0.0, 200.0];
+
+            scene_drawable_bottom.transform.set_x((t * 0.1).sin() * 0.1)
         }
 
-        let drawable_refs: Vec<&dyn Drawable> = vec![&scene_drawable];
+        let drawable_refs: Vec<&dyn Drawable> = vec![&scene_drawable_bottom, &scene_drawable_top];
         let light_refs: Vec<&dyn LightDrawable> =
             lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
         draw_all(

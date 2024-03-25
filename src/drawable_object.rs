@@ -88,7 +88,8 @@ pub struct Sprite {
     height_texture: glium::texture::Texture2d,
     roughness_texture: glium::texture::Texture2d,
     normal_texture: glium::texture::Texture2d,
-    transform: Transform,
+    pub transform: Transform,
+    shadow_strength: f32,
 }
 
 impl Sprite {
@@ -176,7 +177,12 @@ impl Sprite {
             roughness_texture,
             normal_texture,
             transform,
+            shadow_strength: 0.5,
         }
+    }
+
+    pub fn set_shadow_strength(&mut self, strength: f32) {
+        self.shadow_strength = strength;
     }
 }
 
@@ -292,5 +298,10 @@ impl Drawable for Sprite {
 
     fn get_position(&self) -> [[f32; 4]; 4] {
         self.transform.matrix
+    }
+
+    /// 0.0 is no shadows, 1.0 is full shadows
+    fn get_recieve_shadows_strength(&self) -> f32 {
+        self.shadow_strength
     }
 }

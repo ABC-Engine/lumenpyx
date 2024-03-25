@@ -176,7 +176,8 @@ fn draw_rectangle(
 pub struct Circle {
     color: [f32; 4],
     radius: f32,
-    transform: Transform,
+    pub transform: Transform,
+    shadow_strength: f32,
 }
 
 impl Circle {
@@ -185,6 +186,7 @@ impl Circle {
             color,
             radius,
             transform,
+            shadow_strength: 0.5,
         }
     }
 }
@@ -227,12 +229,17 @@ impl Drawable for Circle {
     fn get_position(&self) -> [[f32; 4]; 4] {
         self.transform.matrix
     }
+
+    fn get_recieve_shadows_strength(&self) -> f32 {
+        self.shadow_strength
+    }
 }
 
 pub struct Sphere {
     color: [f32; 4],
     radius: f32,
-    transform: Transform,
+    pub transform: Transform,
+    shadow_strength: f32,
 }
 
 impl Sphere {
@@ -241,6 +248,7 @@ impl Sphere {
             color,
             radius,
             transform,
+            shadow_strength: 0.5,
         }
     }
 }
@@ -308,13 +316,18 @@ impl Drawable for Sphere {
     fn get_position(&self) -> [[f32; 4]; 4] {
         self.transform.matrix
     }
+
+    fn get_recieve_shadows_strength(&self) -> f32 {
+        self.shadow_strength
+    }
 }
 
 pub struct Rectangle {
     color: [f32; 4],
     width: f32,
     height: f32,
-    transform: Transform,
+    pub transform: Transform,
+    shadow_strength: f32,
 }
 
 impl Rectangle {
@@ -324,6 +337,7 @@ impl Rectangle {
             width,
             height,
             transform,
+            shadow_strength: 0.5,
         }
     }
 }
@@ -367,13 +381,18 @@ impl Drawable for Rectangle {
     fn get_position(&self) -> [[f32; 4]; 4] {
         self.transform.matrix
     }
+
+    fn get_recieve_shadows_strength(&self) -> f32 {
+        self.shadow_strength
+    }
 }
 
 pub struct Cylinder {
     color: [f32; 4],
     radius: f32,
     height: f32,
-    transform: Transform,
+    pub transform: Transform,
+    shadow_strength: f32,
 }
 
 impl Cylinder {
@@ -383,7 +402,12 @@ impl Cylinder {
             radius,
             height,
             transform,
+            shadow_strength: 0.5,
         }
+    }
+
+    pub fn set_shadow_strength(&mut self, shadow_strength: f32) {
+        self.shadow_strength = shadow_strength;
     }
 }
 
@@ -449,6 +473,10 @@ impl Drawable for Cylinder {
 
     fn get_position(&self) -> [[f32; 4]; 4] {
         self.transform.matrix
+    }
+
+    fn get_recieve_shadows_strength(&self) -> f32 {
+        self.shadow_strength
     }
 }
 

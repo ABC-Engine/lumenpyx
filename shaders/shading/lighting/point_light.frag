@@ -133,7 +133,7 @@ void main() {
 		color = shaded_color;
     }
 	else {
-		color = (shaded_color * dimFactor);
+		color = (shaded_color * (1.0 - dimFactor));
     }
 }
 
