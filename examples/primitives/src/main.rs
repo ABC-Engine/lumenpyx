@@ -1,5 +1,7 @@
+use lumenpyx::drawable_object::Drawable;
 use lumenpyx::lights::LightDrawable;
 use lumenpyx::primitives::*;
+use lumenpyx::primitives::{Normal, Sprite, Texture};
 use lumenpyx::*;
 
 fn main() {

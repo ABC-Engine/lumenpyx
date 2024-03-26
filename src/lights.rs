@@ -3,6 +3,7 @@ use crate::LumenpyxProgram;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
+use glium::Blend;
 use glium::Surface;
 
 pub(crate) const POINT_LIGHT_VERTEX_SHADER_SRC: &str =
@@ -20,6 +21,22 @@ pub(crate) const DIRECTIONAL_LIGHT_VERTEX_SHADER_SRC: &str =
 pub(crate) const DIRECTIONAL_LIGHT_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/shading/lighting/directional_light.frag");
 
+pub const DEFAULT_LIGHT_BLENDING: Blend = glium::Blend {
+    color: glium::BlendingFunction::Addition {
+        source: glium::LinearBlendingFactor::One,
+        destination: glium::LinearBlendingFactor::One,
+    },
+    alpha: glium::BlendingFunction::Addition {
+        source: glium::LinearBlendingFactor::One,
+        destination: glium::LinearBlendingFactor::One,
+    },
+    constant_value: (0.0, 0.0, 0.0, 0.0),
+};
+
+/// A trait for drawable lights
+/// This trait is used to draw lights in the scene
+/// If you want to create a custom light, you can implement this trait
+/// Follow the example here: https://github.com/ABC-Engine/lumenpyx/wiki/Creating-custom-drawable-objects
 pub trait LightDrawable {
     fn draw(
         &self,
@@ -35,6 +52,8 @@ pub trait LightDrawable {
     fn get_transform(&self) -> [[f32; 4]; 4];
 }
 
+/// A point light source
+/// falloff is the distance falloff of the light
 #[derive(Copy, Clone)]
 pub struct PointLight {
     position: [f32; 3],
@@ -44,6 +63,7 @@ pub struct PointLight {
 }
 
 impl PointLight {
+    /// Create a new point light
     pub fn new(position: [f32; 3], color: [f32; 3], intensity: f32, falloff: f32) -> PointLight {
         PointLight {
             position,
@@ -53,10 +73,12 @@ impl PointLight {
         }
     }
 
+    /// Set the position of the light
     pub fn set_position(&mut self, x: f32, y: f32, z: f32) {
         self.position = [x, y, z];
     }
 
+    /// Get the position of the light
     pub fn get_position(&self) -> [f32; 3] {
         self.position
     }
@@ -66,10 +88,13 @@ impl PointLight {
         self.color = [r, g, b];
     }
 
+    /// Set the intensity of the light
+    /// If the intensity is above 1.0, it can result in overexposure
     pub fn set_intensity(&mut self, intensity: f32) {
         self.intensity = intensity;
     }
 
+    /// Set the falloff of the light
     pub fn set_falloff(&mut self, falloff: f32) {
         self.falloff = falloff;
     }
@@ -121,6 +146,7 @@ impl LightDrawable for PointLight {
     }
 }
 
+/// An area light source
 pub struct AreaLight {
     position: [f32; 3],
     color: [f32; 3],
@@ -131,6 +157,7 @@ pub struct AreaLight {
 }
 
 impl AreaLight {
+    /// Create a new area light
     pub fn new(
         position: [f32; 3],
         color: [f32; 3],
@@ -149,10 +176,12 @@ impl AreaLight {
         }
     }
 
+    /// Set the position of the light
     pub fn set_position(&mut self, x: f32, y: f32, z: f32) {
         self.position = [x, y, z];
     }
 
+    /// Get the position of the light
     pub fn get_position(&self) -> [f32; 3] {
         self.position
     }
@@ -162,18 +191,22 @@ impl AreaLight {
         self.color = [r, g, b];
     }
 
+    /// Set the intensity of the light
     pub fn set_intensity(&mut self, intensity: f32) {
         self.intensity = intensity;
     }
 
+    /// Set the falloff of the light
     pub fn set_falloff(&mut self, falloff: f32) {
         self.falloff = falloff;
     }
 
+    /// Set the width of the light
     pub fn set_width(&mut self, width: f32) {
         self.width = width;
     }
 
+    /// Set the height of the light
     pub fn set_height(&mut self, height: f32) {
         self.height = height;
     }
@@ -225,6 +258,7 @@ impl LightDrawable for AreaLight {
     }
 }
 
+/// A directional light source with directional and distance falloff
 pub struct DirectionalLight {
     position: [f32; 3],
     direction: [f32; 3],
@@ -248,6 +282,7 @@ impl Default for DirectionalLight {
 }
 
 impl DirectionalLight {
+    /// Create a new directional light
     pub fn new(
         position: [f32; 3],
         direction: [f32; 3],
@@ -266,10 +301,14 @@ impl DirectionalLight {
         }
     }
 
+    /// Set the direction of the light
+    /// the light points in the direction of the vector
     pub fn set_direction(&mut self, x: f32, y: f32, z: f32) {
         self.direction = [x, y, z];
     }
 
+    /// Get the direction of the light
+    /// the light points in the direction of the vector
     pub fn get_direction(&self) -> [f32; 3] {
         self.direction
     }
@@ -279,14 +318,20 @@ impl DirectionalLight {
         self.color = [r, g, b];
     }
 
+    /// Set the intensity of the light
+    /// If the intensity is above 1.0, it can result in overexposure
     pub fn set_intensity(&mut self, intensity: f32) {
         self.intensity = intensity;
     }
 
+    /// Set the angular falloff of the light
+    /// 0.0 is no falloff, 1.0 is full falloff
     pub fn set_angular_falloff(&mut self, angular_falloff: f32) {
         self.angular_falloff = angular_falloff;
     }
 
+    /// Set the distance falloff of the light
+    /// 0.0 is no falloff, 1.0 is full falloff
     pub fn set_distance_falloff(&mut self, distance_falloff: f32) {
         self.distance_falloff = distance_falloff;
     }
@@ -380,17 +425,7 @@ pub(crate) fn draw_point_light(
             &shader,
             uniforms,
             &glium::DrawParameters {
-                blend: glium::Blend {
-                    color: glium::BlendingFunction::Addition {
-                        source: glium::LinearBlendingFactor::One,
-                        destination: glium::LinearBlendingFactor::One,
-                    },
-                    alpha: glium::BlendingFunction::Addition {
-                        source: glium::LinearBlendingFactor::One,
-                        destination: glium::LinearBlendingFactor::One,
-                    },
-                    constant_value: (0.0, 0.0, 0.0, 0.0),
-                },
+                blend: DEFAULT_LIGHT_BLENDING,
                 ..Default::default()
             },
         )
@@ -441,17 +476,7 @@ fn draw_area_light(
             &shader,
             uniforms,
             &glium::DrawParameters {
-                blend: glium::Blend {
-                    color: glium::BlendingFunction::Addition {
-                        source: glium::LinearBlendingFactor::One,
-                        destination: glium::LinearBlendingFactor::One,
-                    },
-                    alpha: glium::BlendingFunction::Addition {
-                        source: glium::LinearBlendingFactor::One,
-                        destination: glium::LinearBlendingFactor::One,
-                    },
-                    constant_value: (0.0, 0.0, 0.0, 0.0),
-                },
+                blend: DEFAULT_LIGHT_BLENDING,
                 ..Default::default()
             },
         )
@@ -500,17 +525,7 @@ fn draw_directional_light(
             &shader,
             uniforms,
             &glium::DrawParameters {
-                blend: glium::Blend {
-                    color: glium::BlendingFunction::Addition {
-                        source: glium::LinearBlendingFactor::One,
-                        destination: glium::LinearBlendingFactor::One,
-                    },
-                    alpha: glium::BlendingFunction::Addition {
-                        source: glium::LinearBlendingFactor::One,
-                        destination: glium::LinearBlendingFactor::One,
-                    },
-                    constant_value: (0.0, 0.0, 0.0, 0.0),
-                },
+                blend: DEFAULT_LIGHT_BLENDING,
                 ..Default::default()
             },
         )

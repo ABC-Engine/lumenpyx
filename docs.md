@@ -3,6 +3,8 @@
 ## Rendering a Sprite
 ```rust
 use lumenpyx::{lights::LightDrawable, winit::event, *};
+use lumenpyx::drawable_object::Drawable;
+use lumenpyx::primitives::{Sprite, Normal};
 
 fn main() {
     // setup your program at any resolution you would like
@@ -66,7 +68,7 @@ fn main() {
 This is not necessary to do, the default drawables that come with the library should be enough for most. However, if you have a solid understanding of OpenGL here is how you make a custom drawable.
 
 ```rust
-use lumenpyx::Drawable;
+use lumenpyx::drawable_object::Drawable;
 use lumenpyx::LumenpyxProgram;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
@@ -169,3 +171,144 @@ impl Drawable for Circle {
     }
 }
 ```
+
+## Creating Custom Lights
+This uses the same principles as the custom drawable object but takes them to the next level.
+
+```rust
+use lumenpyx::lights::DEFAULT_LIGHT_BLENDING;
+
+pub struct PointLight {
+    position: [f32; 3],
+    color: [f32; 3],
+    intensity: f32,
+    falloff: f32,
+}
+
+impl LightDrawable for PointLight {
+    fn draw(
+        &self,
+        program: &LumenpyxProgram,
+        matrix_transform: [[f32; 4]; 4],
+        albedo_framebuffer: &mut SimpleFrameBuffer,
+        height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        reflection_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    ) {
+        draw_point_light(
+            albedo_uniform,
+            height_uniform,
+            shadow_strength_uniform,
+            albedo_framebuffer,
+            program,
+            &self,
+            matrix_transform,
+        )
+    }
+
+    fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
+        if program.get_shader("point_light_shader").is_none() {
+            let shader = glium::Program::from_source(
+                &program.display,
+                POINT_LIGHT_VERTEX_SHADER_SRC,
+                POINT_LIGHT_FRAGMENT_SHADER_SRC,
+                None,
+            )
+            .unwrap();
+
+            program.add_shader(shader, "point_light_shader");
+        }
+    }
+
+    fn get_transform(&self) -> [[f32; 4]; 4] {
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [self.position[0], self.position[1], self.position[2], 0.0],
+        ]
+    }
+}
+
+
+impl LightDrawable for PointLight {
+    fn draw(
+        &self,
+        program: &LumenpyxProgram,
+        matrix_transform: [[f32; 4]; 4],
+        albedo_framebuffer: &mut SimpleFrameBuffer,
+        height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        reflection_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+        shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    ) {
+        let display = &program.display;
+        let indices = &program.indices;
+
+        // get the shader you loaded in in the load_shaders function
+        let shader = &program.get_shader("point_light_shader").unwrap();
+
+        let shape = FULL_SCREEN_QUAD;
+
+        // the magic numbers are to transform the light position from -1.0 to 1.0 to 0.0 to 1.0
+        let light_pos = [
+            ((matrix_transform[3][0]) + 1.0) * 0.5,
+            ((matrix_transform[3][1]) + 1.0) * 0.5,
+            light.position[2] * matrix_transform[2][2],
+        ];
+
+        let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+        // provide all the uniforms mentioned in your shader
+        let uniforms = &uniform! {
+            heightmap: heightmap,
+            albedomap: albedo_uniform,
+            shadow_strength_map: shadow_strength_uniform,
+            light_pos: light_pos,
+            light_color: light.color,
+            light_intensity: light.intensity,
+            light_falloff: light.falloff,
+        };
+
+        // be careful with the blending function here
+        // it should be the DEFAULT_LIGHT_BLENDING constant from the lights module
+        framebuffer
+            .draw(
+                &vertex_buffer,
+                indices,
+                &shader,
+                uniforms,
+                &glium::DrawParameters {
+                    blend: DEFAULT_LIGHT_BLENDING,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+    }
+
+    // load the shader just like in drawable object
+    fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
+        if program.get_shader("point_light_shader").is_none() {
+            let shader = glium::Program::from_source(
+                &program.display,
+                POINT_LIGHT_VERTEX_SHADER_SRC,
+                POINT_LIGHT_FRAGMENT_SHADER_SRC,
+                None,
+            )
+            .unwrap();
+
+            program.add_shader(shader, "point_light_shader");
+        }
+    }
+
+    /// this is implemented for every custom light so it can be adjusted for the camera
+    fn get_transform(&self) -> [[f32; 4]; 4] {
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [self.position[0], self.position[1], self.position[2], 0.0],
+        ]
+    }
+}

@@ -2,16 +2,24 @@ use glium;
 use glium::glutin::surface::WindowSurface;
 use glium::implement_vertex;
 use glium::Surface;
+/// This module contains all the window and display setup functions
 pub use winit;
 use winit::event_loop::EventLoop;
+/// This module contains all the objects that can be drawn in the program
 pub mod primitives;
+/// This module contains the full screen quad for custom shaders
 pub mod shaders;
 use shaders::*;
-mod drawable_object;
-pub use drawable_object::*;
+/// This module contains all the objects that can be drawn in the program
+/// As well as containing the trait that all drawable objects must implement
+pub mod drawable_object;
+use drawable_object::*;
 use rustc_hash::FxHashMap;
+/// This module contains all the lights that can be used in the program
+/// As well as containing the trait that all lights must implement
 pub mod lights;
 #[doc = include_str!("../README.md")]
+#[doc = include_str!("../docs.md")]
 
 pub(crate) const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior =
     glium::uniforms::SamplerBehavior {
@@ -48,15 +56,20 @@ impl Default for DebugOption {
     }
 }
 
+/// The main struct that contains the window and display
 pub struct LumenpyxProgram {
+    /// The window that the program is running in (this is a winit window)
     pub window: winit::window::Window,
+    /// The display that the program is running in
     pub display: glium::Display<WindowSurface>,
+    /// The indices for the program (there are no indices, but glium requires this to be here)
     pub indices: glium::index::NoIndices,
     shaders: FxHashMap<String, glium::Program>,
     dimensions: [u32; 2],
 }
 
 impl LumenpyxProgram {
+    /// Create a new program with the given resolution and name
     pub fn new(resolution: [u32; 2], name: &str) -> (LumenpyxProgram, EventLoop<()>) {
         let (event_loop, window, display, indices) = setup_program();
 
@@ -75,22 +88,27 @@ impl LumenpyxProgram {
         (program, event_loop)
     }
 
+    /// Add a shader to the program with the given name
     pub fn add_shader(&mut self, program: glium::Program, name: &str) {
         self.shaders.insert(name.to_string(), program);
     }
 
+    /// Get a shader from the program with the given name
     pub fn get_shader(&self, name: &str) -> Option<&glium::Program> {
         self.shaders.get(name)
     }
 
+    /// Remove a shader from the program
     pub fn remove_shader(&mut self, name: &str) {
         self.shaders.remove(name);
     }
 
+    /// Set the name of the window
     pub fn set_name(&mut self, name: &str) {
         self.window.set_title(name);
     }
 
+    /// run the program with the given update function
     pub fn run<F>(&mut self, event_loop: EventLoop<()>, mut update: F)
     where
         F: FnMut(&mut Self),
@@ -120,11 +138,13 @@ impl LumenpyxProgram {
     }
 }
 
+/// The transform struct is used to determine the position and scale of an object
 #[derive(Copy, Clone)]
 pub struct Transform {
     matrix: [[f32; 4]; 4],
 }
 
+// every position is multiplied by 2.0 because the shader expects the position to be in the range of -1.0 to 1.0 were as the scale of the object is 0.0 to 1.0
 impl Transform {
     // we multiply by 2.0 because the shader expects the position to be in the range of -1.0 to 1.0 were as the scale of the object is 0.0 to 1.0
     pub fn new(pos: [f32; 3]) -> Transform {
@@ -138,35 +158,44 @@ impl Transform {
         }
     }
 
+    /// Get the matrix of the transform
     pub fn get_matrix(&self) -> [[f32; 4]; 4] {
         self.matrix
     }
 
+    /// Set the matrix of the transform
     pub fn translate(&mut self, x: f32, y: f32, z: f32) {
         self.matrix[3][0] = x * 2.0;
         self.matrix[3][1] = y * 2.0;
         self.matrix[3][2] = z * 2.0;
     }
 
+    /// set the scale of the transform
     pub fn scale(&mut self, x: f32, y: f32, z: f32) {
         self.matrix[0][0] = x;
         self.matrix[1][1] = y;
         self.matrix[2][2] = z;
     }
 
+    /// set the x position of the transform
     pub fn set_x(&mut self, x: f32) {
         self.matrix[3][0] = x * 2.0;
     }
 
+    /// set the y position of the transform
     pub fn set_y(&mut self, y: f32) {
         self.matrix[3][1] = y * 2.0;
     }
 
+    /// set the z position of the transform
     pub fn set_z(&mut self, z: f32) {
         self.matrix[3][2] = z * 2.0;
     }
 }
 
+/// The vertex struct for the program.
+/// This doesn't need to be messed with unless you are making a custom shader
+/// that doesn't use the full screen quad.
 #[derive(Copy, Clone)]
 pub struct Vertex {
     position: [f32; 2],
@@ -174,7 +203,8 @@ pub struct Vertex {
 }
 implement_vertex!(Vertex, position, tex_coords);
 
-pub fn setup_program() -> (
+/// Setup the program with the window and display
+pub(crate) fn setup_program() -> (
     EventLoop<()>,
     winit::window::Window,
     glium::Display<WindowSurface>,
@@ -217,6 +247,7 @@ fn setup_window() -> (
     (event_loop, display, window, indices)
 }
 
+/// The camera struct is used to determine the position of the camera
 pub struct Camera {
     pub position: [f32; 3],
 }
@@ -227,9 +258,8 @@ impl Camera {
     }
 }
 
+/// Draw everything to the screen
 pub fn draw_all(
-    /*display: &glium::Display<WindowSurface>,
-    indices: &glium::index::NoIndices,*/
     lights: Vec<&dyn lights::LightDrawable>,
     drawables: Vec<&dyn Drawable>,
     program: &mut LumenpyxProgram,
@@ -249,6 +279,10 @@ pub fn draw_all(
         render every albedo to a texture
         render every height to a texture
         render every roughness to a texture
+        render every normal to a texture
+
+        find the difference between the last frame and this frame
+        use this to color the different pixels with the shadow strength
     STEP 2:
         take the textures and feed it into a lighting shader
         we do this for every light and then blend the results together
@@ -258,6 +292,7 @@ pub fn draw_all(
     STEP 4:
         upscale the result to the screen size
     */
+
     let display = &program.display;
 
     let albedo_texture = glium::texture::Texture2d::empty_with_format(

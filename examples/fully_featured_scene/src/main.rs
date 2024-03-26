@@ -1,4 +1,5 @@
-use lumenpyx::Texture;
+use lumenpyx::drawable_object::Drawable;
+use lumenpyx::primitives::{Normal, Sprite, Texture};
 use lumenpyx::{lights::LightDrawable, winit::event, *};
 use rand::Rng;
 
@@ -27,7 +28,7 @@ fn main() {
         "../images/Demo_Town/Demo-town-albedo-bottom.png".into(),
         "../images/Demo_Town/Demo-town-Heightmap-Bottom.png".into(),
         [0.0, 0.0, 0.0, 1.0].into(),
-        [0.01, 0.96, 0.48, 1.0].into(),
+        [0.0, 0.96, 0.48, 1.0].into(),
         &lumen_program,
         Transform::new([0.0, 0.0, 0.0]),
     );
@@ -37,7 +38,7 @@ fn main() {
         "../images/Demo_Town/Demo-town-albedo-Top.png".into(),
         "../images/Demo_Town/Demo-town-Heightmap-Top.png".into(),
         "../images/Demo_Town/Demo-town-roughness.png".into(),
-        [0.01, 0.96, 0.48, 1.0].into(),
+        [0.0, 0.96, 0.48, 1.0].into(),
         &lumen_program,
         Transform::new([0.0, 0.0, 0.0]),
     );

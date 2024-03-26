@@ -1,8 +1,7 @@
+use crate::primitives::{BASE_FRAGMENT_SHADER_SRC, BASE_VERTEX_SHADER_SRC};
 use crate::Camera;
 use crate::LumenpyxProgram;
 use crate::Vertex;
-use crate::BASE_FRAGMENT_SHADER_SRC;
-use crate::BASE_VERTEX_SHADER_SRC;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
@@ -35,6 +34,7 @@ pub(crate) const RECIEVE_SHADOWS_VERTEX_SHADER_SRC: &str =
 pub(crate) const RECIEVE_SHADOWS_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/technical_shaders/set_recieve_shadows.frag");
 
+/// A full screen quad that can be used to draw to the screen with a shader
 pub const FULL_SCREEN_QUAD: [Vertex; 6] = [
     Vertex {
         position: [-1.0, -1.0],

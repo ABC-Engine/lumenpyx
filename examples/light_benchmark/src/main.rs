@@ -1,3 +1,5 @@
+use lumenpyx::drawable_object::Drawable;
+use lumenpyx::primitives::{Normal, Sprite, Texture};
 use lumenpyx::{lights::LightDrawable, winit::event, *};
 use rand::Rng;
 
