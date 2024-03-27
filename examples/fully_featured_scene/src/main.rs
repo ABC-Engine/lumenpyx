@@ -1,13 +1,12 @@
 use lumenpyx::drawable_object::Drawable;
 use lumenpyx::primitives::{Normal, Sprite, Texture};
 use lumenpyx::{lights::LightDrawable, winit::event, *};
-use rand::Rng;
 
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
     let (mut lumen_program, event_loop) = LumenpyxProgram::new([256, 256], "fully_featured_scene");
 
-    let mut lights = vec![
+    let lights = vec![
         Box::new(lights::PointLight::new(
             [-1.52, 0.545, 1.0],
             [1.0, 0.76, 0.52],

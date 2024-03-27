@@ -79,9 +79,9 @@ use lumenpyx::Vertex;
 // put your glsl shader in a file and reference it here
 // if you don't do this the shader won't be including in the binary and it will panic
 const GENERATE_CIRCLE_VERTEX_SHADER_SRC: &str =
-    include_str!(r"examples\shaders\ahr_shaders\circle_ahr_shader.vert");
+    include_str!(r"..\shaders\primitives\circle_ahr_shader.vert");
 const GENERATE_CIRCLE_FRAGMENT_SHADER_SRC: &str =
-    include_str!(r"examples\shaders\ahr_shaders\circle_ahr_shader.frag");
+    include_str!(r"..\shaders\primitives\circle_ahr_shader.frag");
 
 
 pub struct Circle {
@@ -177,6 +177,17 @@ This uses the same principles as the custom drawable object but takes them to th
 
 ```rust
 use lumenpyx::lights::DEFAULT_LIGHT_BLENDING;
+use lumenpyx::LumenpyxProgram;
+use lumenpyx::shaders::FULL_SCREEN_QUAD;
+use glium::framebuffer::SimpleFrameBuffer;
+use lumenpyx::lights::LightDrawable;
+use glium::uniform;
+use glium::Surface;
+
+pub(crate) const POINT_LIGHT_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/shading/lighting/point_light.vert");
+pub(crate) const POINT_LIGHT_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/shading/lighting/point_light.frag");
 
 pub struct PointLight {
     position: [f32; 3],
@@ -184,53 +195,6 @@ pub struct PointLight {
     intensity: f32,
     falloff: f32,
 }
-
-impl LightDrawable for PointLight {
-    fn draw(
-        &self,
-        program: &LumenpyxProgram,
-        matrix_transform: [[f32; 4]; 4],
-        albedo_framebuffer: &mut SimpleFrameBuffer,
-        height_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-        albedo_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-        reflection_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-        shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
-    ) {
-        draw_point_light(
-            albedo_uniform,
-            height_uniform,
-            shadow_strength_uniform,
-            albedo_framebuffer,
-            program,
-            &self,
-            matrix_transform,
-        )
-    }
-
-    fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
-        if program.get_shader("point_light_shader").is_none() {
-            let shader = glium::Program::from_source(
-                &program.display,
-                POINT_LIGHT_VERTEX_SHADER_SRC,
-                POINT_LIGHT_FRAGMENT_SHADER_SRC,
-                None,
-            )
-            .unwrap();
-
-            program.add_shader(shader, "point_light_shader");
-        }
-    }
-
-    fn get_transform(&self) -> [[f32; 4]; 4] {
-        [
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [self.position[0], self.position[1], self.position[2], 0.0],
-        ]
-    }
-}
-
 
 impl LightDrawable for PointLight {
     fn draw(
@@ -255,25 +219,25 @@ impl LightDrawable for PointLight {
         let light_pos = [
             ((matrix_transform[3][0]) + 1.0) * 0.5,
             ((matrix_transform[3][1]) + 1.0) * 0.5,
-            light.position[2] * matrix_transform[2][2],
+            self.position[2] * matrix_transform[2][2],
         ];
 
         let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
         // provide all the uniforms mentioned in your shader
         let uniforms = &uniform! {
-            heightmap: heightmap,
+            heightmap: height_uniform,
             albedomap: albedo_uniform,
             shadow_strength_map: shadow_strength_uniform,
             light_pos: light_pos,
-            light_color: light.color,
-            light_intensity: light.intensity,
-            light_falloff: light.falloff,
+            light_color: self.color,
+            light_intensity: self.intensity,
+            light_falloff: self.falloff,
         };
 
         // be careful with the blending function here
         // it should be the DEFAULT_LIGHT_BLENDING constant from the lights module
-        framebuffer
+        albedo_framebuffer
             .draw(
                 &vertex_buffer,
                 indices,
