@@ -66,6 +66,8 @@ pub struct LumenpyxProgram {
     pub indices: glium::index::NoIndices,
     shaders: FxHashMap<String, glium::Program>,
     dimensions: [u32; 2],
+    pub debug: DebugOption,
+    pub render_settings: RenderSettings,
 }
 
 impl LumenpyxProgram {
@@ -79,6 +81,11 @@ impl LumenpyxProgram {
             indices,
             shaders: FxHashMap::default(),
             dimensions: resolution,
+            debug: DebugOption::None,
+            render_settings: RenderSettings {
+                shadows: true,
+                reflections: true,
+            },
         };
 
         program.set_name(name);
@@ -106,6 +113,21 @@ impl LumenpyxProgram {
     /// Set the name of the window
     pub fn set_name(&mut self, name: &str) {
         self.window.set_title(name);
+    }
+
+    /// Set the debug option of the program
+    pub fn set_debug(&mut self, debug: DebugOption) {
+        self.debug = debug;
+    }
+
+    /// Set the render settings of the program
+    pub fn set_render_settings(&mut self, settings: RenderSettings) {
+        self.render_settings = settings;
+    }
+
+    /// Set the resolution of the program
+    pub fn set_resolution(&mut self, resolution: [u32; 2]) {
+        self.dimensions = resolution;
     }
 
     /// run the program with the given update function
@@ -258,13 +280,17 @@ impl Camera {
     }
 }
 
+pub struct RenderSettings {
+    pub shadows: bool,
+    pub reflections: bool,
+}
+
 /// Draw everything to the screen
 pub fn draw_all(
     lights: Vec<&dyn lights::LightDrawable>,
     drawables: Vec<&dyn Drawable>,
     program: &mut LumenpyxProgram,
     camera: &Camera,
-    debug: DebugOption,
 ) {
     // this is kind of inefficient, but it works for now
     for drawable in &drawables {
@@ -294,6 +320,8 @@ pub fn draw_all(
     */
 
     let display = &program.display;
+    let debug = &program.debug;
+    let render_settings = &program.render_settings;
 
     let albedo_texture = glium::texture::Texture2d::empty_with_format(
         display,
@@ -396,27 +424,29 @@ pub fn draw_all(
                 &mut normal_framebuffer,
             );
 
-            let shadow_strength = drawable.get_recieve_shadows_strength();
+            if render_settings.shadows {
+                let shadow_strength = drawable.get_recieve_shadows_strength();
 
-            shaders::draw_recieve_shadows(
-                &mut shadow_strength_framebuffer,
-                &program,
-                shadow_strength,
-                last_drawable_sampler,
-                this_drawable_sampler,
-            );
+                shaders::draw_recieve_shadows(
+                    &mut shadow_strength_framebuffer,
+                    &program,
+                    shadow_strength,
+                    last_drawable_sampler,
+                    this_drawable_sampler,
+                );
 
-            // copy the albedo to the last drawable framebuffer
-            albedo_framebuffer.blit_whole_color_to(
-                &last_drawable_framebuffer,
-                &glium::BlitTarget {
-                    left: 0,
-                    bottom: 0,
-                    width: program.dimensions[0] as i32,
-                    height: program.dimensions[1] as i32,
-                },
-                glium::uniforms::MagnifySamplerFilter::Nearest,
-            );
+                // copy the albedo to the last drawable framebuffer
+                albedo_framebuffer.blit_whole_color_to(
+                    &last_drawable_framebuffer,
+                    &glium::BlitTarget {
+                        left: 0,
+                        bottom: 0,
+                        width: program.dimensions[0] as i32,
+                        height: program.dimensions[1] as i32,
+                    },
+                    glium::uniforms::MagnifySamplerFilter::Nearest,
+                );
+            }
         }
     }
 
@@ -429,7 +459,7 @@ pub fn draw_all(
     )
     .expect("Failed to create lit frame buffer");
 
-    {
+    if render_settings.shadows {
         let albedo = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
         let height_sampler = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
         let roughness_sampler = glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR);
@@ -471,11 +501,15 @@ pub fn draw_all(
     )
     .expect("Failed to create reflected frame buffer");
 
-    {
+    if render_settings.reflections {
         let roughness = glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR);
         let height = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
         let normal = glium::uniforms::Sampler(&normal_texture, DEFAULT_BEHAVIOR);
-        let lit_sampler = glium::uniforms::Sampler(&lit_texture, DEFAULT_BEHAVIOR);
+        let lit_sampler = if render_settings.shadows {
+            glium::uniforms::Sampler(&lit_texture, DEFAULT_BEHAVIOR)
+        } else {
+            glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR)
+        };
 
         let mut reflected_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, &reflected_texture).unwrap();

@@ -59,7 +59,7 @@ fn main() {
             lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
 
         // Finally, we draw all of them, this needs to happen every frame
-        draw_all(light_refs, drawable_refs, &mut program, &camera, DebugOption::None);
+        draw_all(light_refs, drawable_refs, &mut program, &camera);
     });
 }
 ```

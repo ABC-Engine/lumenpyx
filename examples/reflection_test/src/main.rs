@@ -50,7 +50,6 @@ fn main() {
             drawable_refs,
             &mut program,
             &Camera::new([t.sin(), 0.0, 1.0]),
-            DebugOption::None,
         );
     });
 }

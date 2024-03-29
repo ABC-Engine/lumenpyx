@@ -56,7 +56,7 @@ fn main() {
         }
 
         {
-            t += 0.005;
+            t += 0.01;
             camera.position = [(t * 0.1).sin(), 0.0, 200.0];
 
             scene_drawable_bottom.transform.set_x((t * 0.1).sin() * 0.1)
@@ -65,12 +65,6 @@ fn main() {
         let drawable_refs: Vec<&dyn Drawable> = vec![&scene_drawable_bottom, &scene_drawable_top];
         let light_refs: Vec<&dyn LightDrawable> =
             lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
-        draw_all(
-            light_refs,
-            drawable_refs,
-            &mut program,
-            &camera,
-            DebugOption::None,
-        );
+        draw_all(light_refs, drawable_refs, &mut program, &camera);
     });
 }
