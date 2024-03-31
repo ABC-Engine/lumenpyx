@@ -34,6 +34,12 @@ pub(crate) const RECIEVE_SHADOWS_VERTEX_SHADER_SRC: &str =
 pub(crate) const RECIEVE_SHADOWS_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/technical_shaders/set_recieve_shadows.frag");
 
+pub(crate) const FILL_ALPHA_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/fill_alpha.vert");
+
+pub(crate) const FILL_ALPHA_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/fill_alpha.frag");
+
 /// A full screen quad that can be used to draw to the screen with a shader
 pub const FULL_SCREEN_QUAD: [Vertex; 6] = [
     Vertex {
@@ -218,6 +224,60 @@ pub(crate) fn draw_generate_normals(
         .unwrap();
 }
 
+pub(crate) fn draw_fill_alpha(
+    framebuffer: &mut SimpleFrameBuffer,
+    program: &LumenpyxProgram,
+    target_sampler: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    fill_color: [f32; 4],
+) {
+    let display = &program.display;
+    let indices = &program.indices;
+    let shader = &program.get_shader("fill_alpha").unwrap();
+
+    let shape = FULL_SCREEN_QUAD;
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        target_fill: target_sampler,
+        color_fill: fill_color,
+    };
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &shader,
+            uniforms,
+            &Default::default(),
+        )
+        .unwrap();
+}
+
+pub(crate) fn new_fill_alpha_texure(
+    program: &LumenpyxProgram,
+    albedo_sampler: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    color: [f32; 4],
+) -> glium::texture::Texture2d {
+    let display = &program.display;
+    let dimensions = albedo_sampler.0.dimensions();
+
+    let texture = glium::texture::Texture2d::empty_with_format(
+        display,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::MipmapsOption::NoMipmap,
+        dimensions.0,
+        dimensions.1,
+    )
+    .unwrap();
+
+    let mut framebuffer = glium::framebuffer::SimpleFrameBuffer::new(display, &texture)
+        .expect("Failed to create framebuffer for height texture");
+    draw_fill_alpha(&mut framebuffer, program, albedo_sampler, color);
+
+    texture
+}
+
 // Profiling seems to indicate that the glium clear color is the slowest part of the rendering
 // process. So this this is a simpler and faster version of the clear color function
 pub(crate) fn faster_clear_color(
@@ -344,5 +404,17 @@ pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
         .expect("Failed to load reflection shader");
 
         program.add_shader(reflection_shader, "reflection_shader");
+    }
+
+    {
+        let display = &program.display;
+        let shader = glium::Program::from_source(
+            display,
+            FILL_ALPHA_VERTEX_SHADER_SRC,
+            FILL_ALPHA_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+        program.add_shader(shader, "fill_alpha");
     }
 }

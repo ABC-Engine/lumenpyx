@@ -193,7 +193,7 @@ impl Transform {
     }
 
     /// set the scale of the transform
-    pub fn scale(&mut self, x: f32, y: f32, z: f32) {
+    pub fn set_scale(&mut self, x: f32, y: f32, z: f32) {
         self.matrix[0][0] = x;
         self.matrix[1][1] = y;
         self.matrix[2][2] = z;
@@ -201,17 +201,32 @@ impl Transform {
 
     /// set the x position of the transform
     pub fn set_x(&mut self, x: f32) {
-        self.matrix[3][0] = x * 2.0;
+        self.matrix[3][0] = x;
+    }
+
+    /// get the x position of the transform
+    pub fn get_x(&self) -> f32 {
+        self.matrix[3][0] / 2.0
     }
 
     /// set the y position of the transform
     pub fn set_y(&mut self, y: f32) {
-        self.matrix[3][1] = y * 2.0;
+        self.matrix[3][1] = y;
+    }
+
+    /// get the y position of the transform
+    pub fn get_y(&self) -> f32 {
+        self.matrix[3][1]
     }
 
     /// set the z position of the transform
     pub fn set_z(&mut self, z: f32) {
-        self.matrix[3][2] = z * 2.0;
+        self.matrix[3][2] = z;
+    }
+
+    /// get the z position of the transform
+    pub fn get_z(&self) -> f32 {
+        self.matrix[3][2]
     }
 }
 

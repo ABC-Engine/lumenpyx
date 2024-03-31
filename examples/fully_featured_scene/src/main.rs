@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use lumenpyx::drawable_object::Drawable;
 use lumenpyx::primitives::{Normal, Sprite, Texture};
 use lumenpyx::{lights::LightDrawable, winit::event, *};
@@ -5,19 +7,26 @@ use lumenpyx::{lights::LightDrawable, winit::event, *};
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
     let (mut lumen_program, event_loop) = LumenpyxProgram::new([256, 256], "fully_featured_scene");
+    lumen_program.set_debug(DebugOption::None);
 
-    let lights = vec![
+    let mut lights = vec![
         Box::new(lights::PointLight::new(
             [-1.52, 0.545, 1.0],
             [1.0, 0.76, 0.52],
             1.0,
-            0.01,
+            0.025,
         )),
         Box::new(lights::PointLight::new(
             [1.49, 0.545, 1.0],
             [1.0, 0.76, 0.52],
             1.0,
-            0.01,
+            0.025,
+        )),
+        Box::new(lights::PointLight::new(
+            [1.49, 0.545, 1.0],
+            [1.0, 0.76, 0.52],
+            1.0,
+            0.05,
         )),
     ];
 
@@ -42,12 +51,41 @@ fn main() {
         Transform::new([0.0, 0.0, 0.0]),
     );
 
+    let mut skeleton_sprites = vec![];
+    for i in 0..13 {
+        let path = format!(
+            "../images/Skeleton Walk/Animation/Skeleton Walk{}.png",
+            i + 1
+        );
+
+        let mut transform = Transform::new([0.0, 0.05, 0.0]);
+        transform.set_scale(2.0, 2.0, 1.0);
+        skeleton_sprites.push(Sprite::new(
+            path.into(),
+            0.34.into(),
+            0.0.into(),
+            Default::default(),
+            &lumen_program,
+            Transform::new([0.0, 0.063, 0.0]),
+        ));
+    }
+
     let mut distance_to_60_frame = 0.0;
     let mut start_of_60_frame = std::time::Instant::now();
     let mut camera = Camera::new([0.0, 0.0, 200.0]);
 
-    let mut t: f32 = 0.0;
+    let total_time = Instant::now();
+    let mut duration_already_passed = Duration::new(0, 0);
+    let mut direction = 1.0;
+    let mut skeleton_x = 0.0;
+
     lumen_program.run(event_loop, |mut program| {
+        let delta_time = total_time.elapsed() - duration_already_passed;
+        duration_already_passed = total_time.elapsed();
+
+        let delta_secs = delta_time.as_secs_f32();
+        let total_secs = total_time.elapsed().as_secs_f32();
+
         distance_to_60_frame -= 1.0;
         if distance_to_60_frame < 0.0 {
             println!("FPS: {}", 60.0 / start_of_60_frame.elapsed().as_secs_f32());
@@ -56,13 +94,37 @@ fn main() {
         }
 
         {
-            t += 0.01;
-            camera.position = [(t * 0.1).sin(), 0.0, 200.0];
+            camera.position = [(total_secs * 0.2).sin(), 0.0, 200.0];
 
-            scene_drawable_bottom.transform.set_x((t * 0.1).sin() * 0.1)
+            scene_drawable_bottom
+                .transform
+                .set_x((total_secs * 0.2).sin() * 0.1);
+        }
+        let displayed_sprite = &mut skeleton_sprites[(total_secs * 10.0) as usize % 13];
+        // walk back and forth on the x axis
+        {
+            let duration_to_walk_across = 10.0;
+            skeleton_x += (delta_secs / duration_to_walk_across) * direction;
+            if skeleton_x > 1.0 {
+                direction = -1.0;
+            } else if skeleton_x < -1.0 {
+                direction = 1.0;
+            }
+            displayed_sprite.transform.set_x(skeleton_x);
+            lights[2].set_position(skeleton_x, 0.063, 1.0);
+
+            if direction == 1.0 {
+                displayed_sprite.transform.set_scale(1.0, 1.0, 1.0);
+            } else {
+                displayed_sprite.transform.set_scale(-1.0, 1.0, 1.0);
+            }
         }
 
-        let drawable_refs: Vec<&dyn Drawable> = vec![&scene_drawable_bottom, &scene_drawable_top];
+        let drawable_refs: Vec<&dyn Drawable> = vec![
+            &scene_drawable_bottom,
+            &scene_drawable_top,
+            displayed_sprite,
+        ];
         let light_refs: Vec<&dyn LightDrawable> =
             lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
         draw_all(light_refs, drawable_refs, &mut program, &camera);
