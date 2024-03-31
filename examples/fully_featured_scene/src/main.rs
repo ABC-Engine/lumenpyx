@@ -14,13 +14,13 @@ fn main() {
             [-1.52, 0.545, 1.0],
             [1.0, 0.76, 0.52],
             1.0,
-            0.025,
+            0.02,
         )),
         Box::new(lights::PointLight::new(
             [1.49, 0.545, 1.0],
             [1.0, 0.76, 0.52],
             1.0,
-            0.025,
+            0.02,
         )),
         Box::new(lights::PointLight::new(
             [1.49, 0.545, 1.0],
@@ -51,6 +51,7 @@ fn main() {
         Transform::new([0.0, 0.0, 0.0]),
     );
 
+    // credit to https://jesse-m.itch.io/skeleton-pack for the free assets
     let mut skeleton_sprites = vec![];
     for i in 0..13 {
         let path = format!(
@@ -83,8 +84,8 @@ fn main() {
         let delta_time = total_time.elapsed() - duration_already_passed;
         duration_already_passed = total_time.elapsed();
 
-        let delta_secs = delta_time.as_secs_f32();
-        let total_secs = total_time.elapsed().as_secs_f32();
+        let delta_secs = delta_time.as_secs_f32() * 2.0;
+        let total_secs = total_time.elapsed().as_secs_f32() * 2.0;
 
         distance_to_60_frame -= 1.0;
         if distance_to_60_frame < 0.0 {
@@ -93,13 +94,6 @@ fn main() {
             start_of_60_frame = std::time::Instant::now();
         }
 
-        {
-            camera.position = [(total_secs * 0.2).sin(), 0.0, 200.0];
-
-            scene_drawable_bottom
-                .transform
-                .set_x((total_secs * 0.2).sin() * 0.1);
-        }
         let displayed_sprite = &mut skeleton_sprites[(total_secs * 10.0) as usize % 13];
         // walk back and forth on the x axis
         {
@@ -111,13 +105,20 @@ fn main() {
                 direction = 1.0;
             }
             displayed_sprite.transform.set_x(skeleton_x);
-            lights[2].set_position(skeleton_x, 0.063, 1.0);
 
             if direction == 1.0 {
                 displayed_sprite.transform.set_scale(1.0, 1.0, 1.0);
+                lights[2].set_position(skeleton_x + 0.035, 0.12, 1.0);
             } else {
                 displayed_sprite.transform.set_scale(-1.0, 1.0, 1.0);
+                lights[2].set_position(skeleton_x - 0.035, 0.12, 1.0);
             }
+        }
+
+        {
+            camera.position = [skeleton_x, 0.0, 200.0];
+
+            scene_drawable_bottom.transform.set_x(skeleton_x * 0.1);
         }
 
         let drawable_refs: Vec<&dyn Drawable> = vec![
