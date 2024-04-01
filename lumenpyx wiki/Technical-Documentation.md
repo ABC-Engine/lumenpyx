@@ -1,0 +1,1 @@
+This section is about the inner workings of the renderer. 

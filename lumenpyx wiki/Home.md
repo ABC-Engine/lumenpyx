@@ -1,0 +1,1 @@
+Welcome to the lumenpyx wiki! I keep some docs in here for now. I might make a dedicated domain for it in the future. If you are just getting started I would recommend starting at [Rendering A Sprite](https://github.com/ABC-Engine/lumenpyx/wiki/Rendering-a-Sprite).

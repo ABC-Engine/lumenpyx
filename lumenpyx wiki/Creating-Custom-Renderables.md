@@ -1,0 +1,1 @@
+This section is about creating custom objects with their own rendering procedures. Be warned learning the basics of OpenGL is required for this.

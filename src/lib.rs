@@ -18,8 +18,15 @@ use rustc_hash::FxHashMap;
 /// This module contains all the lights that can be used in the program
 /// As well as containing the trait that all lights must implement
 pub mod lights;
-#[doc = include_str!("../README.md")]
-#[doc = include_str!("../docs.md")]
+
+// include the whole lumenpyx.wiki folder into the documentation
+#[doc = include_str!("../lumenpyx wiki/Home.md")]
+#[doc = include_str!("../lumenpyx wiki/Common-problems-and-their-solutions.md")]
+#[doc = include_str!("../lumenpyx wiki/Creating-custom-drawable-objects.md")]
+#[doc = include_str!("../lumenpyx wiki/Creating-Custom-Lights.md")]
+#[doc = include_str!("../lumenpyx wiki/Creating-Custom-Renderables.md")]
+#[doc = include_str!("../lumenpyx wiki/Rendering-a-Sprite.md")]
+#[doc = include_str!("../lumenpyx wiki/Technical-Documentation.md")]
 
 pub(crate) const DEFAULT_BEHAVIOR: glium::uniforms::SamplerBehavior =
     glium::uniforms::SamplerBehavior {
