@@ -13,6 +13,7 @@ I re-export the winit crate because it is necessary for window management.
 # Getting Started
 Check out the wiki, I put some docs in there. I will keep updated as time goes on. If there is anything that you would like a docs page for let me know! 
 * [Getting Started][home]
+  * [Making Sprites][makingsprites]
   * [Rendering a Sprite][renderingasprite]
 * [Common Problems and Their Solutions][commonproblemsandsolutions]
   * [Lines in Reflections][linesinreflections]
@@ -29,6 +30,9 @@ Check out the wiki, I put some docs in there. I will keep updated as time goes o
 [customlights]: https://github.com/ABC-Engine/lumenpyx/wiki/Creating-Custom-Lights
 [customrenderables]: https://github.com/ABC-Engine/lumenpyx/wiki/Creating-Custom-Renderables
 [renderingasprite]: https://github.com/ABC-Engine/lumenpyx/wiki/Rendering-a-Sprite
+[linesinreflections]: https://github.com/ABC-Engine/lumenpyx/wiki/Lines-in-reflections
+[shadowsystem]: https://github.com/ABC-Engine/lumenpyx/wiki/The-shadows-system
+[makingsprites]: https://github.com/ABC-Engine/lumenpyx/wiki/Making-Sprites
 [linesinreflections]: https://github.com/ABC-Engine/lumenpyx/wiki/Lines-in-reflections
 [shadowsystem]: https://github.com/ABC-Engine/lumenpyx/wiki/The-shadows-system
 
