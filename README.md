@@ -11,4 +11,26 @@ This is the best example I have for now, the renderer is capable of much more th
 I re-export the winit crate because it is necessary for window management.
 
 # Getting Started
-Check out the wiki, I put some docs in there. I will keep updated as time goes on. If there is anything that you would like a docs page for let me know! [Check it out here!](https://github.com/ABC-Engine/lumenpyx/wiki)
+Check out the wiki, I put some docs in there. I will keep updated as time goes on. If there is anything that you would like a docs page for let me know! 
+* [Getting Started][home]
+  * [Rendering a Sprite][renderingasprite]
+* [Common Problems and Their Solutions][commonproblemsandsolutions]
+  * [Lines in Reflections][linesinreflections]
+* [Technical documentation][techdocs]
+  * [The Shadow System][shadowsystem]
+* [Creating Custom Renderables][customrenderables]
+  * [Creating Custom Drawable Objects][customdrawableobjects]
+  * [Creating Custom Lights][customlights]
+
+[home]: https://github.com/ABC-Engine/lumenpyx/wiki
+[techdocs]: https://github.com/ABC-Engine/lumenpyx/wiki/Technical-Documentation
+[commonproblemsandsolutions]: https://github.com/ABC-Engine/lumenpyx/wiki/Common-problems-and-their-solutions
+[customdrawableobjects]: https://github.com/ABC-Engine/lumenpyx/wiki/Creating-custom-drawable-objects
+[customlights]: https://github.com/ABC-Engine/lumenpyx/wiki/Creating-Custom-Lights
+[customrenderables]: https://github.com/ABC-Engine/lumenpyx/wiki/Creating-Custom-Renderables
+[renderingasprite]: https://github.com/ABC-Engine/lumenpyx/wiki/Rendering-a-Sprite
+[linesinreflections]: https://github.com/ABC-Engine/lumenpyx/wiki/Lines-in-reflections
+[shadowsystem]: https://github.com/ABC-Engine/lumenpyx/wiki/The-shadows-system
+
+# Contibuting
+Contributions are welcome! Start by filing an issue and we can work forward from there! If you're not sure what to work on but you want to help [Join the discord and ping me](https://discord.gg/6nTvhYRfpm), I'm happy to help!
