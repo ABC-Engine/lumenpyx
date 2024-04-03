@@ -43,5 +43,5 @@ You can find the crate [here](https://crates.io/crates/lumenpyx) and download it
 [linesinreflections]: https://github.com/ABC-Engine/lumenpyx/wiki/Lines-in-reflections
 [shadowsystem]: https://github.com/ABC-Engine/lumenpyx/wiki/The-shadows-system
 
-# Contibuting
+# Contributing
 Contributions are welcome! Start by filing an issue and we can work forward from there! If you're not sure what to work on but you want to help [Join the discord and ping me](https://discord.gg/6nTvhYRfpm), I'm happy to help!
