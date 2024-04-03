@@ -798,22 +798,16 @@ impl Drawable for Sprite {
         let width = self.albedo_texture.get_width() as f32;
         let height = self.albedo_texture.get_height().unwrap() as f32;
         let mut transform_matrix = transform_matrix;
-        if width > height {
-            transform_matrix[0][0] *= width / height;
-        } else {
-            transform_matrix[1][1] *= height / width;
-        };
 
         // adjust size of the sprite to match the texture
         {
-            let x_scale = self.albedo_texture.get_width() as f32
-                / albedo_framebuffer.get_dimensions().0 as f32;
-            let y_scale = self.albedo_texture.get_height().unwrap() as f32
-                / albedo_framebuffer.get_dimensions().1 as f32;
+            let smallest_dimension = (albedo_framebuffer.get_dimensions().1 as f32)
+                .min(albedo_framebuffer.get_dimensions().0 as f32);
+            let x_scale = width as f32 / smallest_dimension;
+            let y_scale = height as f32 / smallest_dimension;
 
-            transform_matrix[0][0] *= x_scale.min(y_scale);
-            transform_matrix[1][1] *= x_scale.min(y_scale);
-            println!("scale x: {:?}, scale y: {:?}", x_scale, y_scale);
+            transform_matrix[0][0] *= x_scale;
+            transform_matrix[1][1] *= y_scale;
         }
 
         let uniform = &uniform! {

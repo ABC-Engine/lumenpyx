@@ -1,4 +1,5 @@
-Here's how you render a sprite using lumenpyx. This uses the sprite primitve to render a full scene with no moving parts.
+Here 's how you render a sprite using lumenpyx. This uses the sprite primitve to render a full scene with no moving parts.
+
 ```rust
 use lumenpyx::{lights::LightDrawable, winit::event, *};
 use lumenpyx::drawable_object::Drawable;

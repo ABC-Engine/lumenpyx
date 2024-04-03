@@ -15,4 +15,3 @@ glium = "0.34.0"
 image = "0.24.7"
 rustc-hash = "1.1.0"
 winit = "0.29.9"
-
