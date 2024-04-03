@@ -7,6 +7,9 @@
 This is the best example I have for now, the renderer is capable of much more than this, but I'm not a great artist.
 <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlxYXdyMmdkNmp5MGlkZDYxcWxlaTVlaGttaXowdHNnNDZveGdtMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/NGyyKxJbvJy5IIQkYa/giphy.gif" width="100%" height="auto"/>
 
+# Compatibility
+Because of the use of the winit crate this library is currently windows only.
+
 # Re-Exports
 I re-export the winit crate because it is necessary for window management.
 
