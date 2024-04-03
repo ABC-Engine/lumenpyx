@@ -11,7 +11,7 @@ This is the best example I have for now, the renderer is capable of much more th
 I re-export the winit crate because it is necessary for window management.
 
 # Getting Started
-Check out the wiki, I put some docs in there. I will keep updated as time goes on. If there is anything that you would like a docs page for let me know! 
+You can download the crate [here](https://crates.io/crates/lumenpyx). Check out the wiki, I put some docs in there. I will keep updated as time goes on. If there is anything that you would like a docs page for let me know! 
 * [Getting Started][home]
   * [Making Sprites][makingsprites]
   * [Rendering a Sprite][renderingasprite]
