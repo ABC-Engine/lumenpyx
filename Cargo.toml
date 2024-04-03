@@ -9,7 +9,7 @@ readme = "README.md"
 homepage = "https://github.com/ABC-Engine/lumenpyx"
 repository = "https://github.com/ABC-Engine/lumenpyx"
 license = "MIT"
-keywords = ["graphics", "2d", "pixel-art", "lighting", "renderer", "gamedev"]
+keywords = ["graphics", "pixel-art", "lighting", "renderer", "gamedev"]
 authors = ["ABC-Engine", "Ethan Almloff"]
 categories = ["graphics", "game-development", "rendering", "rendering::engine"]
 
