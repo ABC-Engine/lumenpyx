@@ -3,6 +3,17 @@ workspace = { members = ["examples/dungeon", "examples/fully_featured_scene", "e
 name = "lumenpyx"
 version = "0.1.0"
 edition = "2021"
+description = "A 2D pixel art renderer with realistic lighting"
+documentation = "https://github.com/ABC-Engine/lumenpyx/wiki"
+readme = "README.md"
+homepage = "https://github.com/ABC-Engine/lumenpyx"
+repository = "https://github.com/ABC-Engine/lumenpyx"
+license = "MIT"
+keywords = ["graphics", "2d", "pixel-art", "lighting", "renderer", "gamedev"]
+authors = ["ABC-Engine", "Ethan Almloff"]
+categories = ["graphics", "game-development", "rendering", "rendering::engine"]
+
+
 
 [lib]
 name = "lumenpyx"
