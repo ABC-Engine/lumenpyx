@@ -8,13 +8,14 @@ This is the best example I have for now, the renderer is capable of much more th
 <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlxYXdyMmdkNmp5MGlkZDYxcWxlaTVlaGttaXowdHNnNDZveGdtMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/NGyyKxJbvJy5IIQkYa/giphy.gif" width="100%" height="auto"/>
 
 # Compatibility
-Because of the use of the winit crate this library is currently windows only.
+Because of the use of the Winit crate, this library is currently Windows only.
 
 # Re-Exports
-I re-export the winit crate because it is necessary for window management.
+I re-export the Winit crate because it is necessary for window management.
 
 # Getting Started
-You can find the crate [here](https://crates.io/crates/lumenpyx) and download it using ```cargo add lumenpyx```. Check out the wiki, I put some docs in there. I will keep updated as time goes on. If there is anything that you would like a docs page for let me know! 
+You can find the crate [here](https://crates.io/crates/lumenpyx) and download it using ```cargo add lumenpyx```. Check out [the discord](https://discord.gg/55R3GsBSYC), we've got a help channel. Check out the [wiki](https://github.com/ABC-Engine/lumenpyx/wiki), the docs for this library are kept there. I will keep updated as time goes on. If there is anything that you would like a docs page for let me know! 
+
 * [Getting Started][home]
   * [Making Sprites][makingsprites]
   * [Rendering a Sprite][renderingasprite]
