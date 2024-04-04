@@ -42,7 +42,7 @@ fn main() {
     );
     scene_drawable_bottom.set_shadow_strength(0.0);
 
-    let scene_drawable_top = Sprite::new(
+    let mut scene_drawable_top = Sprite::new(
         "../images/Demo_Town/Demo-town-albedo-Top.png".into(),
         "../images/Demo_Town/Demo-town-Heightmap-Top.png".into(),
         "../images/Demo_Town/Demo-town-roughness.png".into(),
@@ -50,6 +50,7 @@ fn main() {
         &lumen_program,
         Transform::new([0.0, 0.0, 0.0]),
     );
+    scene_drawable_top.set_shadow_strength(1.0);
 
     // credit to https://jesse-m.itch.io/skeleton-pack for the free assets
     let mut skeleton_sprites = vec![];
@@ -61,14 +62,16 @@ fn main() {
 
         let mut transform = Transform::new([0.0, 0.05, 0.0]);
         transform.set_scale(2.0, 2.0, 1.0);
-        skeleton_sprites.push(Sprite::new(
+        let mut sprite = Sprite::new(
             path.into(),
             0.34.into(),
             0.0.into(),
             Default::default(),
             &lumen_program,
             Transform::new([0.0, 0.063, 0.0]),
-        ));
+        );
+        sprite.set_shadow_strength(1.0);
+        skeleton_sprites.push(sprite);
     }
 
     let mut distance_to_60_frame = 0.0;
