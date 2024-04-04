@@ -5,7 +5,9 @@
 
 # Examples
 This is the best example I have for now, the renderer is capable of much more than this, but I'm not a great artist.
-<img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlxYXdyMmdkNmp5MGlkZDYxcWxlaTVlaGttaXowdHNnNDZveGdtMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/NGyyKxJbvJy5IIQkYa/giphy.gif" width="100%" height="auto"/>
+
+https://github.com/ABC-Engine/lumenpyx/assets/76850177/a4d73ff0-6991-4e6d-9390-1343b29a99fb
+
 Here is a static scene:
 ![image](https://github.com/ABC-Engine/lumenpyx/assets/76850177/385e640b-97c9-4b45-aa86-496ad5e474b2)
 
