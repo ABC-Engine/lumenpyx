@@ -13,7 +13,7 @@ Here is a static scene:
 
 
 # Compatibility
-Because of the use of the Winit crate, this library is currently Windows only.
+This crate is cross-platform.
 
 # Re-Exports
 I re-export the Winit crate because it is necessary for window management.
