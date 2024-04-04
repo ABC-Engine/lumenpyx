@@ -4,7 +4,7 @@
 <h2 align="center"> A unique 2D-pixel art renderer with heightmaps to simulate 3d shadows. </h2>
 
 # Examples
-This is the best example I have for now, the renderer is capable of much more than this, but I'm not a great artist.
+This is the best example I have for now, the renderer is capable of much more than this, but I'm not a great artist. If this video doesn't load you can view it [here](https://jumpshare.com/v/Qby5rxmfNWXRzXbELPK6?b=nQ38KY77bXG1w5YSpTeR).
 
 https://github.com/ABC-Engine/lumenpyx/assets/76850177/a4d73ff0-6991-4e6d-9390-1343b29a99fb
 
