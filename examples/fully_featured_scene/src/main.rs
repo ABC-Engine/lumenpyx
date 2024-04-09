@@ -1,8 +1,8 @@
 use std::time::{Duration, Instant};
 
 use lumenpyx::drawable_object::Drawable;
-use lumenpyx::primitives::{Normal, Sprite, Texture};
-use lumenpyx::{lights::LightDrawable, winit::event, *};
+use lumenpyx::primitives::Sprite;
+use lumenpyx::{lights::LightDrawable, *};
 
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
@@ -68,7 +68,7 @@ fn main() {
             0.0.into(),
             Default::default(),
             &lumen_program,
-            Transform::new([0.0, 0.063, 0.0]),
+            Transform::new([0.0, 0.126, 0.0]),
         );
         sprite.set_shadow_strength(1.0);
         skeleton_sprites.push(sprite);

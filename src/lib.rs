@@ -173,16 +173,14 @@ pub struct Transform {
     matrix: [[f32; 4]; 4],
 }
 
-// every position is multiplied by 2.0 because the shader expects the position to be in the range of -1.0 to 1.0 were as the scale of the object is 0.0 to 1.0
 impl Transform {
-    // we multiply by 2.0 because the shader expects the position to be in the range of -1.0 to 1.0 were as the scale of the object is 0.0 to 1.0
     pub fn new(pos: [f32; 3]) -> Transform {
         Transform {
             matrix: [
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
-                [pos[0] * 2.0, pos[1] * 2.0, pos[2] * 2.0, 1.0],
+                [pos[0], pos[1], pos[2], 1.0],
             ],
         }
     }
@@ -194,9 +192,9 @@ impl Transform {
 
     /// Set the matrix of the transform
     pub fn translate(&mut self, x: f32, y: f32, z: f32) {
-        self.matrix[3][0] = x * 2.0;
-        self.matrix[3][1] = y * 2.0;
-        self.matrix[3][2] = z * 2.0;
+        self.matrix[3][0] = x;
+        self.matrix[3][1] = y;
+        self.matrix[3][2] = z;
     }
 
     /// set the scale of the transform
@@ -213,7 +211,7 @@ impl Transform {
 
     /// get the x position of the transform
     pub fn get_x(&self) -> f32 {
-        self.matrix[3][0] / 2.0
+        self.matrix[3][0]
     }
 
     /// set the y position of the transform
