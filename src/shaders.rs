@@ -2,10 +2,10 @@ use crate::primitives::{BASE_FRAGMENT_SHADER_SRC, BASE_VERTEX_SHADER_SRC};
 use crate::Camera;
 use crate::LumenpyxProgram;
 use crate::Vertex;
-use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
 use glium::Surface;
+use glium::{self, BlitTarget};
 
 // include the vertex and fragment shaders in the library
 pub(crate) const REFLECTION_VERTEX_SHADER_SRC: &str =
@@ -72,9 +72,65 @@ pub const FULL_SCREEN_QUAD: [Vertex; 6] = [
 pub(crate) fn draw_upscale(
     image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     lumenpyx_program: &LumenpyxProgram,
+    window_resolution: [u32; 2],
 ) {
     let display = &lumenpyx_program.display;
     let indices = &lumenpyx_program.indices;
+
+    // make a new texture that crops the image to the correct window resolution
+    let new_texture = glium::texture::Texture2d::empty_with_format(
+        display,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::MipmapsOption::NoMipmap,
+        window_resolution[0],
+        window_resolution[1],
+    )
+    .unwrap();
+
+    let image_uniform = image_uniform
+        .anisotropy(1)
+        .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
+        .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest);
+
+    let new_uniform = match image_uniform.0.dimensions()
+        == (window_resolution[0], window_resolution[1])
+    {
+        true => image_uniform,
+        false => {
+            if image_uniform.0.dimensions() != (window_resolution[0], window_resolution[1]) {
+                let framebuffer = glium::framebuffer::SimpleFrameBuffer::new(display, &new_texture)
+                    .expect("Failed to create framebuffer for height texture");
+                let image_framebuffer =
+                    glium::framebuffer::SimpleFrameBuffer::new(display, image_uniform.0)
+                        .expect("Failed to create framebuffer for height texture");
+
+                let x_res_diff = (image_uniform.0.dimensions().0 - window_resolution[0]) / 2;
+                let y_res_diff = (image_uniform.0.dimensions().1 - window_resolution[1]) / 2;
+                println!("x_res_diff: {}, y_res_diff: {}", x_res_diff, y_res_diff);
+
+                image_framebuffer.blit_color(
+                    &glium::Rect {
+                        left: x_res_diff,
+                        bottom: y_res_diff,
+                        width: window_resolution[0] + x_res_diff,
+                        height: window_resolution[1] + y_res_diff,
+                    },
+                    &framebuffer,
+                    &glium::BlitTarget {
+                        left: 0,
+                        bottom: 0,
+                        width: window_resolution[0] as i32,
+                        height: window_resolution[1] as i32,
+                    },
+                    glium::uniforms::MagnifySamplerFilter::Nearest,
+                );
+            }
+            glium::uniforms::Sampler::new(&new_texture)
+                .anisotropy(1)
+                .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
+                .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest)
+        }
+    };
 
     let upscale_shader = &lumenpyx_program
         .get_shader("upscale_shader")
@@ -84,12 +140,10 @@ pub(crate) fn draw_upscale(
     let dimensions = target.get_dimensions();
     // figure out which dimensions need the black bars
     let [target_width, target_height] = [dimensions.0 as f32, dimensions.1 as f32];
-    let [image_width, image_height] = [
-        lumenpyx_program.dimensions[0] as f32,
-        lumenpyx_program.dimensions[1] as f32,
-    ];
+    let [image_width, image_height] = [window_resolution[0] as f32, window_resolution[1] as f32];
 
     let mut dim_scales = [image_width / target_width, image_height / target_height];
+
     // make the max value 1.0
     if dim_scales[0] > dim_scales[1] {
         dim_scales[1] *= 1.0 / dim_scales[0];
@@ -98,10 +152,6 @@ pub(crate) fn draw_upscale(
         dim_scales[0] *= 1.0 / dim_scales[1];
         dim_scales[1] = 1.0;
     }
-
-    //let (target_width, target_height) = (target_width * image_width, target_height * image_height);
-    //let (target_width, target_height) = (target_width as u32, target_height as u32);
-    // change the position of the vertices to fit the screen not the tex_coords
 
     let shape = vec![
         Vertex {
@@ -133,7 +183,7 @@ pub(crate) fn draw_upscale(
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
     let uniforms = &uniform! {
-        image: image_uniform
+        image: new_uniform
     };
 
     target.clear_color(0.0, 0.0, 0.0, 0.0);
@@ -150,7 +200,6 @@ pub(crate) fn draw_upscale(
     target.finish().unwrap();
 }
 
-#[no_mangle]
 pub(crate) fn draw_reflections(
     camera: &Camera,
     lit_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,

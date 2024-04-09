@@ -92,6 +92,7 @@ impl LumenpyxProgram {
             render_settings: RenderSettings {
                 shadows: true,
                 reflections: true,
+                render_resolution: None,
             },
         };
 
@@ -303,6 +304,38 @@ impl Camera {
 pub struct RenderSettings {
     pub shadows: bool,
     pub reflections: bool,
+    /// The resolution that the program is rendering at
+    /// this is different from the window resolution,
+    /// the program will only show window resolution pixels,
+    /// set the render resolution to a higher value for reflecting things that are off screen
+    pub render_resolution: Option<[u32; 2]>,
+}
+
+impl Default for RenderSettings {
+    fn default() -> Self {
+        RenderSettings {
+            shadows: true,
+            reflections: true,
+            render_resolution: None,
+        }
+    }
+}
+
+impl RenderSettings {
+    pub fn with_shadows(mut self, shadows: bool) -> Self {
+        self.shadows = shadows;
+        self
+    }
+
+    pub fn with_reflections(mut self, reflections: bool) -> Self {
+        self.reflections = reflections;
+        self
+    }
+
+    pub fn with_render_resolution(mut self, resolution: [u32; 2]) -> Self {
+        self.render_resolution = Some(resolution);
+        self
+    }
 }
 
 /// Draw everything to the screen
@@ -342,13 +375,19 @@ pub fn draw_all(
     let display = &program.display;
     let debug = &program.debug;
     let render_settings = &program.render_settings;
+    let render_resolution = render_settings
+        .render_resolution
+        .unwrap_or(program.dimensions);
+    if render_resolution < program.dimensions {
+        panic!("Render resolution must be greater than or equal to the window resolution");
+    }
 
     let albedo_texture = glium::texture::Texture2d::empty_with_format(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        program.dimensions[0],
-        program.dimensions[1],
+        render_resolution[0],
+        render_resolution[1],
     )
     .unwrap();
 
@@ -356,8 +395,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        program.dimensions[0],
-        program.dimensions[1],
+        render_resolution[0],
+        render_resolution[1],
     )
     .unwrap();
 
@@ -365,8 +404,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        program.dimensions[0],
-        program.dimensions[1],
+        render_resolution[0],
+        render_resolution[1],
     )
     .unwrap();
 
@@ -374,8 +413,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        program.dimensions[0],
-        program.dimensions[1],
+        render_resolution[0],
+        render_resolution[1],
     )
     .unwrap();
 
@@ -383,8 +422,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        program.dimensions[0],
-        program.dimensions[1],
+        render_resolution[0],
+        render_resolution[1],
     )
     .unwrap();
 
@@ -393,8 +432,8 @@ pub fn draw_all(
             display,
             glium::texture::UncompressedFloatFormat::U8U8U8U8,
             glium::texture::MipmapsOption::NoMipmap,
-            program.dimensions[0],
-            program.dimensions[1],
+            render_resolution[0],
+            render_resolution[1],
         )
         .unwrap();
 
@@ -426,10 +465,10 @@ pub fn draw_all(
         for drawable in &drawables {
             let mut new_matrix = drawable.get_position();
             // scale off the resolution
-            if program.dimensions[0] > program.dimensions[1] {
-                new_matrix[0][0] *= program.dimensions[1] as f32 / program.dimensions[0] as f32;
+            if render_resolution[0] > render_resolution[1] {
+                new_matrix[0][0] *= render_resolution[1] as f32 / render_resolution[0] as f32;
             } else {
-                new_matrix[1][1] *= program.dimensions[0] as f32 / program.dimensions[1] as f32;
+                new_matrix[1][1] *= render_resolution[0] as f32 / render_resolution[1] as f32;
             }
             // adjust off the camera no need to translate the z, it would just mess up the height map's interaction with the light
             new_matrix[3][0] -= camera.position[0];
@@ -461,8 +500,8 @@ pub fn draw_all(
                     &glium::BlitTarget {
                         left: 0,
                         bottom: 0,
-                        width: program.dimensions[0] as i32,
-                        height: program.dimensions[1] as i32,
+                        width: render_resolution[0] as i32,
+                        height: render_resolution[1] as i32,
                     },
                     glium::uniforms::MagnifySamplerFilter::Nearest,
                 );
@@ -474,8 +513,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        program.dimensions[0],
-        program.dimensions[1],
+        render_resolution[0],
+        render_resolution[1],
     )
     .expect("Failed to create lit frame buffer");
 
@@ -491,10 +530,10 @@ pub fn draw_all(
 
         for light in lights {
             let mut new_matrix = light.get_transform();
-            if program.dimensions[0] > program.dimensions[1] {
-                new_matrix[0][0] *= program.dimensions[1] as f32 / program.dimensions[0] as f32;
+            if render_resolution[0] > render_resolution[1] {
+                new_matrix[0][0] *= render_resolution[1] as f32 / render_resolution[0] as f32;
             } else {
-                new_matrix[1][1] *= program.dimensions[0] as f32 / program.dimensions[1] as f32;
+                new_matrix[1][1] *= render_resolution[0] as f32 / render_resolution[1] as f32;
             }
             // adjust off the camera no need to translate the z, it would just mess up the height map's interaction with the light
             new_matrix[3][0] -= camera.position[0];
@@ -516,8 +555,8 @@ pub fn draw_all(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
-        program.dimensions[0],
-        program.dimensions[1],
+        render_resolution[0],
+        render_resolution[1],
     )
     .expect("Failed to create reflected frame buffer");
 
@@ -558,6 +597,7 @@ pub fn draw_all(
                 glium::uniforms::Sampler(&shadow_strength_texture, DEFAULT_BEHAVIOR)
             }
         };
-        draw_upscale(finished_texture, &program);
+
+        draw_upscale(finished_texture, &program, program.dimensions);
     }
 }

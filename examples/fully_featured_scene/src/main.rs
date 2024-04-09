@@ -7,7 +7,7 @@ use lumenpyx::{lights::LightDrawable, *};
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
     let (mut lumen_program, event_loop) = LumenpyxProgram::new([256, 256], "fully_featured_scene");
-    lumen_program.set_debug(DebugOption::None);
+    lumen_program.set_render_settings(RenderSettings::default().with_render_resolution([512, 256]));
 
     let mut lights = vec![
         Box::new(lights::PointLight::new(
@@ -119,7 +119,7 @@ fn main() {
         }
 
         {
-            camera.position = [skeleton_x, 0.0, 200.0];
+            camera.position = [skeleton_x, 0.0, 5.0];
 
             scene_drawable_bottom.transform.set_x(skeleton_x * 0.1);
         }

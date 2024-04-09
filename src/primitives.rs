@@ -4,7 +4,6 @@ use crate::Drawable;
 use crate::LumenpyxProgram;
 use crate::DEFAULT_BEHAVIOR;
 use glium;
-use glium::framebuffer;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
 use glium::Surface;
