@@ -6,6 +6,7 @@ use lumenpyx::*;
 
 fn main() {
     let (mut lumen_program, event_loop) = LumenpyxProgram::new([128, 128], "primitives");
+    lumen_program.set_render_settings(RenderSettings::default().with_render_resolution([256, 128]));
 
     let mut drawables: Vec<Box<dyn Drawable>> = vec![];
     let mut lights = vec![Box::new(lights::PointLight::new(
@@ -19,7 +20,7 @@ fn main() {
     drawables.push(Box::new(Sphere::new(
         [0.7, 0.3, 0.0, 1.0],
         0.1,
-        Transform::new([-0.2, 0.0, 0.0]),
+        Transform::new([-60.0, 0.0, 0.0]),
     )));
     drawables.push(Box::new(Circle::new(
         [0.0, 0.0, 1.0, 1.0],
@@ -30,13 +31,13 @@ fn main() {
         [1.0, 1.0, 1.0, 1.0],
         0.2,
         0.2,
-        Transform::new([0.2, 0.0, 0.0]),
+        Transform::new([60.0, 0.0, 0.0]),
     )));
     drawables.push(Box::new(Cylinder::new(
         [1.0, 0.0, 0.0, 1.0],
         0.1,
         0.4,
-        Transform::new([0.4, -0.2, 0.0]),
+        Transform::new([120.0, -0.2, 0.0]),
     )));
 
     let mut t: f32 = 0.0;

@@ -474,6 +474,9 @@ pub fn draw_all(
             new_matrix[3][0] -= camera.position[0];
             new_matrix[3][1] -= camera.position[1];
 
+            new_matrix[3][0] /= render_resolution[0] as f32;
+            new_matrix[3][1] /= render_resolution[1] as f32;
+
             drawable.draw(
                 program,
                 new_matrix,
@@ -538,6 +541,9 @@ pub fn draw_all(
             // adjust off the camera no need to translate the z, it would just mess up the height map's interaction with the light
             new_matrix[3][0] -= camera.position[0];
             new_matrix[3][1] -= camera.position[1];
+
+            new_matrix[3][0] /= render_resolution[0] as f32;
+            new_matrix[3][1] /= render_resolution[1] as f32;
 
             light.draw(
                 program,
