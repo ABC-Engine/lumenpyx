@@ -5,7 +5,7 @@ use lumenpyx::primitives::{Normal, Sprite, Texture};
 use lumenpyx::*;
 
 fn main() {
-    let (mut lumen_program, event_loop) = LumenpyxProgram::new([128, 128], "primitives");
+    let (mut lumen_program, event_loop) = LumenpyxProgram::new([256, 128], "primitives");
     lumen_program.set_render_settings(RenderSettings::default().with_render_resolution([256, 128]));
 
     let mut drawables: Vec<Box<dyn Drawable>> = vec![];
@@ -19,23 +19,23 @@ fn main() {
     // this hightlights an issue, the radius seems to be 2x what it should be
     drawables.push(Box::new(Sphere::new(
         [0.7, 0.3, 0.0, 1.0],
-        0.1,
+        5.0,
         Transform::new([-60.0, 0.0, 0.0]),
     )));
     drawables.push(Box::new(Circle::new(
         [0.0, 0.0, 1.0, 1.0],
-        0.1,
+        5.0,
         Transform::new([0.0, 0.0, 0.0]),
     )));
     drawables.push(Box::new(Rectangle::new(
         [1.0, 1.0, 1.0, 1.0],
-        0.2,
+        10.0,
         0.2,
         Transform::new([60.0, 0.0, 0.0]),
     )));
     drawables.push(Box::new(Cylinder::new(
         [1.0, 0.0, 0.0, 1.0],
-        0.1,
+        5.0,
         0.4,
         Transform::new([120.0, -0.2, 0.0]),
     )));

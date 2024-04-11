@@ -40,6 +40,12 @@ pub(crate) const FILL_ALPHA_VERTEX_SHADER_SRC: &str =
 pub(crate) const FILL_ALPHA_FRAGMENT_SHADER_SRC: &str =
     include_str!("../shaders/technical_shaders/fill_alpha.frag");
 
+pub(crate) const CROP_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/crop_shader.frag");
+
+pub(crate) const CROP_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/crop_shader.vert");
+
 /// A full screen quad that can be used to draw to the screen with a shader
 pub const FULL_SCREEN_QUAD: [Vertex; 6] = [
     Vertex {
@@ -68,6 +74,47 @@ pub const FULL_SCREEN_QUAD: [Vertex; 6] = [
     },
 ];
 
+pub(crate) fn draw_crop_centered(
+    image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    framebuffer: &mut SimpleFrameBuffer,
+    lumenpyx_program: &LumenpyxProgram,
+    cropped_res: [u32; 2],
+) {
+    let display = &lumenpyx_program.display;
+    let indices = &lumenpyx_program.indices;
+
+    let crop_shader = &lumenpyx_program
+        .get_shader("crop_shader")
+        .expect("Failed to load crop shader");
+
+    let image_dimensions = [
+        image_uniform.0.dimensions().0 as f32,
+        image_uniform.0.dimensions().1 as f32,
+    ];
+
+    let [target_width, target_height] = [cropped_res[0] as f32, cropped_res[1] as f32];
+
+    let uniform = uniform! {
+        image: image_uniform,
+        image_res: image_dimensions,
+        screen_res: [target_width, target_height],
+    };
+
+    let shape = FULL_SCREEN_QUAD;
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &crop_shader,
+            &uniform,
+            &Default::default(),
+        )
+        .unwrap();
+}
+
 /// upscale the result to the screen size
 pub(crate) fn draw_upscale(
     image_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
@@ -77,8 +124,7 @@ pub(crate) fn draw_upscale(
     let display = &lumenpyx_program.display;
     let indices = &lumenpyx_program.indices;
 
-    // make a new texture that crops the image to the correct window resolution
-    let new_texture = glium::texture::Texture2d::empty_with_format(
+    let texture = glium::texture::Texture2d::empty_with_format(
         display,
         glium::texture::UncompressedFloatFormat::U8U8U8U8,
         glium::texture::MipmapsOption::NoMipmap,
@@ -87,45 +133,24 @@ pub(crate) fn draw_upscale(
     )
     .unwrap();
 
-    let image_uniform = image_uniform
-        .anisotropy(1)
-        .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
-        .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest);
-
-    let new_uniform = match image_uniform.0.dimensions()
-        == (window_resolution[0], window_resolution[1])
+    let new_uniform = match [
+        image_uniform.0.dimensions().0,
+        image_uniform.0.dimensions().1,
+    ] == window_resolution
     {
         true => image_uniform,
         false => {
-            if image_uniform.0.dimensions() != (window_resolution[0], window_resolution[1]) {
-                let framebuffer = glium::framebuffer::SimpleFrameBuffer::new(display, &new_texture)
-                    .expect("Failed to create framebuffer for height texture");
-                let image_framebuffer =
-                    glium::framebuffer::SimpleFrameBuffer::new(display, image_uniform.0)
-                        .expect("Failed to create framebuffer for height texture");
+            let mut framebuffer = glium::framebuffer::SimpleFrameBuffer::new(display, &texture)
+                .expect("Failed to create framebuffer for height texture");
 
-                let x_res_diff = (image_uniform.0.dimensions().0 - window_resolution[0]) / 2;
-                let y_res_diff = (image_uniform.0.dimensions().1 - window_resolution[1]) / 2;
-                println!("x_res_diff: {}, y_res_diff: {}", x_res_diff, y_res_diff);
+            draw_crop_centered(
+                image_uniform,
+                &mut framebuffer,
+                lumenpyx_program,
+                window_resolution,
+            );
 
-                image_framebuffer.blit_color(
-                    &glium::Rect {
-                        left: x_res_diff,
-                        bottom: y_res_diff,
-                        width: window_resolution[0] + x_res_diff,
-                        height: window_resolution[1] + y_res_diff,
-                    },
-                    &framebuffer,
-                    &glium::BlitTarget {
-                        left: 0,
-                        bottom: 0,
-                        width: window_resolution[0] as i32,
-                        height: window_resolution[1] as i32,
-                    },
-                    glium::uniforms::MagnifySamplerFilter::Nearest,
-                );
-            }
-            glium::uniforms::Sampler::new(&new_texture)
+            glium::uniforms::Sampler::new(&texture)
                 .anisotropy(1)
                 .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
                 .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest)
@@ -138,6 +163,7 @@ pub(crate) fn draw_upscale(
 
     let mut target = display.draw();
     let dimensions = target.get_dimensions();
+
     // figure out which dimensions need the black bars
     let [target_width, target_height] = [dimensions.0 as f32, dimensions.1 as f32];
     let [image_width, image_height] = [window_resolution[0] as f32, window_resolution[1] as f32];
@@ -183,7 +209,7 @@ pub(crate) fn draw_upscale(
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
 
     let uniforms = &uniform! {
-        image: new_uniform
+        image: new_uniform,
     };
 
     target.clear_color(0.0, 0.0, 0.0, 0.0);
@@ -465,5 +491,17 @@ pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
         )
         .unwrap();
         program.add_shader(shader, "fill_alpha");
+    }
+
+    {
+        let display = &program.display;
+        let shader = glium::Program::from_source(
+            display,
+            CROP_VERTEX_SHADER_SRC,
+            CROP_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+        program.add_shader(shader, "crop_shader");
     }
 }
