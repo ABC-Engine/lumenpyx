@@ -478,6 +478,10 @@ pub fn draw_all(
             new_matrix[3][0] /= render_resolution[0] as f32;
             new_matrix[3][1] /= render_resolution[1] as f32;
 
+            // because its -1 to 1, we need to multiply by 2
+            new_matrix[3][0] *= 2.0;
+            new_matrix[3][1] *= 2.0;
+
             drawable.draw(
                 program,
                 new_matrix,
@@ -545,6 +549,10 @@ pub fn draw_all(
 
             new_matrix[3][0] /= render_resolution[0] as f32;
             new_matrix[3][1] /= render_resolution[1] as f32;
+
+            // because its -1 to 1, we need to multiply by 2
+            new_matrix[3][0] *= 2.0;
+            new_matrix[3][1] *= 2.0;
 
             light.draw(
                 program,

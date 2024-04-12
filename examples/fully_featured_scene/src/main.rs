@@ -7,22 +7,23 @@ use lumenpyx::{lights::LightDrawable, *};
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
     let (mut lumen_program, event_loop) = LumenpyxProgram::new([256, 256], "fully_featured_scene");
+    lumen_program.set_render_settings(RenderSettings::default().with_render_resolution([512, 256]));
 
     let mut lights = vec![
         Box::new(lights::PointLight::new(
-            [-389.0, 139.0, 1.0],
+            [-195.0, 72.0, 1.0],
             [1.0, 0.76, 0.52],
             1.0,
-            0.02,
+            0.05,
         )),
         Box::new(lights::PointLight::new(
-            [381.0, 144.0, 1.0],
+            [190.0, 72.0, 1.0],
             [1.0, 0.76, 0.52],
             1.0,
-            0.02,
+            0.05,
         )),
         Box::new(lights::PointLight::new(
-            [381.0, 140.0, 1.0],
+            [0.0, 0.0, 1.0],
             [1.0, 0.76, 0.52],
             1.0,
             0.05,
@@ -67,7 +68,7 @@ fn main() {
             0.0.into(),
             Default::default(),
             &lumen_program,
-            Transform::new([0.0, 32.0, 0.0]),
+            Transform::new([0.0, 16.0, 0.0]),
         );
         sprite.set_shadow_strength(1.0);
         skeleton_sprites.push(sprite);
@@ -106,22 +107,19 @@ fn main() {
             } else if skeleton_x < -1.0 {
                 direction = 1.0;
             }
-            displayed_sprite.transform.set_x(skeleton_x * 256.0);
+            displayed_sprite.transform.set_x(skeleton_x * 128.0);
 
             if direction == 1.0 {
                 displayed_sprite.transform.set_scale(1.0, 1.0, 1.0);
-                lights[2].set_position((skeleton_x + 0.035) * 256.0, 31.0, 1.0);
+                lights[2].set_position(skeleton_x * 128.0 + 9.0, 16.0, 1.0);
             } else {
                 displayed_sprite.transform.set_scale(-1.0, 1.0, 1.0);
-                lights[2].set_position((skeleton_x - 0.035) * 256.0, 31.0, 1.0);
+                lights[2].set_position(skeleton_x * 128.0 - 9.0, 16.0, 1.0);
             }
-
-            program
-                .set_render_settings(RenderSettings::default().with_render_resolution([512, 256]));
         }
 
         {
-            camera.position = [skeleton_x * 256.0, 0.0, 5.0];
+            camera.position = [skeleton_x * 128.0, 0.0, 5.0];
 
             scene_drawable_bottom
                 .transform
