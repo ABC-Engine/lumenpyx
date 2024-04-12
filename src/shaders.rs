@@ -46,6 +46,12 @@ pub(crate) const CROP_FRAGMENT_SHADER_SRC: &str =
 pub(crate) const CROP_VERTEX_SHADER_SRC: &str =
     include_str!("../shaders/technical_shaders/crop_shader.vert");
 
+pub(crate) const OVERLAY_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/overlay.frag");
+
+pub(crate) const OVERLAY_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/overlay.vert");
+
 /// A full screen quad that can be used to draw to the screen with a shader
 pub const FULL_SCREEN_QUAD: [Vertex; 6] = [
     Vertex {
@@ -237,6 +243,20 @@ pub(crate) fn draw_reflections(
 ) {
     let display = &program.display;
     let indices = &program.indices;
+
+    let reflection_texture = glium::texture::Texture2d::empty_with_format(
+        display,
+        glium::texture::UncompressedFloatFormat::U8U8U8U8,
+        glium::texture::MipmapsOption::NoMipmap,
+        lit_uniform.0.dimensions().0,
+        lit_uniform.0.dimensions().1,
+    )
+    .expect("Failed to create reflection texture");
+
+    let mut reflection_framebuffer =
+        glium::framebuffer::SimpleFrameBuffer::new(display, &reflection_texture)
+            .expect("Failed to create framebuffer for reflection texture");
+
     let shader = &program
         .get_shader("reflection_shader")
         .expect("Failed to load reflection shader");
@@ -255,7 +275,7 @@ pub(crate) fn draw_reflections(
         camera_z: camera_pos[2],
     };
 
-    framebuffer
+    reflection_framebuffer
         .draw(
             &vertex_buffer,
             indices,
@@ -264,6 +284,13 @@ pub(crate) fn draw_reflections(
             &Default::default(),
         )
         .unwrap();
+
+    let reflection_sampler = glium::uniforms::Sampler::new(&reflection_texture)
+        .anisotropy(1)
+        .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
+        .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest);
+
+    draw_overlay(framebuffer, program, reflection_sampler, lit_uniform);
 }
 
 pub(crate) fn draw_generate_normals(
@@ -370,6 +397,36 @@ pub(crate) fn faster_clear_color(
 
     let uniforms = &uniform! {
         new_color: color,
+    };
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &shader,
+            uniforms,
+            &Default::default(),
+        )
+        .unwrap();
+}
+
+pub(crate) fn draw_overlay(
+    framebuffer: &mut SimpleFrameBuffer,
+    program: &LumenpyxProgram,
+    top_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    bottom_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
+) {
+    let display = &program.display;
+    let indices = &program.indices;
+    let shader = &program.get_shader("overlay_shader").unwrap();
+
+    let shape = FULL_SCREEN_QUAD;
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        top_tex: top_uniform,
+        bottom_tex: bottom_uniform,
     };
 
     framebuffer
@@ -503,5 +560,17 @@ pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
         )
         .unwrap();
         program.add_shader(shader, "crop_shader");
+    }
+
+    {
+        let display = &program.display;
+        let shader = glium::Program::from_source(
+            display,
+            OVERLAY_VERTEX_SHADER_SRC,
+            OVERLAY_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+        program.add_shader(shader, "overlay_shader");
     }
 }

@@ -156,7 +156,7 @@ void main() {
 	
 	vec4 albedo = texture(albedomap, v_tex_coords);
 	if (new_color == NON_INTERSECT_COLOR) {
-		color = albedo;
+		color = vec4(0.0, 0.0, 0.0, 0.0);
 	}
 	else {
 		vec4 roughness = texture(roughnessmap, v_tex_coords);
