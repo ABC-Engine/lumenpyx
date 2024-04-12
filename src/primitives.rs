@@ -4,7 +4,6 @@ use crate::Drawable;
 use crate::LumenpyxProgram;
 use crate::DEFAULT_BEHAVIOR;
 use glium;
-use glium::framebuffer;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
 use glium::Surface;
@@ -59,6 +58,13 @@ pub fn draw_circle(
     let display = &program.display;
     let indices = &program.indices;
 
+    let smallest_dim = framebuffer
+        .get_dimensions()
+        .0
+        .min(framebuffer.get_dimensions().1);
+
+    let radius = radius / smallest_dim as f32;
+
     let shader = program.get_shader("circle_ahr_shader").unwrap();
 
     let shape = FULL_SCREEN_QUAD;
@@ -97,6 +103,13 @@ pub fn draw_sphere(
     let indices = &program.indices;
 
     draw_circle(color, radius, matrix_transform, program, albedo_framebuffer);
+
+    let smallest_dim = albedo_framebuffer
+        .get_dimensions()
+        .0
+        .min(albedo_framebuffer.get_dimensions().1);
+
+    let radius = radius / smallest_dim as f32;
 
     {
         let height_shader = program.get_shader("sphere_height_shader").unwrap();
@@ -161,6 +174,13 @@ fn draw_rectangle(
 ) {
     let display = &program.display;
     let indices = &program.indices;
+
+    let smallest_dim = framebuffer
+        .get_dimensions()
+        .0
+        .min(framebuffer.get_dimensions().1);
+    let width = width / smallest_dim as f32;
+    let height = height / smallest_dim as f32;
 
     let shader = program.get_shader("rectangle_ahr_shader").unwrap();
 
@@ -520,6 +540,13 @@ fn draw_cylinder(
         program,
         albedo_framebuffer,
     );
+
+    let smallest_dim = albedo_framebuffer
+        .get_dimensions()
+        .0
+        .min(albedo_framebuffer.get_dimensions().1);
+
+    let radius = radius / smallest_dim as f32;
 
     let display = &program.display;
     let indices = &program.indices;

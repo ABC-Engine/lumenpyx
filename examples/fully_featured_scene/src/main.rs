@@ -7,23 +7,23 @@ use lumenpyx::{lights::LightDrawable, *};
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
     let (mut lumen_program, event_loop) = LumenpyxProgram::new([256, 256], "fully_featured_scene");
-    lumen_program.set_debug(DebugOption::None);
+    lumen_program.set_render_settings(RenderSettings::default().with_render_resolution([512, 256]));
 
     let mut lights = vec![
         Box::new(lights::PointLight::new(
-            [-1.52, 0.545, 1.0],
+            [-195.0, 72.0, 1.0],
             [1.0, 0.76, 0.52],
             1.0,
-            0.02,
+            0.05,
         )),
         Box::new(lights::PointLight::new(
-            [1.49, 0.545, 1.0],
+            [190.0, 72.0, 1.0],
             [1.0, 0.76, 0.52],
             1.0,
-            0.02,
+            0.05,
         )),
         Box::new(lights::PointLight::new(
-            [1.49, 0.545, 1.0],
+            [0.0, 0.0, 1.0],
             [1.0, 0.76, 0.52],
             1.0,
             0.05,
@@ -60,7 +60,7 @@ fn main() {
             i + 1
         );
 
-        let mut transform = Transform::new([0.0, 0.05, 0.0]);
+        let mut transform = Transform::new([0.0, 13.0, 0.0]);
         transform.set_scale(2.0, 2.0, 1.0);
         let mut sprite = Sprite::new(
             path.into(),
@@ -68,7 +68,7 @@ fn main() {
             0.0.into(),
             Default::default(),
             &lumen_program,
-            Transform::new([0.0, 0.126, 0.0]),
+            Transform::new([0.0, 16.0, 0.0]),
         );
         sprite.set_shadow_strength(1.0);
         skeleton_sprites.push(sprite);
@@ -107,21 +107,23 @@ fn main() {
             } else if skeleton_x < -1.0 {
                 direction = 1.0;
             }
-            displayed_sprite.transform.set_x(skeleton_x);
+            displayed_sprite.transform.set_x(skeleton_x * 128.0);
 
             if direction == 1.0 {
                 displayed_sprite.transform.set_scale(1.0, 1.0, 1.0);
-                lights[2].set_position(skeleton_x + 0.035, 0.12, 1.0);
+                lights[2].set_position(skeleton_x * 128.0 + 9.0, 16.0, 1.0);
             } else {
                 displayed_sprite.transform.set_scale(-1.0, 1.0, 1.0);
-                lights[2].set_position(skeleton_x - 0.035, 0.12, 1.0);
+                lights[2].set_position(skeleton_x * 128.0 - 9.0, 16.0, 1.0);
             }
         }
 
         {
-            camera.position = [skeleton_x, 0.0, 200.0];
+            camera.position = [skeleton_x * 128.0, 0.0, 5.0];
 
-            scene_drawable_bottom.transform.set_x(skeleton_x * 0.1);
+            scene_drawable_bottom
+                .transform
+                .set_x((skeleton_x * 0.1) * 256.0);
         }
 
         let drawable_refs: Vec<&dyn Drawable> = vec![
@@ -129,6 +131,7 @@ fn main() {
             &scene_drawable_top,
             displayed_sprite,
         ];
+
         let light_refs: Vec<&dyn LightDrawable> =
             lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
         draw_all(light_refs, drawable_refs, &mut program, &camera);

@@ -6,6 +6,5 @@ out vec4 color;
 uniform sampler2D image;
 
 void main() {
-    vec4 new_color = texture(image, v_tex_coords);
-    color = new_color;
+    color = texture(image, v_tex_coords);
 }
