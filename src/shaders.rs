@@ -223,7 +223,9 @@ pub(crate) fn draw_upscale(
         )
         .unwrap();
 
-    target.finish().unwrap();
+    target
+        .finish()
+        .expect("Failed to finish drawing to the screen");
 }
 
 pub(crate) fn draw_reflections(

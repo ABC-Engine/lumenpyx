@@ -302,13 +302,13 @@ impl Camera {
 }
 
 pub struct RenderSettings {
-    pub shadows: bool,
-    pub reflections: bool,
+    shadows: bool,
+    reflections: bool,
     /// The resolution that the program is rendering at
     /// this is different from the window resolution,
     /// the program will only show window resolution pixels,
     /// set the render resolution to a higher value for reflecting things that are off screen
-    pub render_resolution: Option<[u32; 2]>,
+    render_resolution: Option<[u32; 2]>,
 }
 
 impl Default for RenderSettings {
