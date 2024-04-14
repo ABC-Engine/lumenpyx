@@ -143,7 +143,7 @@ void main() {
 	light_dist = max(light_dist * light_falloff, 1.0);
     vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * (light_intensity / (light_dist * light_dist));
 
-    if (!find_intersections(closest_point_3d, new_v_tex_coords)) {
+    if (dimFactor <= 0.01 || !find_intersections(closest_point_3d, new_v_tex_coords)) {
 		color = shaded_color;
     }
 	else {

@@ -129,7 +129,7 @@ void main() {
 	float falloff = (light_intensity / (1.0 + light_dist * light_dist));
     vec4 shaded_color = albedo_color * vec4(light_color, 1.0) * falloff;
 
-    if (!find_intersections(new_light_pos, new_v_tex_coords)) {
+    if (dimFactor <= 0.01 || !find_intersections(new_light_pos, new_v_tex_coords)) {
 		color = shaded_color;
     }
 	else {
