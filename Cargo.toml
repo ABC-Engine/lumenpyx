@@ -1,4 +1,11 @@
-workspace = { members = ["examples/dungeon", "examples/fully_featured_scene", "examples/light_benchmark", "examples/moving_light", "examples/primitives", "examples/reflection_test"] }
+workspace = { members = [
+    "examples/dungeon",
+    "examples/fully_featured_scene",
+    "examples/light_benchmark",
+    "examples/moving_light",
+    "examples/primitives",
+    "examples/reflection_test",
+] }
 [package]
 name = "lumenpyx"
 version = "0.1.0"
@@ -14,7 +21,6 @@ authors = ["ABC-Engine", "Ethan Almloff"]
 categories = ["graphics", "game-development", "rendering", "rendering::engine"]
 
 
-
 [lib]
 name = "lumenpyx"
 path = "src/lib.rs"
@@ -23,6 +29,15 @@ path = "src/lib.rs"
 
 [dependencies]
 glium = "0.34.0"
-image = "0.24.7"
+image = "0.25.1"
 rustc-hash = "1.1.0"
 winit = "0.29.9"
+
+[profile.release]
+#debug = true
+lto = true
+incremental = false
+opt-level = 3
+codegen-units = 1
+panic = "abort"
+overflow-checks = false
