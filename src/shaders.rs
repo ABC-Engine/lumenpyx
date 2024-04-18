@@ -3,9 +3,9 @@ use crate::Camera;
 use crate::LumenpyxProgram;
 use crate::Vertex;
 use glium::framebuffer::SimpleFrameBuffer;
-use glium::uniform;
 use glium::Surface;
 use glium::{self, BlitTarget};
+use glium::{uniform, DrawParameters};
 
 // include the vertex and fragment shaders in the library
 pub(crate) const REFLECTION_VERTEX_SHADER_SRC: &str =
@@ -51,6 +51,12 @@ pub(crate) const OVERLAY_FRAGMENT_SHADER_SRC: &str =
 
 pub(crate) const OVERLAY_VERTEX_SHADER_SRC: &str =
     include_str!("../shaders/technical_shaders/overlay.vert");
+
+pub(crate) const GAUSSIAN_BLUR_FRAGMENT_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/blur_area.frag");
+
+pub(crate) const GAUSSIAN_BLUR_VERTEX_SHADER_SRC: &str =
+    include_str!("../shaders/technical_shaders/blur_area.vert");
 
 /// A full screen quad that can be used to draw to the screen with a shader
 pub const FULL_SCREEN_QUAD: [Vertex; 6] = [
@@ -273,15 +279,25 @@ pub(crate) fn draw_reflections(
         roughnessmap: rougness_uniform,
         normalmap: normal_uniform,
         camera_z: camera_pos[2],
+        blur_reflections: program.render_settings.blur_reflections,
     };
 
+    // the intersection distance is stored in the alpha channel of the texture,
+    // since there isn't really a point of the alpha channel in this context
     reflection_framebuffer
         .draw(
             &vertex_buffer,
             indices,
             &shader,
             uniforms,
-            &Default::default(),
+            &DrawParameters {
+                blend: glium::Blend {
+                    color: glium::BlendingFunction::AlwaysReplace,
+                    alpha: glium::BlendingFunction::AlwaysReplace,
+                    constant_value: (0.0, 0.0, 0.0, 0.0),
+                },
+                ..Default::default()
+            },
         )
         .unwrap();
 
@@ -290,7 +306,54 @@ pub(crate) fn draw_reflections(
         .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
         .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest);
 
+    if program.render_settings.blur_reflections {
+        draw_gaussian_blur(
+            &mut reflection_framebuffer,
+            program,
+            reflection_sampler,
+            program.render_settings.blur_strength,
+        );
+    }
     draw_overlay(framebuffer, program, reflection_sampler, lit_uniform);
+}
+
+pub(crate) fn draw_gaussian_blur(
+    framebuffer: &mut SimpleFrameBuffer,
+    program: &LumenpyxProgram,
+    blur_sampler: glium::uniforms::Sampler<glium::texture::Texture2d>,
+    blur_size: f32,
+) {
+    let display = &program.display;
+    let indices = &program.indices;
+    let shader = &program
+        .get_shader("gaussian_blur")
+        .expect("Failed to load gaussian blur shader");
+
+    let shape = FULL_SCREEN_QUAD;
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+
+    let uniforms = &uniform! {
+        tex: blur_sampler,
+        blur_scale: blur_size,
+    };
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &shader,
+            uniforms,
+            &DrawParameters {
+                blend: glium::Blend {
+                    color: glium::BlendingFunction::AlwaysReplace,
+                    alpha: glium::BlendingFunction::AlwaysReplace,
+                    constant_value: (0.0, 0.0, 0.0, 0.0),
+                },
+                ..Default::default()
+            },
+        )
+        .unwrap();
 }
 
 pub(crate) fn draw_generate_normals(
@@ -572,5 +635,17 @@ pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
         )
         .unwrap();
         program.add_shader(shader, "overlay_shader");
+    }
+
+    {
+        let display = &program.display;
+        let shader = glium::Program::from_source(
+            display,
+            GAUSSIAN_BLUR_VERTEX_SHADER_SRC,
+            GAUSSIAN_BLUR_FRAGMENT_SHADER_SRC,
+            None,
+        )
+        .unwrap();
+        program.add_shader(shader, "gaussian_blur");
     }
 }

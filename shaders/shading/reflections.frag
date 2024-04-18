@@ -8,6 +8,7 @@ uniform sampler2D heightmap;
 uniform sampler2D roughnessmap;
 uniform sampler2D normalmap;
 uniform float camera_z;
+uniform bool blur_reflections;
 
 const vec4 NON_INTERSECT_COLOR = vec4(0.0, 0.0, 0.0, 0.0);
 const float MAX_ROUGHNESS = 1.0;
@@ -68,7 +69,10 @@ vec4 find_intersect_color(vec3 p1, vec3 p2) {
 		// if the height of the line is greater than the height of the heightmap at the current x and y, return the color of the heightmap at the current x and y
 		// also make sure the current x and y are not the same as the x and y of the two points, because in this use case they intersect by definition
         if (texture_pixel(heightmap, vec2(x, y)).r > height_of_line && vec2(x,y) != vec2(x1, y1) && vec2(x,y) != vec2(x2, y2)) {
-            return texture_pixel(albedomap, vec2(x, y));
+            vec4 new_color = texture_pixel(albedomap, vec2(x, y));
+			float intersection_distance = distance(p1, vec3(x,y, height_of_line));
+			new_color.a = intersection_distance;
+			return new_color;
         }
 
 		e = 2 * dy-dx;
@@ -90,7 +94,10 @@ vec4 find_intersect_color(vec3 p1, vec3 p2) {
 
 			float height_of_line = lerp(p1, p2, vec2(x, y));
             if (texture_pixel(heightmap, vec2(x, y)).r > height_of_line  && vec2(x,y) != vec2(x1, y1) && vec2(x,y) != vec2(x2, y2)) {
-                return texture_pixel(albedomap, vec2(x, y));
+                vec4 new_color = texture_pixel(albedomap, vec2(x, y));
+				float intersection_distance = distance(p1, vec3(x,y, height_of_line));
+				new_color.a = intersection_distance;
+				return new_color;
             }
 		}
 
@@ -102,7 +109,10 @@ vec4 find_intersect_color(vec3 p1, vec3 p2) {
 
 		float height_of_line = lerp(p1, p2, vec2(x, y));
         if (texture_pixel(heightmap, vec2(x, y)).r > height_of_line && vec2(x,y) != vec2(x1, y1) && vec2(x,y) != vec2(x2, y2)) {
-            return texture_pixel(albedomap, vec2(x, y));
+            vec4 new_color = texture_pixel(albedomap, vec2(x, y));
+			float intersection_distance = distance(p1, vec3(x,y, height_of_line));
+			new_color.a = intersection_distance;
+			return new_color;
         }
 
 		e = 2*dx-dy;
@@ -124,7 +134,10 @@ vec4 find_intersect_color(vec3 p1, vec3 p2) {
 
 			float height_of_line = lerp(p1, p2, vec2(x, y));
             if (texture_pixel(heightmap, vec2(x, y)).r > height_of_line && vec2(x,y) != vec2(x1, y1) && vec2(x,y) != vec2(x2, y2)) {
-                return texture_pixel(albedomap, vec2(x, y));
+                vec4 new_color = texture_pixel(albedomap, vec2(x, y));
+				float intersection_distance = distance(p1, vec3(x,y, height_of_line));
+				new_color.a = intersection_distance;
+				return new_color;
             }
 		}
 	}
@@ -135,8 +148,8 @@ void main() {
 	{
 		float roughness = texture(roughnessmap, v_tex_coords).r;
 		vec4 albedo = texture(albedomap, v_tex_coords);
-		if (roughness <= 0.0) {
-			color = albedo;
+		if (roughness <= 0.0 || albedo.a <= 0.0) {
+			color = vec4(0.0, 0.0, 0.0, 0.0);
 			return;
 		}
 	}
@@ -161,5 +174,11 @@ void main() {
 	else {
 		vec4 roughness = texture(roughnessmap, v_tex_coords);
 		color = new_color * roughness.r + albedo * (1.0 - roughness.r);
+		if (blur_reflections) {
+			color.a = color.a / 500.0;
+		}
+		else {
+			color.a = 1.0;
+		}
 	}
 }

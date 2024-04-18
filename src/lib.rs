@@ -93,6 +93,8 @@ impl LumenpyxProgram {
                 shadows: true,
                 reflections: true,
                 render_resolution: None,
+                blur_reflections: false,
+                blur_strength: 0.01,
             },
         };
 
@@ -309,6 +311,8 @@ pub struct RenderSettings {
     /// the program will only show window resolution pixels,
     /// set the render resolution to a higher value for reflecting things that are off screen
     pub render_resolution: Option<[u32; 2]>,
+    pub blur_reflections: bool,
+    pub blur_strength: f32,
 }
 
 impl Default for RenderSettings {
@@ -317,6 +321,8 @@ impl Default for RenderSettings {
             shadows: true,
             reflections: true,
             render_resolution: None,
+            blur_reflections: false,
+            blur_strength: 0.01,
         }
     }
 }
@@ -334,6 +340,16 @@ impl RenderSettings {
 
     pub fn with_render_resolution(mut self, resolution: [u32; 2]) -> Self {
         self.render_resolution = Some(resolution);
+        self
+    }
+
+    pub fn with_blur_reflections(mut self, blur: bool) -> Self {
+        self.blur_reflections = blur;
+        self
+    }
+
+    pub fn with_blur_strength(mut self, strength: f32) -> Self {
+        self.blur_strength = strength;
         self
     }
 }

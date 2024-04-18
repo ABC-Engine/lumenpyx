@@ -7,7 +7,11 @@ use lumenpyx::{lights::LightDrawable, *};
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
     let (mut lumen_program, event_loop) = LumenpyxProgram::new([256, 256], "fully_featured_scene");
-    lumen_program.set_render_settings(RenderSettings::default().with_render_resolution([512, 256]));
+    lumen_program.set_render_settings(
+        RenderSettings::default()
+            .with_render_resolution([512, 256])
+            .with_blur_reflections(true),
+    );
 
     let mut lights = vec![
         Box::new(lights::PointLight::new(
