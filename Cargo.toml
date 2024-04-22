@@ -1,4 +1,4 @@
-workspace = { members = [
+workspace = { members = [ "examples/animation_test",
     "examples/dungeon",
     "examples/fully_featured_scene",
     "examples/light_benchmark",

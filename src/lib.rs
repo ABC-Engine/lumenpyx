@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use glium;
 use glium::glutin::surface::WindowSurface;
 use glium::implement_vertex;
@@ -15,6 +17,7 @@ use shaders::*;
 pub mod drawable_object;
 use drawable_object::*;
 use rustc_hash::FxHashMap;
+pub mod animation;
 /// This module contains all the lights that can be used in the program
 /// As well as containing the trait that all lights must implement
 pub mod lights;
@@ -262,7 +265,7 @@ pub(crate) fn setup_program() -> (
 }
 
 fn load_image(path: &str) -> glium::texture::RawImage2d<f32> {
-    let img = image::open(path).unwrap();
+    let img = image::open(path).expect(format!("Failed to load image at path {}", path,).as_str());
     img.flipv();
     let path = format!("{}", path);
     let image = image::load(
