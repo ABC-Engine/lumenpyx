@@ -71,7 +71,7 @@ impl Animation {
         }
     }
 
-    fn new_from_spritesheet(
+    pub fn new_from_spritesheet(
         albedo: Texture,
         height: Texture,
         roughness: Texture,
@@ -202,21 +202,22 @@ fn load_textures_from_spritesheet_tex(
                 "failed to create texture framebuffer when creating animation from spritesheet",
             );
 
-        let target_rect = &glium::BlitTarget {
+        let dest_rect = &glium::Rect {
             left: (i as i32 * frame_width as i32) as u32,
+            bottom: 0,
+            width: frame_width as u32,
+            height: frame_height as u32,
+        };
+
+        let target_rect = &glium::BlitTarget {
+            left: 0,
             bottom: 0,
             width: frame_width as i32,
             height: frame_height as i32,
         };
 
-        println!(
-            "{:?}, recieving width of {}, putting into width of {}",
-            target_rect,
-            texture.width(),
-            frame_width
-        );
-
-        texture_framebuffer.blit_whole_color_to(
+        texture_framebuffer.blit_color(
+            dest_rect,
             &new_texture_framebuffer,
             target_rect,
             glium::uniforms::MagnifySamplerFilter::Nearest,

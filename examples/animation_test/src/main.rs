@@ -9,10 +9,10 @@ fn main() {
         LumenpyxProgram::new([(128.0 * (16.0 / 9.0)) as u32, 128], "animation test");
 
     let lights = vec![Box::new(lights::PointLight::new(
-        [0.56, -0.44, 1.0],
-        [1.0, 0.76, 0.52],
-        2.0,
-        0.02,
+        [0.0, 0.0, 1.0],
+        [1.0, 1.0, 1.0],
+        1.0,
+        0.00,
     ))];
 
     let mut animation = Animation::new_from_images(
@@ -26,22 +26,22 @@ fn main() {
         &lumen_program,
     );
 
-    /*let animation_2 = Animation::new_from_spritesheet(
+    let animation_2 = Animation::new_from_spritesheet(
         "../images/Skeleton Walk/Skeleton Walk.png".into(),
         0.0.into(),
         0.0.into(),
         [0.0, 0.0, 0.0, 0.0].into(),
-        4,
+        13,
         std::time::Duration::from_millis(100),
         Transform::new([-28.0, 0.0, 0.0]),
         &lumen_program,
-    );*/
+    );
 
     let camera = Camera::new([0.0, 0.0, 1.5]);
 
     lumen_program.run(event_loop, |mut program| {
         let light_refs = lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
-        let drawable_refs: Vec<&dyn Drawable> = vec![&animation];
+        let drawable_refs: Vec<&dyn Drawable> = vec![&animation, &animation_2];
         draw_all(light_refs, drawable_refs, &mut program, &camera);
     });
 }
