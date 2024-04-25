@@ -65,11 +65,14 @@ pub fn draw_circle(
 
     let radius = radius / smallest_dim as f32;
 
-    let shader = program.get_shader("circle_ahr_shader").unwrap();
+    let shader = program
+        .get_shader("circle_ahr_shader")
+        .expect("'circle_ahr_shader' shader not found, did you override the default shaders?");
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+        .expect("Failed to create vertex buffer for circle");
 
     let uniforms = &uniform! {
         circle_color: color,
@@ -85,7 +88,7 @@ pub fn draw_circle(
             uniforms,
             &Default::default(),
         )
-        .unwrap();
+        .expect("Failed to draw circle");
 }
 
 /// Draws a sphere with the given color and radius.
@@ -112,11 +115,14 @@ pub fn draw_sphere(
     let radius = radius / smallest_dim as f32;
 
     {
-        let height_shader = program.get_shader("sphere_height_shader").unwrap();
+        let height_shader = program
+            .get_shader("sphere_height_shader")
+            .expect("Failed to get sphere height shader");
 
         let shape = FULL_SCREEN_QUAD;
 
-        let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+        let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+            .expect("Failed to create vertex buffer for sphere");
 
         let uniforms = &uniform! {
             matrix: matrix_transform,
@@ -131,15 +137,18 @@ pub fn draw_sphere(
                 uniforms,
                 &Default::default(),
             )
-            .unwrap();
+            .expect("Failed to draw sphere height map");
     }
 
     {
-        let normal_shader = program.get_shader("sphere_normal_shader").unwrap();
+        let normal_shader = program
+            .get_shader("sphere_normal_shader")
+            .expect("Failed to get sphere normal shader");
 
         let shape = FULL_SCREEN_QUAD;
 
-        let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+        let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+            .expect("Failed to create vertex buffer for sphere");
         let resolution = [
             albedo_framebuffer.get_dimensions().0 as f32,
             albedo_framebuffer.get_dimensions().1 as f32,
@@ -160,7 +169,7 @@ pub fn draw_sphere(
                 uniforms,
                 &Default::default(),
             )
-            .unwrap();
+            .expect("Failed to draw sphere normal map");
     }
 }
 
@@ -182,11 +191,14 @@ fn draw_rectangle(
     let width = width / smallest_dim as f32;
     let height = height / smallest_dim as f32;
 
-    let shader = program.get_shader("rectangle_ahr_shader").unwrap();
+    let shader = program
+        .get_shader("rectangle_ahr_shader")
+        .expect("Failed to get rectangle shader");
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+        .expect("Failed to create vertex buffer for rectangle");
 
     let uniforms = &uniform! {
         rect_color: color,
@@ -203,7 +215,7 @@ fn draw_rectangle(
             uniforms,
             &Default::default(),
         )
-        .unwrap();
+        .expect("Failed to draw rectangle");
 }
 
 /// A circle primitive.
@@ -256,7 +268,7 @@ impl Drawable for Circle {
             GENERATE_CIRCLE_FRAGMENT_SHADER_SRC,
             None,
         )
-        .unwrap();
+        .expect("Failed to create circle shader");
 
         program.add_shader(shader, "circle_ahr_shader");
     }
@@ -320,7 +332,7 @@ impl Drawable for Sphere {
                 GENERATE_SPHERE_HEIGHT_FRAGMENT_SHADER_SRC,
                 None,
             )
-            .unwrap();
+            .expect("Failed to create sphere height shader");
 
             program.add_shader(shader, "sphere_height_shader");
         }
@@ -332,7 +344,7 @@ impl Drawable for Sphere {
                 GENERATE_CIRCLE_FRAGMENT_SHADER_SRC,
                 None,
             )
-            .unwrap();
+            .expect("Failed to create circle shader");
 
             program.add_shader(shader, "circle_ahr_shader");
         }
@@ -344,7 +356,7 @@ impl Drawable for Sphere {
                 GENERATE_SPHERE_NORMAL_FRAGMENT_SHADER_SRC,
                 None,
             )
-            .unwrap();
+            .expect("Failed to create sphere normal shader");
 
             program.add_shader(shader, "sphere_normal_shader");
         }
@@ -412,7 +424,7 @@ impl Drawable for Rectangle {
             GENERATE_RECTANGLE_FRAGMENT_SHADER_SRC,
             None,
         )
-        .unwrap();
+        .expect("Failed to create rectangle shader");
 
         program.add_shader(shader, "rectangle_ahr_shader");
     }
@@ -483,7 +495,7 @@ impl Drawable for Cylinder {
                 GENERATE_RECTANGLE_FRAGMENT_SHADER_SRC,
                 None,
             )
-            .unwrap();
+            .expect("Failed to create rectangle shader");
 
             program.add_shader(shader, "rectangle_ahr_shader");
         }
@@ -495,7 +507,7 @@ impl Drawable for Cylinder {
                 GENERATE_CYLINDER_HEIGHT_FRAGMENT_SHADER_SRC,
                 None,
             )
-            .unwrap();
+            .expect("Failed to create cylinder height shader");
 
             program.add_shader(shader, "cylinder_height_shader");
         }
@@ -507,7 +519,7 @@ impl Drawable for Cylinder {
                 GENERATE_CYLINDER_NORMAL_FRAGMENT_SHADER_SRC,
                 None,
             )
-            .unwrap();
+            .expect("Failed to create cylinder normal shader");
 
             program.add_shader(shader, "cylinder_normal_shader");
         }
@@ -551,11 +563,14 @@ fn draw_cylinder(
     let display = &program.display;
     let indices = &program.indices;
 
-    let shader = program.get_shader("cylinder_height_shader").unwrap();
+    let shader = program
+        .get_shader("cylinder_height_shader")
+        .expect("Failed to get cylinder height shader");
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+        .expect("Failed to create vertex buffer for cylinder");
 
     let uniforms = &uniform! {
         width: radius * 2.0,
@@ -571,13 +586,16 @@ fn draw_cylinder(
             uniforms,
             &Default::default(),
         )
-        .unwrap();
+        .expect("Failed to draw cylinder height map");
 
-    let normal_shader = program.get_shader("cylinder_normal_shader").unwrap();
+    let normal_shader = program
+        .get_shader("cylinder_normal_shader")
+        .expect("Failed to get cylinder normal shader");
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+        .expect("Failed to create vertex buffer for cylinder");
 
     let resolution = [
         normal_framebuffer.get_dimensions().0 as f32,
@@ -599,7 +617,7 @@ fn draw_cylinder(
             uniforms,
             &Default::default(),
         )
-        .unwrap();
+        .expect("Failed to draw cylinder normal map");
 }
 
 pub enum Texture {
@@ -735,7 +753,7 @@ pub(crate) fn new_albedo_texture(
     let albedo_texture = match albedo {
         Texture::Path(path) => {
             let image = load_image(path.as_str());
-            glium::texture::Texture2d::new(display, image).unwrap()
+            glium::texture::Texture2d::new(display, image).expect("Failed to load texture")
         }
         Texture::Texture(texture) => texture,
         _ => panic!("Albedo texture must be a path or a texture"),
@@ -752,7 +770,7 @@ pub(crate) fn new_non_albedo_texture(
     match texture {
         Texture::Path(path) => {
             let image = load_image(path.as_str());
-            glium::texture::Texture2d::new(display, image).unwrap()
+            glium::texture::Texture2d::new(display, image).expect("Failed to load texture")
         }
         Texture::Solid(color) => {
             let albedo_sampler = glium::uniforms::Sampler(albedo_texture, crate::DEFAULT_BEHAVIOR);
@@ -773,7 +791,7 @@ pub(crate) fn new_normal_texture(
     match normal {
         Normal::Path(path) => {
             let image = load_image(&path);
-            glium::texture::Texture2d::new(display, image).unwrap()
+            glium::texture::Texture2d::new(display, image).expect("Failed to load texture")
         }
         Normal::Solid(color) => {
             let albedo_sampler = glium::uniforms::Sampler(albedo_texture, crate::DEFAULT_BEHAVIOR);
@@ -790,12 +808,13 @@ pub(crate) fn new_normal_texture(
                     .get_height()
                     .expect("Failed to get height of albedo texture"),
             )
-            .unwrap();
+            .expect("Failed to create normal texture");
 
             let height_uniform = glium::uniforms::Sampler(height_texture, crate::DEFAULT_BEHAVIOR);
             let albedo_uniform = glium::uniforms::Sampler(albedo_texture, crate::DEFAULT_BEHAVIOR);
             let mut normal_framebuffer =
-                glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture).unwrap();
+                glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture)
+                    .expect("Failed to create normal framebuffer");
 
             crate::draw_generate_normals(
                 program,
@@ -863,18 +882,24 @@ impl Drawable for Sprite {
         let indices = &program.indices;
         let display = &program.display;
 
-        let shader = program.get_shader("sprite_shader").unwrap();
+        let shader = program
+            .get_shader("sprite_shader")
+            .expect("Failed to get sprite shader");
 
         let shape = FULL_SCREEN_QUAD;
 
-        let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+        let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+            .expect("Failed to create vertex buffer for sprite");
 
         let mut image = glium::uniforms::Sampler(&self.albedo_texture, DEFAULT_BEHAVIOR);
 
         // scale the transform matrix to match the size of the texture
         // check which side is longer and scale the other side to match
         let width = self.albedo_texture.get_width() as f32;
-        let height = self.albedo_texture.get_height().unwrap() as f32;
+        let height = self
+            .albedo_texture
+            .get_height()
+            .expect("failed to get height of sprite's texture") as f32;
         let mut transform_matrix = transform_matrix;
 
         // adjust size of the sprite to match the texture
@@ -901,7 +926,7 @@ impl Drawable for Sprite {
                 uniform,
                 &Default::default(),
             )
-            .unwrap();
+            .expect("failed to draw sprite albedo");
 
         image = glium::uniforms::Sampler(&self.height_texture, DEFAULT_BEHAVIOR);
         let uniform = &uniform! {
@@ -916,7 +941,7 @@ impl Drawable for Sprite {
                 uniform,
                 &Default::default(),
             )
-            .unwrap();
+            .expect("failed to draw sprite height");
 
         image = glium::uniforms::Sampler(&self.roughness_texture, DEFAULT_BEHAVIOR);
         let uniform = &uniform! {
@@ -932,7 +957,7 @@ impl Drawable for Sprite {
                 uniform,
                 &Default::default(),
             )
-            .unwrap();
+            .expect("failed to draw sprite roughness");
 
         image = glium::uniforms::Sampler(&self.normal_texture, DEFAULT_BEHAVIOR);
         let uniform = &uniform! {
@@ -947,7 +972,7 @@ impl Drawable for Sprite {
                 uniform,
                 &Default::default(),
             )
-            .unwrap();
+            .expect("failed to draw sprite normal");
     }
 
     fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
@@ -961,7 +986,7 @@ impl Drawable for Sprite {
             BASE_FRAGMENT_SHADER_SRC,
             None,
         )
-        .unwrap();
+        .expect("Failed to create sprite shader");
 
         program.add_shader(new_shader, "sprite_shader");
     }

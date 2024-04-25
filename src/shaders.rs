@@ -114,7 +114,8 @@ pub(crate) fn draw_crop_centered(
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer =
+        glium::VertexBuffer::new(display, &shape).expect("Failed to create vertex buffer");
 
     framebuffer
         .draw(
@@ -124,7 +125,7 @@ pub(crate) fn draw_crop_centered(
             &uniform,
             &Default::default(),
         )
-        .unwrap();
+        .expect("Failed to draw to the framebuffer");
 }
 
 /// upscale the result to the screen size
@@ -143,7 +144,7 @@ pub(crate) fn draw_upscale(
         window_resolution[0],
         window_resolution[1],
     )
-    .unwrap();
+    .expect("Failed to create texture for height texture");
 
     let new_uniform = match [
         image_uniform.0.dimensions().0,
@@ -218,7 +219,8 @@ pub(crate) fn draw_upscale(
         },
     ];
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer =
+        glium::VertexBuffer::new(display, &shape).expect("Failed to create vertex buffer");
 
     let uniforms = &uniform! {
         image: new_uniform,
@@ -233,7 +235,7 @@ pub(crate) fn draw_upscale(
             uniforms,
             &Default::default(),
         )
-        .unwrap();
+        .expect("Failed to draw to the screen");
 
     target
         .finish()
@@ -271,7 +273,8 @@ pub(crate) fn draw_reflections(
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer =
+        glium::VertexBuffer::new(display, &shape).expect("Failed to create vertex buffer");
 
     let camera_pos = camera.position;
 
@@ -301,7 +304,7 @@ pub(crate) fn draw_reflections(
                 ..Default::default()
             },
         )
-        .unwrap();
+        .expect("Failed to draw to the framebuffer");
 
     let reflection_sampler = glium::uniforms::Sampler::new(&reflection_texture)
         .anisotropy(1)
@@ -333,7 +336,8 @@ pub(crate) fn draw_gaussian_blur(
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer =
+        glium::VertexBuffer::new(display, &shape).expect("Failed to create vertex buffer");
 
     let uniforms = &uniform! {
         tex: blur_sampler,
@@ -355,7 +359,7 @@ pub(crate) fn draw_gaussian_blur(
                 ..Default::default()
             },
         )
-        .unwrap();
+        .expect("Failed to draw to the framebuffer");
 }
 
 pub(crate) fn draw_generate_normals(
@@ -373,7 +377,8 @@ pub(crate) fn draw_generate_normals(
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer =
+        glium::VertexBuffer::new(display, &shape).expect("Failed to create vertex buffer");
 
     let uniforms = &uniform! {
         heightmap: height_uniform,
@@ -388,7 +393,7 @@ pub(crate) fn draw_generate_normals(
             uniforms,
             &Default::default(),
         )
-        .unwrap();
+        .expect("Failed to draw to the framebuffer");
 }
 
 pub(crate) fn draw_fill_alpha(
@@ -399,11 +404,14 @@ pub(crate) fn draw_fill_alpha(
 ) {
     let display = &program.display;
     let indices = &program.indices;
-    let shader = &program.get_shader("fill_alpha").unwrap();
+    let shader = &program
+        .get_shader("fill_alpha")
+        .expect("Failed to load fill alpha shader");
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer =
+        glium::VertexBuffer::new(display, &shape).expect("Failed to create vertex buffer");
 
     let uniforms = &uniform! {
         target_fill: target_sampler,
@@ -418,7 +426,7 @@ pub(crate) fn draw_fill_alpha(
             uniforms,
             &Default::default(),
         )
-        .unwrap();
+        .expect("Failed to draw to the framebuffer");
 }
 
 pub(crate) fn new_fill_alpha_texure(
@@ -436,7 +444,7 @@ pub(crate) fn new_fill_alpha_texure(
         dimensions.0,
         dimensions.1,
     )
-    .unwrap();
+    .expect("Failed to create texture for height texture");
 
     let mut framebuffer = glium::framebuffer::SimpleFrameBuffer::new(display, &texture)
         .expect("Failed to create framebuffer for height texture");
@@ -454,11 +462,14 @@ pub(crate) fn faster_clear_color(
 ) {
     let display = &program.display;
     let indices = &program.indices;
-    let shader = &program.get_shader("faster_clear_color_shader").unwrap();
+    let shader = &program
+        .get_shader("faster_clear_color_shader")
+        .expect("Failed to load shader");
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer =
+        glium::VertexBuffer::new(display, &shape).expect("Failed to create vertex buffer");
 
     let uniforms = &uniform! {
         new_color: color,
@@ -472,7 +483,7 @@ pub(crate) fn faster_clear_color(
             uniforms,
             &Default::default(),
         )
-        .unwrap();
+        .expect("Failed to draw to the framebuffer");
 }
 
 pub(crate) fn draw_overlay(
@@ -483,11 +494,14 @@ pub(crate) fn draw_overlay(
 ) {
     let display = &program.display;
     let indices = &program.indices;
-    let shader = &program.get_shader("overlay_shader").unwrap();
+    let shader = &program
+        .get_shader("overlay_shader")
+        .expect("Failed to load overlay shader");
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer =
+        glium::VertexBuffer::new(display, &shape).expect("Failed to create vertex buffer");
 
     let uniforms = &uniform! {
         top_tex: top_uniform,
@@ -502,7 +516,7 @@ pub(crate) fn draw_overlay(
             uniforms,
             &Default::default(),
         )
-        .unwrap();
+        .expect("Failed to draw to the framebuffer");
 }
 
 pub(crate) fn draw_recieve_shadows(
@@ -514,11 +528,14 @@ pub(crate) fn draw_recieve_shadows(
 ) {
     let display = &program.display;
     let indices = &program.indices;
-    let shader = &program.get_shader("recieve_shadows_shader").unwrap();
+    let shader = &program
+        .get_shader("recieve_shadows_shader")
+        .expect("Failed to load shader");
 
     let shape = FULL_SCREEN_QUAD;
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer =
+        glium::VertexBuffer::new(display, &shape).expect("Failed to create vertex buffer");
 
     let uniforms = &uniform! {
         last_draw: last_frame_sampler,
@@ -534,7 +551,7 @@ pub(crate) fn draw_recieve_shadows(
             uniforms,
             &Default::default(),
         )
-        .unwrap();
+        .expect("Failed to draw to the framebuffer");
 }
 
 pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
@@ -611,7 +628,7 @@ pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
             FILL_ALPHA_FRAGMENT_SHADER_SRC,
             None,
         )
-        .unwrap();
+        .expect("Failed to load fill alpha shader");
         program.add_shader(shader, "fill_alpha");
     }
 
@@ -623,7 +640,7 @@ pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
             CROP_FRAGMENT_SHADER_SRC,
             None,
         )
-        .unwrap();
+        .expect("Failed to load crop shader");
         program.add_shader(shader, "crop_shader");
     }
 
@@ -635,7 +652,7 @@ pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
             OVERLAY_FRAGMENT_SHADER_SRC,
             None,
         )
-        .unwrap();
+        .expect("Failed to load overlay shader");
         program.add_shader(shader, "overlay_shader");
     }
 
@@ -647,7 +664,7 @@ pub(crate) fn load_all_system_shaders(program: &mut LumenpyxProgram) {
             GAUSSIAN_BLUR_FRAGMENT_SHADER_SRC,
             None,
         )
-        .unwrap();
+        .expect("Failed to load gaussian blur shader");
         program.add_shader(shader, "gaussian_blur");
     }
 }

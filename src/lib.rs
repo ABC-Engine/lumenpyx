@@ -6,6 +6,7 @@ use glium::implement_vertex;
 use glium::Surface;
 /// This module contains all the window and display setup functions
 pub use winit;
+use winit::event_loop;
 use winit::event_loop::EventLoop;
 /// This module contains all the objects that can be drawn in the program
 pub mod primitives;
@@ -169,7 +170,7 @@ impl LumenpyxProgram {
                 }
                 _ => (),
             })
-            .unwrap();
+            .expect("Failed to run event loop");
     }
 }
 
@@ -269,10 +270,10 @@ fn load_image(path: &str) -> glium::texture::RawImage2d<f32> {
     img.flipv();
     let path = format!("{}", path);
     let image = image::load(
-        std::io::Cursor::new(std::fs::read(path).unwrap()),
+        std::io::Cursor::new(std::fs::read(path).expect("Failed to read image")),
         image::ImageFormat::Png,
     )
-    .unwrap()
+    .expect("Failed to load image")
     .to_rgba32f();
     let image_dimensions = image.dimensions();
     let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image, image_dimensions);
@@ -286,13 +287,20 @@ fn setup_window() -> (
     glium::index::NoIndices,
 ) {
     // 1. The **winit::EventLoop** for handling events.
-    let event_loop = winit::event_loop::EventLoopBuilder::new().build().unwrap();
-    // 2. Create a glutin context and glium Display
-    let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new().build(&event_loop);
+    let event_loop = winit::event_loop::EventLoopBuilder::new().build();
 
-    let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
+    match event_loop {
+        Ok(event_loop) => {
+            // 2. Create a glutin context and glium Display
+            let (window, display) =
+                glium::backend::glutin::SimpleWindowBuilder::new().build(&event_loop);
 
-    (event_loop, display, window, indices)
+            let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
+
+            (event_loop, display, window, indices)
+        }
+        Err(error) => panic!("Failed to create event loop: {}", error),
+    }
 }
 
 /// The camera struct is used to determine the position of the camera
@@ -408,7 +416,7 @@ pub fn draw_all(
         render_resolution[0],
         render_resolution[1],
     )
-    .unwrap();
+    .expect("Failed to create albedo texture");
 
     let height_texture = glium::texture::Texture2d::empty_with_format(
         display,
@@ -417,7 +425,7 @@ pub fn draw_all(
         render_resolution[0],
         render_resolution[1],
     )
-    .unwrap();
+    .expect("Failed to create height texture");
 
     let normal_texture = glium::texture::Texture2d::empty_with_format(
         display,
@@ -426,7 +434,7 @@ pub fn draw_all(
         render_resolution[0],
         render_resolution[1],
     )
-    .unwrap();
+    .expect("Failed to create normal texture");
 
     let roughness_texture = glium::texture::Texture2d::empty_with_format(
         display,
@@ -435,7 +443,7 @@ pub fn draw_all(
         render_resolution[0],
         render_resolution[1],
     )
-    .unwrap();
+    .expect("Failed to create roughness texture");
 
     let shadow_strength_texture = glium::texture::Texture2d::empty_with_format(
         display,
@@ -444,7 +452,7 @@ pub fn draw_all(
         render_resolution[0],
         render_resolution[1],
     )
-    .unwrap();
+    .expect("Failed to create shadow strength texture");
 
     {
         let last_drawable_texture = glium::texture::Texture2d::empty_with_format(
@@ -454,10 +462,11 @@ pub fn draw_all(
             render_resolution[0],
             render_resolution[1],
         )
-        .unwrap();
+        .expect("Failed to create last drawable texture");
 
         let last_drawable_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &last_drawable_texture).unwrap();
+            glium::framebuffer::SimpleFrameBuffer::new(display, &last_drawable_texture)
+                .expect("Failed to create last drawable framebuffer");
 
         let last_drawable_sampler =
             glium::uniforms::Sampler(&last_drawable_texture, DEFAULT_BEHAVIOR);
@@ -465,21 +474,26 @@ pub fn draw_all(
         let this_drawable_sampler = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
 
         let mut albedo_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &albedo_texture).unwrap();
+            glium::framebuffer::SimpleFrameBuffer::new(display, &albedo_texture)
+                .expect("Failed to create albedo framebuffer");
 
         let mut height_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &height_texture).unwrap();
+            glium::framebuffer::SimpleFrameBuffer::new(display, &height_texture)
+                .expect("Failed to create height framebuffer");
 
         let mut roughness_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &roughness_texture).unwrap();
+            glium::framebuffer::SimpleFrameBuffer::new(display, &roughness_texture)
+                .expect("Failed to create roughness framebuffer");
 
         let mut normal_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture).unwrap();
+            glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture)
+                .expect("Failed to create normal framebuffer");
 
         normal_framebuffer.clear_color(0.0, 0.0, 1.0, 1.0);
 
         let mut shadow_strength_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &shadow_strength_texture).unwrap();
+            glium::framebuffer::SimpleFrameBuffer::new(display, &shadow_strength_texture)
+                .expect("Failed to create shadow strength framebuffer");
 
         for drawable in &drawables {
             let mut new_matrix = drawable.get_position();
@@ -552,8 +566,8 @@ pub fn draw_all(
         let shadow_strength_sampler =
             glium::uniforms::Sampler(&shadow_strength_texture, DEFAULT_BEHAVIOR);
 
-        let mut lit_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture).unwrap();
+        let mut lit_framebuffer = glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture)
+            .expect("Failed to create lit frame buffer");
 
         for light in lights {
             let mut new_matrix = light.get_transform();
@@ -605,7 +619,8 @@ pub fn draw_all(
         };
 
         let mut reflected_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &reflected_texture).unwrap();
+            glium::framebuffer::SimpleFrameBuffer::new(display, &reflected_texture)
+                .expect("Failed to create reflected frame buffer");
 
         draw_reflections(
             camera,

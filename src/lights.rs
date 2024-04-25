@@ -130,7 +130,7 @@ impl LightDrawable for PointLight {
                 POINT_LIGHT_FRAGMENT_SHADER_SRC,
                 None,
             )
-            .unwrap();
+            .expect("Failed to create point light shader program");
 
             program.add_shader(shader, "point_light_shader");
         }
@@ -242,7 +242,7 @@ impl LightDrawable for AreaLight {
                 RECTANGLE_LIGHT_FRAGMENT_SHADER_SRC,
                 None,
             )
-            .unwrap();
+            .expect("Failed to create rectangle light shader program");
 
             program.add_shader(shader, "rectangle_light_shader");
         }
@@ -367,7 +367,7 @@ impl LightDrawable for DirectionalLight {
                 DIRECTIONAL_LIGHT_FRAGMENT_SHADER_SRC,
                 None,
             )
-            .unwrap();
+            .expect("Failed to create directional light shader program");
 
             program.add_shader(shader, "directional_light_shader");
         }
@@ -395,7 +395,7 @@ pub(crate) fn draw_point_light(
 ) {
     let display = &program.display;
     let indices = &program.indices;
-    let shader = &program.get_shader("point_light_shader").unwrap();
+    let shader = &program.get_shader("point_light_shader").expect("Shader not found: 'point_light_shader' this should be loaded by default, did you overwrite the default shaders?");
 
     let shape = FULL_SCREEN_QUAD;
 
@@ -406,7 +406,8 @@ pub(crate) fn draw_point_light(
         light.position[2] * matrix_transform[2][2],
     ];
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+        .expect("Failed to create vertex buffer for point light");
 
     let uniforms = &uniform! {
         heightmap: heightmap,
@@ -429,7 +430,7 @@ pub(crate) fn draw_point_light(
                 ..Default::default()
             },
         )
-        .unwrap();
+        .expect("Failed to draw point light");
 }
 
 fn draw_area_light(
@@ -443,7 +444,9 @@ fn draw_area_light(
 ) {
     let display = &program.display;
     let indices = &program.indices;
-    let shader = &program.get_shader("rectangle_light_shader").unwrap();
+    let shader = &program
+        .get_shader("rectangle_light_shader")
+        .expect("Shader not found: 'rectangle_light_shader' this should be loaded by default, did you overwrite the default shaders?");
 
     let shape = FULL_SCREEN_QUAD;
 
@@ -455,7 +458,8 @@ fn draw_area_light(
     let light_width = light.width * matrix_transform[0][0];
     let light_height = light.height * matrix_transform[1][1];
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+        .expect("Failed to create vertex buffer for area light");
 
     let uniforms = &uniform! {
         heightmap: height_uniform,
@@ -480,7 +484,7 @@ fn draw_area_light(
                 ..Default::default()
             },
         )
-        .unwrap();
+        .expect("Failed to draw area light");
 }
 
 fn draw_directional_light(
@@ -494,7 +498,7 @@ fn draw_directional_light(
 ) {
     let display = &program.display;
     let indices = &program.indices;
-    let shader = &program.get_shader("directional_light_shader").unwrap();
+    let shader = &program.get_shader("directional_light_shader").expect("Shader not found: 'directional_light_shader' this should be loaded by default, did you overwrite the default shaders?");
 
     let shape = FULL_SCREEN_QUAD;
 
@@ -504,7 +508,8 @@ fn draw_directional_light(
         light.position[2] * matrix_transform[2][2],
     ];
 
-    let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+        .expect("Failed to create vertex buffer for directional light");
 
     let uniforms = &uniform! {
         heightmap: height_uniform,
@@ -529,5 +534,5 @@ fn draw_directional_light(
                 ..Default::default()
             },
         )
-        .unwrap();
+        .expect("Failed to draw directional light");
 }
