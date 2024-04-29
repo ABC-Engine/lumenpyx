@@ -1,5 +1,6 @@
 use crate::shaders::FULL_SCREEN_QUAD;
 use crate::LumenpyxProgram;
+use crate::Transform;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
@@ -50,6 +51,7 @@ pub trait LightDrawable {
     );
     fn try_load_shaders(&self, program: &mut LumenpyxProgram);
     fn get_transform(&self) -> [[f32; 4]; 4];
+    fn set_transform(&mut self, transform: Transform);
 }
 
 /// A point light source
@@ -143,6 +145,10 @@ impl LightDrawable for PointLight {
             [0.0, 0.0, 1.0, 0.0],
             [self.position[0], self.position[1], self.position[2], 0.0],
         ]
+    }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.position = [transform.get_x(), transform.get_y(), transform.get_z()];
     }
 }
 
@@ -255,6 +261,10 @@ impl LightDrawable for AreaLight {
             [0.0, 0.0, 1.0, 0.0],
             [self.position[0], self.position[1], self.position[2], 1.0],
         ]
+    }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.position = [transform.get_x(), transform.get_y(), transform.get_z()];
     }
 }
 
@@ -380,6 +390,10 @@ impl LightDrawable for DirectionalLight {
             [0.0, 0.0, 1.0, 0.0],
             [self.position[0], self.position[1], self.position[2], 1.0],
         ]
+    }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.position = [transform.get_x(), transform.get_y(), transform.get_z()];
     }
 }
 

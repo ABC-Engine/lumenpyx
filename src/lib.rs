@@ -1,3 +1,4 @@
+use std::ops::Add;
 use std::path::Path;
 
 use glium;
@@ -85,6 +86,7 @@ impl LumenpyxProgram {
     /// Create a new program with the given resolution and name
     pub fn new(resolution: [u32; 2], name: &str) -> (LumenpyxProgram, EventLoop<()>) {
         let (event_loop, window, display, indices) = setup_program();
+        event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
         let mut program = LumenpyxProgram {
             window,
@@ -164,7 +166,7 @@ impl LumenpyxProgram {
                     _ => (),
                 },
                 winit::event::Event::AboutToWait => {
-                    // RedrawRequested will only trigger once, unless we manually
+                    // RedrawRequested will only when we resize the window, so we need to manually
                     // request it.
                     self.window.request_redraw();
                 }
@@ -172,12 +174,22 @@ impl LumenpyxProgram {
             })
             .expect("Failed to run event loop");
     }
+
+    pub fn get_dimensions(&self) -> [u32; 2] {
+        self.dimensions
+    }
 }
 
 /// The transform struct is used to determine the position and scale of an object
 #[derive(Copy, Clone)]
 pub struct Transform {
     matrix: [[f32; 4]; 4],
+}
+
+impl Default for Transform {
+    fn default() -> Self {
+        Transform::new([0.0, 0.0, 0.0])
+    }
 }
 
 impl Transform {
@@ -239,6 +251,43 @@ impl Transform {
     /// get the z position of the transform
     pub fn get_z(&self) -> f32 {
         self.matrix[3][2]
+    }
+
+    /// set the rotation of the transform
+    pub fn set_rotation(&mut self, angle: f32) {
+        self.matrix[0][0] = angle.cos();
+        self.matrix[0][1] = -angle.sin();
+        self.matrix[1][0] = angle.sin();
+        self.matrix[1][1] = angle.cos();
+    }
+
+    pub fn get_rotation(&self) -> f32 {
+        self.matrix[0][0].acos()
+    }
+}
+
+/// a is the parent
+impl<'a, 'b> std::ops::Add<&'b Transform> for &'a Transform {
+    type Output = Transform;
+
+    fn add(self, other: &'b Transform) -> Transform {
+        let mut new_transform = Transform::new([0.0, 0.0, 0.0]);
+
+        new_transform.translate(
+            self.get_x() + other.get_x(),
+            self.get_y() + other.get_y(),
+            self.get_z() + other.get_z(),
+        );
+
+        new_transform.set_rotation(self.get_rotation() + other.get_rotation());
+
+        new_transform.set_scale(
+            self.get_x() * other.get_x(),
+            self.get_y() * other.get_y(),
+            self.get_z() * other.get_z(),
+        );
+
+        new_transform
     }
 }
 
@@ -304,6 +353,7 @@ fn setup_window() -> (
 }
 
 /// The camera struct is used to determine the position of the camera
+#[derive(Copy, Clone)]
 pub struct Camera {
     pub position: [f32; 3],
 }

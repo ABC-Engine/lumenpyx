@@ -280,6 +280,10 @@ impl Drawable for Circle {
     fn get_recieve_shadows_strength(&self) -> f32 {
         self.shadow_strength
     }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
+    }
 }
 
 /// A sphere primitive.
@@ -369,6 +373,10 @@ impl Drawable for Sphere {
     fn get_recieve_shadows_strength(&self) -> f32 {
         self.shadow_strength
     }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
+    }
 }
 
 /// A rectangle primitive.
@@ -435,6 +443,10 @@ impl Drawable for Rectangle {
 
     fn get_recieve_shadows_strength(&self) -> f32 {
         self.shadow_strength
+    }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
     }
 }
 
@@ -531,6 +543,10 @@ impl Drawable for Cylinder {
 
     fn get_recieve_shadows_strength(&self) -> f32 {
         self.shadow_strength
+    }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
     }
 }
 
@@ -998,5 +1014,9 @@ impl Drawable for Sprite {
     /// 0.0 is no shadows, 1.0 is full shadows
     fn get_recieve_shadows_strength(&self) -> f32 {
         self.shadow_strength
+    }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
     }
 }

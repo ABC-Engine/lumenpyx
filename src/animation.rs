@@ -168,6 +168,10 @@ impl Drawable for Animation {
     fn get_recieve_shadows_strength(&self) -> f32 {
         self.shadow_strength
     }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
+    }
 }
 
 /// splits a texture into multiple textures, one for each frame

@@ -34,4 +34,6 @@ pub trait Drawable {
     fn get_recieve_shadows_strength(&self) -> f32 {
         0.5
     }
+
+    fn set_transform(&mut self, transform: Transform);
 }
