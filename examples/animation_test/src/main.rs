@@ -15,7 +15,7 @@ fn main() {
         0.00,
     ))];
 
-    let mut animation = Animation::new_from_images(
+    let animation = Animation::new_from_images(
         "../images/Skeleton Walk/Animation/Skeleton Walk.png".into(),
         0.0.into(),
         0.0.into(),

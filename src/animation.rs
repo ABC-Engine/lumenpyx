@@ -419,3 +419,62 @@ fn load_tex_from_images_normal(
         }
     }
 }
+
+pub struct AnimationStateMachine {
+    transform: Transform, // not the most efficient way to do this, but it works
+    animations: Vec<Animation>,
+    current_animation: usize,
+}
+
+impl AnimationStateMachine {
+    pub fn new(animations: Vec<Animation>) -> Self {
+        Self {
+            transform: Transform::default(),
+            animations,
+            current_animation: 0,
+        }
+    }
+
+    pub fn set_current_animation(&mut self, index: usize) {
+        self.current_animation = index;
+    }
+}
+
+impl Drawable for AnimationStateMachine {
+    fn draw(
+        &self,
+        program: &LumenpyxProgram,
+        transform_matrix: [[f32; 4]; 4],
+        albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        self.animations[self.current_animation].draw(
+            program,
+            transform_matrix,
+            albedo_framebuffer,
+            height_framebuffer,
+            roughness_framebuffer,
+            normal_framebuffer,
+        );
+    }
+
+    fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
+        for animation in &self.animations {
+            animation.try_load_shaders(program);
+        }
+    }
+
+    fn get_position(&self) -> [[f32; 4]; 4] {
+        self.transform.get_matrix()
+    }
+
+    fn get_recieve_shadows_strength(&self) -> f32 {
+        self.animations[self.current_animation].get_recieve_shadows_strength()
+    }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
+    }
+}
