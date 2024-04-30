@@ -684,8 +684,16 @@ pub fn draw_all(
     }
 
     {
+        let reflected_texture = if render_settings.reflections {
+            &reflected_texture
+        } else if render_settings.shadows {
+            &lit_texture
+        } else {
+            &albedo_texture
+        };
+
         let finished_texture = match debug {
-            DebugOption::None => glium::uniforms::Sampler(&reflected_texture, DEFAULT_BEHAVIOR),
+            DebugOption::None => glium::uniforms::Sampler(reflected_texture, DEFAULT_BEHAVIOR),
             DebugOption::Albedo => glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR),
             DebugOption::Height => glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR),
             DebugOption::Roughness => {
