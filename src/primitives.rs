@@ -6,6 +6,7 @@ use crate::DEFAULT_BEHAVIOR;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
+use glium::DrawParameters;
 use glium::Surface;
 
 const GENERATE_CIRCLE_VERTEX_SHADER_SRC: &str =
@@ -54,6 +55,7 @@ pub fn draw_circle(
     matrix_transform: [[f32; 4]; 4],
     program: &LumenpyxProgram,
     framebuffer: &mut SimpleFrameBuffer,
+    blend_mode: Option<glium::Blend>,
 ) {
     let display = &program.display;
     let indices = &program.indices;
@@ -86,7 +88,10 @@ pub fn draw_circle(
             indices,
             &shader,
             uniforms,
-            &Default::default(),
+            &DrawParameters {
+                blend: blend_mode.unwrap_or(Default::default()),
+                ..Default::default()
+            },
         )
         .expect("Failed to draw circle");
 }
@@ -101,11 +106,19 @@ pub fn draw_sphere(
     albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    blend_mode: Option<glium::Blend>,
 ) {
     let display = &program.display;
     let indices = &program.indices;
 
-    draw_circle(color, radius, matrix_transform, program, albedo_framebuffer);
+    draw_circle(
+        color,
+        radius,
+        matrix_transform,
+        program,
+        albedo_framebuffer,
+        blend_mode,
+    );
 
     let smallest_dim = albedo_framebuffer
         .get_dimensions()
@@ -135,7 +148,10 @@ pub fn draw_sphere(
                 indices,
                 &height_shader,
                 uniforms,
-                &Default::default(),
+                &DrawParameters {
+                    blend: blend_mode.unwrap_or(Default::default()),
+                    ..Default::default()
+                },
             )
             .expect("Failed to draw sphere height map");
     }
@@ -167,7 +183,10 @@ pub fn draw_sphere(
                 indices,
                 &normal_shader,
                 uniforms,
-                &Default::default(),
+                &DrawParameters {
+                    blend: blend_mode.unwrap_or(Default::default()),
+                    ..Default::default()
+                },
             )
             .expect("Failed to draw sphere normal map");
     }
@@ -180,6 +199,7 @@ fn draw_rectangle(
     matrix_transform: [[f32; 4]; 4],
     program: &LumenpyxProgram,
     framebuffer: &mut SimpleFrameBuffer,
+    blend_mode: Option<glium::Blend>,
 ) {
     let display = &program.display;
     let indices = &program.indices;
@@ -213,7 +233,10 @@ fn draw_rectangle(
             indices,
             &shader,
             uniforms,
-            &Default::default(),
+            &DrawParameters {
+                blend: blend_mode.unwrap_or(Default::default()),
+                ..Default::default()
+            },
         )
         .expect("Failed to draw rectangle");
 }
@@ -247,6 +270,7 @@ impl Drawable for Circle {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        blend_mode: Option<glium::Blend>,
     ) {
         draw_circle(
             self.color,
@@ -254,6 +278,7 @@ impl Drawable for Circle {
             matrix_transform,
             program,
             albedo_framebuffer,
+            blend_mode,
         );
     }
 
@@ -315,6 +340,7 @@ impl Drawable for Sphere {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        blend_mode: Option<glium::Blend>,
     ) {
         draw_sphere(
             self.color,
@@ -324,6 +350,7 @@ impl Drawable for Sphere {
             albedo_framebuffer,
             height_framebuffer,
             normal_framebuffer,
+            blend_mode,
         );
     }
 
@@ -410,6 +437,7 @@ impl Drawable for Rectangle {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        blend_mode: Option<glium::Blend>,
     ) {
         draw_rectangle(
             self.color,
@@ -418,6 +446,7 @@ impl Drawable for Rectangle {
             matrix_transform,
             program,
             albedo_framebuffer,
+            blend_mode,
         );
     }
 
@@ -486,6 +515,7 @@ impl Drawable for Cylinder {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        blend_mode: Option<glium::Blend>,
     ) {
         draw_cylinder(
             self.color,
@@ -496,6 +526,7 @@ impl Drawable for Cylinder {
             albedo_framebuffer,
             height_framebuffer,
             normal_framebuffer,
+            blend_mode,
         );
     }
 
@@ -559,6 +590,7 @@ fn draw_cylinder(
     albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    blend_mode: Option<glium::Blend>,
 ) {
     draw_rectangle(
         color,
@@ -567,6 +599,7 @@ fn draw_cylinder(
         matrix_transform,
         program,
         albedo_framebuffer,
+        blend_mode,
     );
 
     let smallest_dim = albedo_framebuffer
@@ -600,7 +633,10 @@ fn draw_cylinder(
             indices,
             &shader,
             uniforms,
-            &Default::default(),
+            &DrawParameters {
+                blend: blend_mode.unwrap_or(Default::default()),
+                ..Default::default()
+            },
         )
         .expect("Failed to draw cylinder height map");
 
@@ -631,7 +667,10 @@ fn draw_cylinder(
             indices,
             &normal_shader,
             uniforms,
-            &Default::default(),
+            &DrawParameters {
+                blend: blend_mode.unwrap_or(Default::default()),
+                ..Default::default()
+            },
         )
         .expect("Failed to draw cylinder normal map");
 }
@@ -894,6 +933,7 @@ impl Drawable for Sprite {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        blend_mode: Option<glium::Blend>,
     ) {
         let indices = &program.indices;
         let display = &program.display;
@@ -929,66 +969,37 @@ impl Drawable for Sprite {
             transform_matrix[1][1] *= y_scale;
         }
 
-        let uniform = &uniform! {
-            matrix: transform_matrix,
-            image: image,
-        };
+        draw_texture(
+            &self.albedo_texture,
+            transform_matrix,
+            program,
+            albedo_framebuffer,
+            blend_mode,
+        );
 
-        albedo_framebuffer
-            .draw(
-                &vertex_buffer,
-                indices,
-                &shader,
-                uniform,
-                &Default::default(),
-            )
-            .expect("failed to draw sprite albedo");
+        draw_texture(
+            &self.height_texture,
+            transform_matrix,
+            program,
+            height_framebuffer,
+            blend_mode,
+        );
 
-        image = glium::uniforms::Sampler(&self.height_texture, DEFAULT_BEHAVIOR);
-        let uniform = &uniform! {
-            matrix: transform_matrix,
-            image: image,
-        };
-        height_framebuffer
-            .draw(
-                &vertex_buffer,
-                indices,
-                &shader,
-                uniform,
-                &Default::default(),
-            )
-            .expect("failed to draw sprite height");
+        draw_texture(
+            &self.roughness_texture,
+            transform_matrix,
+            program,
+            roughness_framebuffer,
+            blend_mode,
+        );
 
-        image = glium::uniforms::Sampler(&self.roughness_texture, DEFAULT_BEHAVIOR);
-        let uniform = &uniform! {
-            matrix: transform_matrix,
-            image: image,
-        };
-
-        roughness_framebuffer
-            .draw(
-                &vertex_buffer,
-                indices,
-                &shader,
-                uniform,
-                &Default::default(),
-            )
-            .expect("failed to draw sprite roughness");
-
-        image = glium::uniforms::Sampler(&self.normal_texture, DEFAULT_BEHAVIOR);
-        let uniform = &uniform! {
-            matrix: transform_matrix,
-            image: image,
-        };
-        normal_framebuffer
-            .draw(
-                &vertex_buffer,
-                indices,
-                &shader,
-                uniform,
-                &Default::default(),
-            )
-            .expect("failed to draw sprite normal");
+        draw_texture(
+            &self.normal_texture,
+            transform_matrix,
+            program,
+            normal_framebuffer,
+            blend_mode,
+        );
     }
 
     fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
@@ -1019,4 +1030,44 @@ impl Drawable for Sprite {
     fn set_transform(&mut self, transform: Transform) {
         self.transform = transform;
     }
+}
+
+pub(crate) fn draw_texture(
+    texture: &glium::texture::Texture2d,
+    matrix_transform: [[f32; 4]; 4],
+    program: &LumenpyxProgram,
+    framebuffer: &mut SimpleFrameBuffer,
+    blend_mode: Option<glium::Blend>,
+) {
+    let display = &program.display;
+    let indices = &program.indices;
+
+    let shader = program
+        .get_shader("sprite_shader")
+        .expect("Failed to get sprite shader");
+
+    let shape = FULL_SCREEN_QUAD;
+
+    let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+        .expect("Failed to create vertex buffer for sprite");
+
+    let image = glium::uniforms::Sampler(texture, DEFAULT_BEHAVIOR);
+
+    let uniform = &uniform! {
+        matrix: matrix_transform,
+        image: image,
+    };
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &shader,
+            uniform,
+            &DrawParameters {
+                blend: blend_mode.unwrap_or(Default::default()),
+                ..Default::default()
+            },
+        )
+        .expect("failed to draw sprite");
 }

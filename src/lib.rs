@@ -1,13 +1,9 @@
-use std::ops::Add;
-use std::path::Path;
-
 use glium;
 use glium::glutin::surface::WindowSurface;
 use glium::implement_vertex;
 use glium::Surface;
 /// This module contains all the window and display setup functions
 pub use winit;
-use winit::event_loop;
 use winit::event_loop::EventLoop;
 /// This module contains all the objects that can be drawn in the program
 pub mod primitives;
@@ -20,6 +16,7 @@ pub mod drawable_object;
 use drawable_object::*;
 use rustc_hash::FxHashMap;
 pub mod animation;
+pub mod blending;
 /// This module contains all the lights that can be used in the program
 /// As well as containing the trait that all lights must implement
 pub mod lights;
@@ -409,6 +406,7 @@ impl RenderSettings {
         self
     }
 
+    // default is 0.01
     pub fn with_blur_strength(mut self, strength: f32) -> Self {
         self.blur_strength = strength;
         self
@@ -572,6 +570,7 @@ pub fn draw_all(
                 &mut height_framebuffer,
                 &mut roughness_framebuffer,
                 &mut normal_framebuffer,
+                None,
             );
 
             if render_settings.shadows {

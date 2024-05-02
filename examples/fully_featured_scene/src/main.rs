@@ -10,7 +10,8 @@ fn main() {
     lumen_program.set_render_settings(
         RenderSettings::default()
             .with_render_resolution([512, 256])
-            .with_blur_reflections(true),
+            .with_blur_reflections(true)
+            .with_blur_strength(0.02),
     );
 
     let mut lights = vec![

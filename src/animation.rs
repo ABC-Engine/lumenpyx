@@ -134,6 +134,7 @@ impl Drawable for Animation {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        blend_mode: Option<glium::Blend>,
     ) {
         let current_frame_num = self
             .start_time
@@ -152,6 +153,7 @@ impl Drawable for Animation {
             height_framebuffer,
             roughness_framebuffer,
             normal_framebuffer,
+            blend_mode,
         );
     }
 
@@ -449,6 +451,7 @@ impl Drawable for AnimationStateMachine {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+        blend_mode: Option<glium::Blend>,
     ) {
         self.animations[self.current_animation].draw(
             program,
@@ -457,6 +460,7 @@ impl Drawable for AnimationStateMachine {
             height_framebuffer,
             roughness_framebuffer,
             normal_framebuffer,
+            blend_mode,
         );
     }
 
