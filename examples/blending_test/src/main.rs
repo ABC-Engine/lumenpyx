@@ -1,5 +1,4 @@
-use lumenpyx::blending::{Blend, BlendObject};
-use lumenpyx::blending::{BlendingFunction, LinearBlendingFactor};
+use lumenpyx::blending::{BlendMode, BlendObject};
 use lumenpyx::drawable_object::Drawable;
 use lumenpyx::primitives::{Normal, Rectangle, Sprite, Texture};
 use lumenpyx::{lights::LightDrawable, winit::event, *};
@@ -39,22 +38,16 @@ fn main() {
         Transform::new([0.0, 0.0, 0.0]),
     );
 
-    let square = Rectangle::new([1.0, 1.0, 1.0, 0.5], 20.0, 20.0, Transform::default());
+    let square = Rectangle::new([0.0, 0.0, 0.0, 0.5], 20.0, 20.0, Transform::default());
 
-    let mask_blending = Blend {
-        color: BlendingFunction::AlwaysReplace,
-        alpha: BlendingFunction::Subtraction {
-            source: LinearBlendingFactor::SourceAlpha,
-            destination: LinearBlendingFactor::DestinationAlpha, // Adjust the constant alpha value as needed
-        },
-        ..Default::default() // Use default values for other blend settings
-    };
+    let square_full_screen =
+        Rectangle::new([1.0, 0.0, 0.0, 1.0], 128.0, 128.0, Transform::default());
 
     let blend_object = BlendObject::new(
         scene_drawable,
         square,
         // the square is a mask, so it should set the alpha of that area to 0.5 subtracted from the original alpha
-        mask_blending,
+        BlendMode::Subtractive,
     );
 
     let background = Rectangle::new([0.0, 1.0, 0.0, 1.0], 128.0, 128.0, Transform::default());

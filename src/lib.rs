@@ -570,7 +570,6 @@ pub fn draw_all(
                 &mut height_framebuffer,
                 &mut roughness_framebuffer,
                 &mut normal_framebuffer,
-                None,
             );
 
             if render_settings.shadows {

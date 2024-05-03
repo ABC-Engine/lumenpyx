@@ -3,6 +3,7 @@ use crate::shaders;
 use crate::Drawable;
 use crate::LumenpyxProgram;
 use crate::DEFAULT_BEHAVIOR;
+use crate::DEFAULT_BLEND;
 use glium;
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
@@ -55,7 +56,6 @@ pub fn draw_circle(
     matrix_transform: [[f32; 4]; 4],
     program: &LumenpyxProgram,
     framebuffer: &mut SimpleFrameBuffer,
-    blend_mode: Option<glium::Blend>,
 ) {
     let display = &program.display;
     let indices = &program.indices;
@@ -89,7 +89,7 @@ pub fn draw_circle(
             &shader,
             uniforms,
             &DrawParameters {
-                blend: blend_mode.unwrap_or(Default::default()),
+                blend: DEFAULT_BLEND,
                 ..Default::default()
             },
         )
@@ -106,19 +106,11 @@ pub fn draw_sphere(
     albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-    blend_mode: Option<glium::Blend>,
 ) {
     let display = &program.display;
     let indices = &program.indices;
 
-    draw_circle(
-        color,
-        radius,
-        matrix_transform,
-        program,
-        albedo_framebuffer,
-        blend_mode,
-    );
+    draw_circle(color, radius, matrix_transform, program, albedo_framebuffer);
 
     let smallest_dim = albedo_framebuffer
         .get_dimensions()
@@ -149,7 +141,7 @@ pub fn draw_sphere(
                 &height_shader,
                 uniforms,
                 &DrawParameters {
-                    blend: blend_mode.unwrap_or(Default::default()),
+                    blend: DEFAULT_BLEND,
                     ..Default::default()
                 },
             )
@@ -184,7 +176,7 @@ pub fn draw_sphere(
                 &normal_shader,
                 uniforms,
                 &DrawParameters {
-                    blend: blend_mode.unwrap_or(Default::default()),
+                    blend: DEFAULT_BLEND,
                     ..Default::default()
                 },
             )
@@ -199,7 +191,6 @@ fn draw_rectangle(
     matrix_transform: [[f32; 4]; 4],
     program: &LumenpyxProgram,
     framebuffer: &mut SimpleFrameBuffer,
-    blend_mode: Option<glium::Blend>,
 ) {
     let display = &program.display;
     let indices = &program.indices;
@@ -234,7 +225,7 @@ fn draw_rectangle(
             &shader,
             uniforms,
             &DrawParameters {
-                blend: blend_mode.unwrap_or(Default::default()),
+                blend: DEFAULT_BLEND,
                 ..Default::default()
             },
         )
@@ -270,7 +261,6 @@ impl Drawable for Circle {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        blend_mode: Option<glium::Blend>,
     ) {
         draw_circle(
             self.color,
@@ -278,7 +268,6 @@ impl Drawable for Circle {
             matrix_transform,
             program,
             albedo_framebuffer,
-            blend_mode,
         );
     }
 
@@ -340,7 +329,6 @@ impl Drawable for Sphere {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        blend_mode: Option<glium::Blend>,
     ) {
         draw_sphere(
             self.color,
@@ -350,7 +338,6 @@ impl Drawable for Sphere {
             albedo_framebuffer,
             height_framebuffer,
             normal_framebuffer,
-            blend_mode,
         );
     }
 
@@ -437,7 +424,6 @@ impl Drawable for Rectangle {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        blend_mode: Option<glium::Blend>,
     ) {
         draw_rectangle(
             self.color,
@@ -446,7 +432,6 @@ impl Drawable for Rectangle {
             matrix_transform,
             program,
             albedo_framebuffer,
-            blend_mode,
         );
     }
 
@@ -515,7 +500,6 @@ impl Drawable for Cylinder {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        blend_mode: Option<glium::Blend>,
     ) {
         draw_cylinder(
             self.color,
@@ -526,7 +510,6 @@ impl Drawable for Cylinder {
             albedo_framebuffer,
             height_framebuffer,
             normal_framebuffer,
-            blend_mode,
         );
     }
 
@@ -590,7 +573,6 @@ fn draw_cylinder(
     albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-    blend_mode: Option<glium::Blend>,
 ) {
     draw_rectangle(
         color,
@@ -599,7 +581,6 @@ fn draw_cylinder(
         matrix_transform,
         program,
         albedo_framebuffer,
-        blend_mode,
     );
 
     let smallest_dim = albedo_framebuffer
@@ -634,7 +615,7 @@ fn draw_cylinder(
             &shader,
             uniforms,
             &DrawParameters {
-                blend: blend_mode.unwrap_or(Default::default()),
+                blend: DEFAULT_BLEND,
                 ..Default::default()
             },
         )
@@ -668,7 +649,7 @@ fn draw_cylinder(
             &normal_shader,
             uniforms,
             &DrawParameters {
-                blend: blend_mode.unwrap_or(Default::default()),
+                blend: DEFAULT_BLEND,
                 ..Default::default()
             },
         )
@@ -933,7 +914,6 @@ impl Drawable for Sprite {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        blend_mode: Option<glium::Blend>,
     ) {
         let indices = &program.indices;
         let display = &program.display;
@@ -974,7 +954,6 @@ impl Drawable for Sprite {
             transform_matrix,
             program,
             albedo_framebuffer,
-            blend_mode,
         );
 
         draw_texture(
@@ -982,7 +961,6 @@ impl Drawable for Sprite {
             transform_matrix,
             program,
             height_framebuffer,
-            blend_mode,
         );
 
         draw_texture(
@@ -990,7 +968,6 @@ impl Drawable for Sprite {
             transform_matrix,
             program,
             roughness_framebuffer,
-            blend_mode,
         );
 
         draw_texture(
@@ -998,7 +975,6 @@ impl Drawable for Sprite {
             transform_matrix,
             program,
             normal_framebuffer,
-            blend_mode,
         );
     }
 
@@ -1037,7 +1013,6 @@ pub(crate) fn draw_texture(
     matrix_transform: [[f32; 4]; 4],
     program: &LumenpyxProgram,
     framebuffer: &mut SimpleFrameBuffer,
-    blend_mode: Option<glium::Blend>,
 ) {
     let display = &program.display;
     let indices = &program.indices;
@@ -1065,7 +1040,7 @@ pub(crate) fn draw_texture(
             &shader,
             uniform,
             &DrawParameters {
-                blend: blend_mode.unwrap_or(Default::default()),
+                blend: DEFAULT_BLEND,
                 ..Default::default()
             },
         )

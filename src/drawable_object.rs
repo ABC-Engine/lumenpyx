@@ -22,7 +22,6 @@ pub trait Drawable {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        blend_mode: Option<glium::Blend>,
     );
 
     /// Load the shaders for the object

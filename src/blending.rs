@@ -1,12 +1,26 @@
+use glium::DrawParameters;
 use glium::Surface;
 
-use crate::primitives::draw_texture;
+//use crate::primitives::draw_texture;
 use crate::Drawable;
 use crate::LumenpyxProgram;
 use crate::Transform;
-pub use glium::Blend;
-pub use glium::BlendingFunction;
-pub use glium::LinearBlendingFactor;
+use crate::DEFAULT_BLEND;
+use crate::FULL_SCREEN_QUAD;
+use glium::uniform;
+//pub use glium::Blend;
+//pub use glium::BlendingFunction;
+//pub use glium::LinearBlendingFactor;
+
+const MIX_SHADER_FRAG: &str = include_str!("../shaders/technical_shaders/mix.frag");
+const MIX_SHADER_VERT: &str = include_str!("../shaders/technical_shaders/mix.vert");
+
+pub enum BlendMode {
+    Additive,
+    Subtractive,
+    Multiplicative,
+    Divisive,
+}
 
 pub struct BlendObject<T, U> {
     object_1: T,
@@ -14,11 +28,11 @@ pub struct BlendObject<T, U> {
     transform: Transform,
     // override the shadow strength of the object
     shadow_strength: f32,
-    blend: glium::Blend,
+    blend: BlendMode,
 }
 
 impl<T, U> BlendObject<T, U> {
-    pub fn new(object_1: T, object_2: U, blend: Blend) -> Self {
+    pub fn new(object_1: T, object_2: U, blend: BlendMode) -> Self {
         Self {
             object_1,
             object_2,
@@ -32,7 +46,7 @@ impl<T, U> BlendObject<T, U> {
         self.shadow_strength = shadow_strength;
     }
 
-    pub fn set_blend(&mut self, blend: Blend) {
+    pub fn set_blend(&mut self, blend: BlendMode) {
         self.blend = blend;
     }
 }
@@ -50,7 +64,6 @@ where
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        blend_mode: Option<glium::Blend>,
     ) {
         let display = &program.display;
         let render_resolution = albedo_framebuffer.get_dimensions();
@@ -60,7 +73,7 @@ where
 
         // create textures for albdeo, height, roughness, and normal
         // not sure how inefficient this is, but probably not great
-        for _ in 0..4 {
+        for _ in 0..8 {
             new_textures.push(
                 glium::texture::Texture2d::empty_with_format(
                     display,
@@ -73,7 +86,7 @@ where
             );
         }
 
-        for i in 0..4 {
+        for i in 0..8 {
             new_framebuffers.push(
                 glium::framebuffer::SimpleFrameBuffer::new(display, &new_textures[i])
                     .expect("Failed to create blending framebuffer"),
@@ -85,7 +98,6 @@ where
             let mut mutable_refs = new_framebuffers.iter_mut().collect::<Vec<_>>();
             let mut mutable_iter = mutable_refs.iter_mut();
 
-            // keep in mind the blend used here is meant to blend the two objects together
             self.object_1.draw(
                 program,
                 transform_matrix,
@@ -93,10 +105,8 @@ where
                 mutable_iter.next().unwrap(),
                 mutable_iter.next().unwrap(),
                 mutable_iter.next().unwrap(),
-                Some(self.blend),
             );
 
-            let mut mutable_iter = mutable_refs.iter_mut();
             self.object_2.draw(
                 program,
                 transform_matrix,
@@ -104,42 +114,42 @@ where
                 mutable_iter.next().unwrap(),
                 mutable_iter.next().unwrap(),
                 mutable_iter.next().unwrap(),
-                Some(self.blend),
             );
         }
 
         // overlay our texture to the main framebuffers
         // the blending mode here is meant to blend the new textures with the main framebuffers aka the one passed in
-        draw_texture(
+        // combine the textures
+        draw_mix(
             &new_textures[0],
-            Transform::default().get_matrix(),
+            &new_textures[4],
+            &self.blend,
             program,
             albedo_framebuffer,
-            blend_mode,
         );
 
-        draw_texture(
+        draw_mix(
             &new_textures[1],
-            Transform::default().get_matrix(),
+            &new_textures[5],
+            &self.blend,
             program,
             height_framebuffer,
-            blend_mode,
         );
 
-        draw_texture(
+        draw_mix(
             &new_textures[2],
-            Transform::default().get_matrix(),
+            &new_textures[6],
+            &self.blend,
             program,
             roughness_framebuffer,
-            blend_mode,
         );
 
-        draw_texture(
+        draw_mix(
             &new_textures[3],
-            Transform::default().get_matrix(),
+            &new_textures[7],
+            &self.blend,
             program,
             normal_framebuffer,
-            blend_mode,
         );
     }
 
@@ -158,5 +168,69 @@ where
     fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
         self.object_1.try_load_shaders(program);
         self.object_2.try_load_shaders(program);
+
+        if program.get_shader("mix").is_none() {
+            let shader = glium::Program::from_source(
+                &program.display,
+                MIX_SHADER_VERT,
+                MIX_SHADER_FRAG,
+                None,
+            )
+            .expect("Failed to create mix shader");
+
+            program.add_shader(shader, "mix");
+        }
     }
+}
+
+fn draw_mix(
+    bottom: &glium::texture::Texture2d,
+    top: &glium::texture::Texture2d,
+    blend: &BlendMode,
+    program: &LumenpyxProgram,
+    framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+) {
+    let display = &program.display;
+    let indices = &program.indices;
+
+    let shader = program.get_shader("mix").unwrap();
+
+    let uniforms = uniform! {
+        bottom_image: bottom,
+        top_image: top,
+        add: match blend {
+            BlendMode::Additive => true,
+            _ => false,
+        },
+        subtract: match blend {
+            BlendMode::Subtractive => true,
+            _ => false,
+        },
+        multiply: match blend {
+            BlendMode::Multiplicative => true,
+            _ => false,
+        },
+        divide: match blend {
+            BlendMode::Divisive => true,
+            _ => false,
+        },
+    };
+
+    let shape = FULL_SCREEN_QUAD;
+
+    let vertex_buffer =
+        glium::VertexBuffer::new(display, &shape).expect("Failed to create vertex buffer");
+
+    framebuffer
+        .draw(
+            &vertex_buffer,
+            indices,
+            &shader,
+            &uniforms,
+            &DrawParameters {
+                blend: DEFAULT_BLEND,
+                ..Default::default()
+            },
+        )
+        .expect("Failed to draw mix");
 }

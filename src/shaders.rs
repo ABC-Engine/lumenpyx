@@ -58,6 +58,18 @@ pub(crate) const GAUSSIAN_BLUR_FRAGMENT_SHADER_SRC: &str =
 pub(crate) const GAUSSIAN_BLUR_VERTEX_SHADER_SRC: &str =
     include_str!("../shaders/technical_shaders/blur_area.vert");
 
+pub(crate) const DEFAULT_BLEND: glium::Blend = glium::Blend {
+    color: glium::BlendingFunction::Addition {
+        source: glium::LinearBlendingFactor::SourceAlpha,
+        destination: glium::LinearBlendingFactor::OneMinusSourceAlpha,
+    },
+    alpha: glium::BlendingFunction::Addition {
+        source: glium::LinearBlendingFactor::SourceAlpha,
+        destination: glium::LinearBlendingFactor::OneMinusSourceAlpha,
+    },
+    constant_value: (0.0, 0.0, 0.0, 0.0),
+};
+
 /// A full screen quad that can be used to draw to the screen with a shader
 pub const FULL_SCREEN_QUAD: [Vertex; 6] = [
     Vertex {
