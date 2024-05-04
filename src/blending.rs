@@ -8,9 +8,6 @@ use crate::Transform;
 use crate::DEFAULT_BLEND;
 use crate::FULL_SCREEN_QUAD;
 use glium::uniform;
-//pub use glium::Blend;
-//pub use glium::BlendingFunction;
-//pub use glium::LinearBlendingFactor;
 
 const MIX_SHADER_FRAG: &str = include_str!("../shaders/technical_shaders/mix.frag");
 const MIX_SHADER_VERT: &str = include_str!("../shaders/technical_shaders/mix.vert");
@@ -25,8 +22,8 @@ pub enum BlendMode {
 
 pub struct BlendObject<'a, T, U>
 where
-    T: Drawable,
-    U: Drawable,
+    T: Drawable + ?Sized,
+    U: Drawable + ?Sized,
 {
     object_1: &'a T,
     object_2: &'a U,
@@ -38,8 +35,8 @@ where
 
 impl<'a, T, U> BlendObject<'a, T, U>
 where
-    T: Drawable,
-    U: Drawable,
+    T: Drawable + ?Sized,
+    U: Drawable + ?Sized,
 {
     pub fn new(object_1: &'a T, object_2: &'a U, blend: BlendMode) -> Self {
         Self {
@@ -62,8 +59,8 @@ where
 
 impl<'a, T, U> Drawable for BlendObject<'a, T, U>
 where
-    T: Drawable,
-    U: Drawable,
+    T: Drawable + ?Sized,
+    U: Drawable + ?Sized,
 {
     fn draw(
         &self,
