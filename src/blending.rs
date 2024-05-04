@@ -15,6 +15,7 @@ use glium::uniform;
 const MIX_SHADER_FRAG: &str = include_str!("../shaders/technical_shaders/mix.frag");
 const MIX_SHADER_VERT: &str = include_str!("../shaders/technical_shaders/mix.vert");
 
+#[derive(Clone, Copy, Debug)]
 pub enum BlendMode {
     Additive,
     Subtractive,
