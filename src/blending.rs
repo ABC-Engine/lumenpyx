@@ -22,17 +22,25 @@ pub enum BlendMode {
     Divisive,
 }
 
-pub struct BlendObject<T, U> {
-    object_1: T,
-    object_2: U,
+pub struct BlendObject<'a, T, U>
+where
+    T: Drawable,
+    U: Drawable,
+{
+    object_1: &'a T,
+    object_2: &'a U,
     transform: Transform,
     // override the shadow strength of the object
     shadow_strength: f32,
     blend: BlendMode,
 }
 
-impl<T, U> BlendObject<T, U> {
-    pub fn new(object_1: T, object_2: U, blend: BlendMode) -> Self {
+impl<'a, T, U> BlendObject<'a, T, U>
+where
+    T: Drawable,
+    U: Drawable,
+{
+    pub fn new(object_1: &'a T, object_2: &'a U, blend: BlendMode) -> Self {
         Self {
             object_1,
             object_2,
@@ -51,7 +59,7 @@ impl<T, U> BlendObject<T, U> {
     }
 }
 
-impl<T, U> Drawable for BlendObject<T, U>
+impl<'a, T, U> Drawable for BlendObject<'a, T, U>
 where
     T: Drawable,
     U: Drawable,

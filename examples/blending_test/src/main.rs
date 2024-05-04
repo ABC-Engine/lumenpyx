@@ -38,14 +38,14 @@ fn main() {
         Transform::new([0.0, 0.0, 0.0]),
     );
 
-    let square = Rectangle::new([0.0, 0.0, 0.0, 0.5], 20.0, 20.0, Transform::default());
+    let mut square = Rectangle::new([0.0, 0.0, 0.0, 0.5], 20.0, 20.0, Transform::default());
 
     let square_full_screen =
         Rectangle::new([1.0, 0.0, 0.0, 1.0], 128.0, 128.0, Transform::default());
 
     let blend_object = BlendObject::new(
-        scene_drawable,
-        square,
+        &scene_drawable,
+        &square,
         // the square is a mask, so it should set the alpha of that area to 0.5 subtracted from the original alpha
         BlendMode::Subtractive,
     );
