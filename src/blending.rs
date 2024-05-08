@@ -104,23 +104,55 @@ where
             let mut mutable_refs = new_framebuffers.iter_mut().collect::<Vec<_>>();
             let mut mutable_iter = mutable_refs.iter_mut();
 
-            self.object_1.draw(
-                program,
-                transform_matrix,
-                mutable_iter.next().unwrap(),
-                mutable_iter.next().unwrap(),
-                mutable_iter.next().unwrap(),
-                mutable_iter.next().unwrap(),
-            );
+            {
+                // all of this is a little bit of a hack to correctly position the object
+                let non_ajusted_object_transform =
+                    Transform::from_matrix(self.object_1.get_position());
+                let camera = crate::Camera::new([0.0, 0.0, 0.0]);
+                let mut adjusted_transform_matrix = program.adjust_transform_matrix_for_drawable(
+                    non_ajusted_object_transform
+                        .add_parent(&self.transform)
+                        .matrix,
+                    &camera,
+                );
+                // adjust based off camera, the camera offset is the plugged in camera position, because we don't give it the actual position of the camera
+                adjusted_transform_matrix[3][0] -= transform_matrix[3][0];
+                adjusted_transform_matrix[3][1] -= transform_matrix[3][1];
 
-            self.object_2.draw(
-                program,
-                transform_matrix,
-                mutable_iter.next().unwrap(),
-                mutable_iter.next().unwrap(),
-                mutable_iter.next().unwrap(),
-                mutable_iter.next().unwrap(),
-            );
+                self.object_1.draw(
+                    program,
+                    adjusted_transform_matrix,
+                    mutable_iter.next().unwrap(),
+                    mutable_iter.next().unwrap(),
+                    mutable_iter.next().unwrap(),
+                    mutable_iter.next().unwrap(),
+                );
+            }
+
+            {
+                // all of this is a little bit of a hack to correctly position the object
+                let non_ajusted_object_transform =
+                    Transform::from_matrix(self.object_2.get_position());
+                let camera = crate::Camera::new([0.0, 0.0, 0.0]);
+                let mut adjusted_transform_matrix = program.adjust_transform_matrix_for_drawable(
+                    non_ajusted_object_transform
+                        .add_parent(&self.transform)
+                        .matrix,
+                    &camera,
+                );
+                // adjust based off camera, the camera offset is the plugged in camera position, because we don't give it the actual position of the camera
+                adjusted_transform_matrix[3][0] -= transform_matrix[3][0];
+                adjusted_transform_matrix[3][1] -= transform_matrix[3][1];
+
+                self.object_2.draw(
+                    program,
+                    adjusted_transform_matrix,
+                    mutable_iter.next().unwrap(),
+                    mutable_iter.next().unwrap(),
+                    mutable_iter.next().unwrap(),
+                    mutable_iter.next().unwrap(),
+                );
+            }
         }
 
         // overlay our texture to the main framebuffers
@@ -164,7 +196,8 @@ where
     }
 
     fn get_position(&self) -> [[f32; 4]; 4] {
-        self.transform.get_matrix()
+        // this is dumb, but we need to find the camera position
+        Transform::default().matrix
     }
 
     fn get_recieve_shadows_strength(&self) -> f32 {

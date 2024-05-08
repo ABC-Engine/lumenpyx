@@ -15,6 +15,10 @@ uniform bool divide;
 void main() {
     vec4 bottom_color = texture(bottom_image, v_tex_coords);
     vec4 top_color = texture(top_image, v_tex_coords);
+    if (top_color.a == 0.0) {
+        color = bottom_color;
+        return;
+    }
 
     if(add) {
         color = bottom_color + top_color;

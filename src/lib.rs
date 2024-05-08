@@ -175,6 +175,40 @@ impl LumenpyxProgram {
     pub fn get_dimensions(&self) -> [u32; 2] {
         self.dimensions
     }
+
+    pub(crate) fn get_render_resolution(&self) -> [u32; 2] {
+        self.render_settings
+            .render_resolution
+            .unwrap_or(self.dimensions)
+    }
+
+    pub(crate) fn adjust_transform_matrix_for_drawable(
+        &self,
+        mut matrix: [[f32; 4]; 4],
+        camera: &Camera,
+    ) -> [[f32; 4]; 4] {
+        let render_resolution = self.get_render_resolution();
+
+        // scale off the resolution
+        if render_resolution[0] > render_resolution[1] {
+            matrix[0][0] *= render_resolution[1] as f32 / render_resolution[0] as f32;
+        } else {
+            matrix[1][1] *= render_resolution[0] as f32 / render_resolution[1] as f32;
+        }
+
+        // adjust off the camera no need to translate the z, it would just mess up the height map's interaction with the light
+        matrix[3][0] -= camera.position[0];
+        matrix[3][1] -= camera.position[1];
+
+        matrix[3][0] /= render_resolution[0] as f32;
+        matrix[3][1] /= render_resolution[1] as f32;
+
+        // because its -1 to 1, we need to multiply by 2
+        matrix[3][0] *= 2.0;
+        matrix[3][1] *= 2.0;
+
+        matrix
+    }
 }
 
 /// The transform struct is used to determine the position and scale of an object
@@ -190,6 +224,10 @@ impl Default for Transform {
 }
 
 impl Transform {
+    pub fn from_matrix(matrix: [[f32; 4]; 4]) -> Transform {
+        Transform { matrix }
+    }
+
     pub fn new(pos: [f32; 3]) -> Transform {
         Transform {
             matrix: [
@@ -218,6 +256,11 @@ impl Transform {
         self.matrix[0][0] = x;
         self.matrix[1][1] = y;
         self.matrix[2][2] = z;
+    }
+
+    /// get the scale of the transform
+    pub fn get_scale(&self) -> [f32; 3] {
+        [self.matrix[0][0], self.matrix[1][1], self.matrix[2][2]]
     }
 
     /// set the x position of the transform
@@ -260,6 +303,24 @@ impl Transform {
 
     pub fn get_rotation(&self) -> f32 {
         self.matrix[0][0].acos()
+    }
+
+    pub fn add_parent(&self, parent: &Transform) -> Transform {
+        let mut new_transform = Transform::new([0.0, 0.0, 0.0]);
+
+        new_transform.set_x(self.get_x() + parent.get_x());
+        new_transform.set_y(self.get_y() + parent.get_y());
+        new_transform.set_z(self.get_z() + parent.get_z());
+
+        new_transform.set_rotation(self.get_rotation() + parent.get_rotation());
+
+        new_transform.set_scale(
+            self.get_scale()[0] * parent.get_scale()[0],
+            self.get_scale()[1] * parent.get_scale()[1],
+            self.get_scale()[2] * parent.get_scale()[2],
+        );
+
+        new_transform
     }
 }
 
@@ -544,24 +605,8 @@ pub fn draw_all(
                 .expect("Failed to create shadow strength framebuffer");
 
         for drawable in &drawables {
-            let mut new_matrix = drawable.get_position();
-            // scale off the resolution
-            if render_resolution[0] > render_resolution[1] {
-                new_matrix[0][0] *= render_resolution[1] as f32 / render_resolution[0] as f32;
-            } else {
-                new_matrix[1][1] *= render_resolution[0] as f32 / render_resolution[1] as f32;
-            }
-
-            // adjust off the camera no need to translate the z, it would just mess up the height map's interaction with the light
-            new_matrix[3][0] -= camera.position[0];
-            new_matrix[3][1] -= camera.position[1];
-
-            new_matrix[3][0] /= render_resolution[0] as f32;
-            new_matrix[3][1] /= render_resolution[1] as f32;
-
-            // because its -1 to 1, we need to multiply by 2
-            new_matrix[3][0] *= 2.0;
-            new_matrix[3][1] *= 2.0;
+            let new_matrix =
+                program.adjust_transform_matrix_for_drawable(drawable.get_position(), camera);
 
             drawable.draw(
                 program,
@@ -618,22 +663,8 @@ pub fn draw_all(
             .expect("Failed to create lit frame buffer");
 
         for light in lights {
-            let mut new_matrix = light.get_transform();
-            if render_resolution[0] > render_resolution[1] {
-                new_matrix[0][0] *= render_resolution[1] as f32 / render_resolution[0] as f32;
-            } else {
-                new_matrix[1][1] *= render_resolution[0] as f32 / render_resolution[1] as f32;
-            }
-            // adjust off the camera no need to translate the z, it would just mess up the height map's interaction with the light
-            new_matrix[3][0] -= camera.position[0];
-            new_matrix[3][1] -= camera.position[1];
-
-            new_matrix[3][0] /= render_resolution[0] as f32;
-            new_matrix[3][1] /= render_resolution[1] as f32;
-
-            // because its -1 to 1, we need to multiply by 2
-            new_matrix[3][0] *= 2.0;
-            new_matrix[3][1] *= 2.0;
+            let new_matrix =
+                program.adjust_transform_matrix_for_drawable(light.get_transform(), camera);
 
             light.draw(
                 program,

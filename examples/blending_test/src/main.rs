@@ -29,7 +29,7 @@ fn main() {
         )),
     ];
 
-    let scene_drawable = Sprite::new(
+    let mut scene_drawable = Sprite::new(
         "../images/Demo-Scene-Albedo.png".into(),
         "../images/Demo-Scene-Heightmap.png".into(),
         "../images/Demo-Scene-Roughnessmap.png".into(),
@@ -40,30 +40,34 @@ fn main() {
 
     let mut square = Rectangle::new([0.0, 0.0, 0.0, 0.5], 20.0, 20.0, Transform::default());
 
-    let square_full_screen =
-        Rectangle::new([1.0, 0.0, 0.0, 1.0], 128.0, 128.0, Transform::default());
-
-    let blend_object = BlendObject::new(
-        &scene_drawable,
-        &square,
-        // the square is a mask, so it should set the alpha of that area to 0.5 subtracted from the original alpha
-        BlendMode::Subtractive,
-    );
-
     let background = Rectangle::new([0.0, 1.0, 0.0, 1.0], 128.0, 128.0, Transform::default());
 
-    let mut distance_to_60_frame = 0.0;
+    let mut distance_to_60_frame = 0;
     let mut start_of_60_frame = std::time::Instant::now();
+    let time_elapsed = std::time::Instant::now();
     let camera = Camera::new([0.0, 0.0, 1.5]);
 
     lumen_program.run(event_loop, |mut program| {
-        distance_to_60_frame -= 1.0;
-        if distance_to_60_frame < 0.0 {
+        distance_to_60_frame -= 1;
+        if distance_to_60_frame < 0 {
             println!("FPS: {}", 60.0 / start_of_60_frame.elapsed().as_secs_f32());
-            distance_to_60_frame = 60.0;
+            distance_to_60_frame = 60;
             start_of_60_frame = std::time::Instant::now();
         }
+        {
+            square.set_transform(Transform::new([
+                (time_elapsed.elapsed().as_secs_f32()).sin() * 64.0,
+                0.0,
+                0.0,
+            ]));
+        }
 
+        let blend_object = BlendObject::new(
+            &scene_drawable,
+            &square,
+            // the square is a mask, so it should set the alpha of that area to 0.5 subtracted from the original alpha
+            BlendMode::Subtractive,
+        );
         let drawable_refs: Vec<&dyn Drawable> = vec![&background, &blend_object];
         let light_refs: Vec<&dyn LightDrawable> =
             lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
