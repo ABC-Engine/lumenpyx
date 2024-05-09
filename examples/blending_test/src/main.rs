@@ -45,7 +45,7 @@ fn main() {
     let mut distance_to_60_frame = 0;
     let mut start_of_60_frame = std::time::Instant::now();
     let time_elapsed = std::time::Instant::now();
-    let camera = Camera::new([0.0, 0.0, 1.5]);
+    let mut camera = Camera::new([0.0, 0.0, 1.5]);
 
     lumen_program.run(event_loop, |mut program| {
         distance_to_60_frame -= 1;
@@ -56,10 +56,11 @@ fn main() {
         }
         {
             square.set_transform(Transform::new([
-                (time_elapsed.elapsed().as_secs_f32()).sin() * 64.0,
+                (time_elapsed.elapsed().as_secs_f32() / 4.0).sin() * 64.0,
                 0.0,
                 0.0,
             ]));
+            camera.position[0] = (time_elapsed.elapsed().as_secs_f32()).sin() * 64.0;
         }
 
         let blend_object = BlendObject::new(

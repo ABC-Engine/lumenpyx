@@ -116,8 +116,9 @@ where
                     &camera,
                 );
                 // adjust based off camera, the camera offset is the plugged in camera position, because we don't give it the actual position of the camera
-                adjusted_transform_matrix[3][0] -= transform_matrix[3][0];
-                adjusted_transform_matrix[3][1] -= transform_matrix[3][1];
+                // add instead of subtract because the transform matrix is -camera_position
+                adjusted_transform_matrix[3][0] += transform_matrix[3][0];
+                adjusted_transform_matrix[3][1] += transform_matrix[3][1];
 
                 self.object_1.draw(
                     program,
@@ -141,8 +142,9 @@ where
                     &camera,
                 );
                 // adjust based off camera, the camera offset is the plugged in camera position, because we don't give it the actual position of the camera
-                adjusted_transform_matrix[3][0] -= transform_matrix[3][0];
-                adjusted_transform_matrix[3][1] -= transform_matrix[3][1];
+                // add instead of subtract because the transform matrix is -camera_position
+                adjusted_transform_matrix[3][0] += transform_matrix[3][0];
+                adjusted_transform_matrix[3][1] += transform_matrix[3][1];
 
                 self.object_2.draw(
                     program,
