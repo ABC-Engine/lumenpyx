@@ -106,15 +106,14 @@ where
 
             {
                 // all of this is a little bit of a hack to correctly position the object
-                let non_ajusted_object_transform =
-                    Transform::from_matrix(self.object_1.get_position());
+                let non_ajusted_object_transform = self.object_1.get_transform();
                 let camera = crate::Camera::new([0.0, 0.0, 0.0]);
-                let mut adjusted_transform_matrix = program.adjust_transform_matrix_for_drawable(
-                    non_ajusted_object_transform
-                        .add_parent(&self.transform)
-                        .matrix,
-                    &camera,
-                );
+                let mut adjusted_transform_matrix = program
+                    .adjust_transform_for_drawable(
+                        &non_ajusted_object_transform.add_parent(&self.transform),
+                        &camera,
+                    )
+                    .get_matrix();
                 // adjust based off camera, the camera offset is the plugged in camera position, because we don't give it the actual position of the camera
                 // add instead of subtract because the transform matrix is -camera_position
                 adjusted_transform_matrix[3][0] += transform_matrix[3][0];
@@ -132,15 +131,14 @@ where
 
             {
                 // all of this is a little bit of a hack to correctly position the object
-                let non_ajusted_object_transform =
-                    Transform::from_matrix(self.object_2.get_position());
+                let non_ajusted_object_transform = self.object_2.get_transform();
                 let camera = crate::Camera::new([0.0, 0.0, 0.0]);
-                let mut adjusted_transform_matrix = program.adjust_transform_matrix_for_drawable(
-                    non_ajusted_object_transform
-                        .add_parent(&self.transform)
-                        .matrix,
-                    &camera,
-                );
+                let mut adjusted_transform_matrix = program
+                    .adjust_transform_for_drawable(
+                        &non_ajusted_object_transform.add_parent(&self.transform),
+                        &camera,
+                    )
+                    .get_matrix();
                 // adjust based off camera, the camera offset is the plugged in camera position, because we don't give it the actual position of the camera
                 // add instead of subtract because the transform matrix is -camera_position
                 adjusted_transform_matrix[3][0] += transform_matrix[3][0];
@@ -197,9 +195,9 @@ where
         self.transform = transform;
     }
 
-    fn get_position(&self) -> [[f32; 4]; 4] {
+    fn get_transform(&self) -> Transform {
         // this is dumb, but we need to find the camera position
-        Transform::default().matrix
+        Transform::default()
     }
 
     fn get_recieve_shadows_strength(&self) -> f32 {

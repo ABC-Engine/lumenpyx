@@ -50,7 +50,7 @@ pub trait LightDrawable {
         shadow_strength_uniform: glium::uniforms::Sampler<glium::texture::Texture2d>,
     );
     fn try_load_shaders(&self, program: &mut LumenpyxProgram);
-    fn get_transform(&self) -> [[f32; 4]; 4];
+    fn get_transform(&self) -> Transform;
     fn set_transform(&mut self, transform: Transform);
 }
 
@@ -138,13 +138,8 @@ impl LightDrawable for PointLight {
         }
     }
 
-    fn get_transform(&self) -> [[f32; 4]; 4] {
-        [
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [self.position[0], self.position[1], self.position[2], 0.0],
-        ]
+    fn get_transform(&self) -> Transform {
+        Transform::new([self.position[0], self.position[1], self.position[2]])
     }
 
     fn set_transform(&mut self, transform: Transform) {
@@ -254,13 +249,10 @@ impl LightDrawable for AreaLight {
         }
     }
 
-    fn get_transform(&self) -> [[f32; 4]; 4] {
-        [
-            [self.width, 0.0, 0.0, 0.0],
-            [0.0, self.height, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [self.position[0], self.position[1], self.position[2], 1.0],
-        ]
+    fn get_transform(&self) -> Transform {
+        let mut transform = Transform::new([self.position[0], self.position[1], self.position[2]]);
+        transform.set_scale(self.width, self.height, 1.0);
+        transform
     }
 
     fn set_transform(&mut self, transform: Transform) {
@@ -383,13 +375,8 @@ impl LightDrawable for DirectionalLight {
         }
     }
 
-    fn get_transform(&self) -> [[f32; 4]; 4] {
-        [
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [self.position[0], self.position[1], self.position[2], 1.0],
-        ]
+    fn get_transform(&self) -> Transform {
+        Transform::new([self.position[0], self.position[1], self.position[2]])
     }
 
     fn set_transform(&mut self, transform: Transform) {

@@ -38,7 +38,7 @@ fn main() {
         Transform::new([0.0, 0.0, 0.0]),
     );
 
-    let mut square = Rectangle::new([0.0, 0.0, 0.0, 0.5], 20.0, 20.0, Transform::default());
+    let mut square = Rectangle::new([0.0, 0.0, 0.0, 1.0], 20.0, 20.0, Transform::default());
 
     let background = Rectangle::new([0.0, 1.0, 0.0, 1.0], 128.0, 128.0, Transform::default());
 
@@ -65,13 +65,7 @@ fn main() {
             camera.position[0] = (time_elapsed.elapsed().as_secs_f32()).sin() * 64.0;
         }
 
-        let blend_object = BlendObject::new(
-            &scene_drawable,
-            &square,
-            // the square is a mask, so it should set the alpha of that area to 0.5 subtracted from the original alpha
-            BlendMode::Subtractive,
-        );
-        let drawable_refs: Vec<&dyn Drawable> = vec![&background, &blend_object];
+        let drawable_refs: Vec<&dyn Drawable> = vec![&background, &square];
         let light_refs: Vec<&dyn LightDrawable> =
             lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
         draw_all(light_refs, drawable_refs, &mut program, &camera);

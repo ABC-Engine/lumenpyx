@@ -287,8 +287,8 @@ impl Drawable for Circle {
         program.add_shader(shader, "circle_ahr_shader");
     }
 
-    fn get_position(&self) -> [[f32; 4]; 4] {
-        self.transform.matrix
+    fn get_transform(&self) -> Transform {
+        self.transform
     }
 
     fn get_recieve_shadows_strength(&self) -> f32 {
@@ -380,8 +380,8 @@ impl Drawable for Sphere {
         }
     }
 
-    fn get_position(&self) -> [[f32; 4]; 4] {
-        self.transform.matrix
+    fn get_transform(&self) -> Transform {
+        self.transform
     }
 
     fn get_recieve_shadows_strength(&self) -> f32 {
@@ -451,8 +451,8 @@ impl Drawable for Rectangle {
         program.add_shader(shader, "rectangle_ahr_shader");
     }
 
-    fn get_position(&self) -> [[f32; 4]; 4] {
-        self.transform.matrix
+    fn get_transform(&self) -> Transform {
+        self.transform
     }
 
     fn get_recieve_shadows_strength(&self) -> f32 {
@@ -551,8 +551,8 @@ impl Drawable for Cylinder {
         }
     }
 
-    fn get_position(&self) -> [[f32; 4]; 4] {
-        self.transform.matrix
+    fn get_transform(&self) -> Transform {
+        self.transform
     }
 
     fn get_recieve_shadows_strength(&self) -> f32 {
@@ -994,8 +994,8 @@ impl Drawable for Sprite {
         program.add_shader(new_shader, "sprite_shader");
     }
 
-    fn get_position(&self) -> [[f32; 4]; 4] {
-        self.transform.matrix
+    fn get_transform(&self) -> Transform {
+        self.transform
     }
 
     /// 0.0 is no shadows, 1.0 is full shadows

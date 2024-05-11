@@ -161,8 +161,8 @@ impl Drawable for Animation {
         }
     }
 
-    fn get_position(&self) -> [[f32; 4]; 4] {
-        self.transform.get_matrix()
+    fn get_transform(&self) -> Transform {
+        self.transform
     }
 
     fn get_recieve_shadows_strength(&self) -> f32 {
@@ -466,8 +466,8 @@ impl Drawable for AnimationStateMachine {
         }
     }
 
-    fn get_position(&self) -> [[f32; 4]; 4] {
-        self.transform.get_matrix()
+    fn get_transform(&self) -> Transform {
+        self.transform
     }
 
     fn get_recieve_shadows_strength(&self) -> f32 {

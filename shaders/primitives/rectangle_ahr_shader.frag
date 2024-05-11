@@ -11,7 +11,7 @@ void main() {
     float x = v_tex_coords.x;
     float y = v_tex_coords.y;
     // center the rectangle
-    if (x < 0.5 - width / 2 || x > 0.5 + width / 2 || y < 0.5 - height / 2 || y > 0.5 + height / 2) {
+    if (x < 0.5 - width / 2.0 || x > 0.5 + width / 2.0 || y < 0.5 - height / 2.0 || y > 0.5 + height / 2.0) {
         discard;
     } else {
         color = rect_color;

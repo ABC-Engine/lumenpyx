@@ -182,32 +182,38 @@ impl LumenpyxProgram {
             .unwrap_or(self.dimensions)
     }
 
-    pub(crate) fn adjust_transform_matrix_for_drawable(
+    pub(crate) fn adjust_transform_for_drawable(
         &self,
-        mut matrix: [[f32; 4]; 4],
+        mut transform: &Transform,
         camera: &Camera,
-    ) -> [[f32; 4]; 4] {
+    ) -> Transform {
         let render_resolution = self.get_render_resolution();
+        let mut new_transform = transform.clone();
 
+        let mut scale = transform.get_scale();
         // scale off the resolution
         if render_resolution[0] > render_resolution[1] {
-            matrix[0][0] *= render_resolution[1] as f32 / render_resolution[0] as f32;
+            scale[0] *= render_resolution[1] as f32 / render_resolution[0] as f32;
         } else {
-            matrix[1][1] *= render_resolution[0] as f32 / render_resolution[1] as f32;
+            scale[1] *= render_resolution[0] as f32 / render_resolution[1] as f32;
         }
+        new_transform.set_scale(scale[0], scale[1], scale[2]);
 
+        let (mut x, mut y, mut z) = (transform.get_x(), transform.get_y(), transform.get_z());
         // adjust off the camera no need to translate the z, it would just mess up the height map's interaction with the light
-        matrix[3][0] -= camera.position[0];
-        matrix[3][1] -= camera.position[1];
+        x -= camera.position[0];
+        y -= camera.position[1];
 
-        matrix[3][0] /= render_resolution[0] as f32;
-        matrix[3][1] /= render_resolution[1] as f32;
+        x /= render_resolution[0] as f32;
+        y /= render_resolution[1] as f32;
 
         // because its -1 to 1, we need to multiply by 2
-        matrix[3][0] *= 2.0;
-        matrix[3][1] *= 2.0;
+        x *= 2.0;
+        y *= 2.0;
 
-        matrix
+        new_transform.translate(x, y, z);
+
+        new_transform
     }
 }
 
@@ -215,6 +221,7 @@ impl LumenpyxProgram {
 #[derive(Copy, Clone)]
 pub struct Transform {
     matrix: [[f32; 4]; 4],
+    rotation: f32,
 }
 
 impl Default for Transform {
@@ -225,7 +232,10 @@ impl Default for Transform {
 
 impl Transform {
     pub fn from_matrix(matrix: [[f32; 4]; 4]) -> Transform {
-        Transform { matrix }
+        Transform {
+            matrix,
+            rotation: 0.0,
+        }
     }
 
     pub fn new(pos: [f32; 3]) -> Transform {
@@ -236,12 +246,20 @@ impl Transform {
                 [0.0, 0.0, 1.0, 0.0],
                 [pos[0], pos[1], pos[2], 1.0],
             ],
+            rotation: 0.0,
         }
     }
 
     /// Get the matrix of the transform
     pub fn get_matrix(&self) -> [[f32; 4]; 4] {
-        self.matrix
+        let rotation_matrix = [
+            [self.rotation.cos(), -self.rotation.sin(), 0.0, 0.0],
+            [self.rotation.sin(), self.rotation.cos(), 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ];
+
+        multiply_matrix(rotation_matrix, self.matrix)
     }
 
     /// Set the matrix of the transform
@@ -295,14 +313,11 @@ impl Transform {
 
     /// set the rotation of the transform
     pub fn set_rotation(&mut self, angle: f32) {
-        self.matrix[0][0] = angle.cos();
-        self.matrix[0][1] = -angle.sin();
-        self.matrix[1][0] = angle.sin();
-        self.matrix[1][1] = angle.cos();
+        self.rotation = angle;
     }
 
     pub fn get_rotation(&self) -> f32 {
-        self.matrix[0][0].acos()
+        self.rotation
     }
 
     pub fn add_parent(&self, parent: &Transform) -> Transform {
@@ -322,6 +337,20 @@ impl Transform {
 
         new_transform
     }
+}
+
+fn multiply_matrix(matrix1: [[f32; 4]; 4], matrix2: [[f32; 4]; 4]) -> [[f32; 4]; 4] {
+    let mut new_matrix = [[0.0; 4]; 4];
+
+    for i in 0..4 {
+        for j in 0..4 {
+            for k in 0..4 {
+                new_matrix[i][j] = new_matrix[i][j] + matrix1[i][k] * matrix2[k][j];
+            }
+        }
+    }
+
+    new_matrix
 }
 
 /// a is the parent
@@ -605,12 +634,12 @@ pub fn draw_all(
                 .expect("Failed to create shadow strength framebuffer");
 
         for drawable in &drawables {
-            let new_matrix =
-                program.adjust_transform_matrix_for_drawable(drawable.get_position(), camera);
+            let new_transform =
+                program.adjust_transform_for_drawable(&drawable.get_transform(), camera);
 
             drawable.draw(
                 program,
-                new_matrix,
+                new_transform.get_matrix(),
                 &mut albedo_framebuffer,
                 &mut height_framebuffer,
                 &mut roughness_framebuffer,
@@ -663,12 +692,12 @@ pub fn draw_all(
             .expect("Failed to create lit frame buffer");
 
         for light in lights {
-            let new_matrix =
-                program.adjust_transform_matrix_for_drawable(light.get_transform(), camera);
+            let new_transform =
+                program.adjust_transform_for_drawable(&light.get_transform(), camera);
 
             light.draw(
                 program,
-                new_matrix,
+                new_transform.get_matrix(),
                 &mut lit_framebuffer,
                 height_sampler,
                 albedo,

@@ -4,7 +4,7 @@ workspace = { members = [ "examples/animation_test", "examples/blending_test",
     "examples/light_benchmark",
     "examples/moving_light",
     "examples/primitives",
-    "examples/reflection_test",
+    "examples/reflection_test", "examples/rotation_test",
 ] }
 [package]
 name = "lumenpyx"
