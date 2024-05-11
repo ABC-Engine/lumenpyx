@@ -639,7 +639,7 @@ pub fn draw_all(
 
             drawable.draw(
                 program,
-                new_transform.get_matrix(),
+                &new_transform,
                 &mut albedo_framebuffer,
                 &mut height_framebuffer,
                 &mut roughness_framebuffer,

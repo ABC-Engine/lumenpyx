@@ -256,7 +256,7 @@ impl Drawable for Circle {
     fn draw(
         &self,
         program: &LumenpyxProgram,
-        matrix_transform: [[f32; 4]; 4],
+        transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -265,7 +265,7 @@ impl Drawable for Circle {
         draw_circle(
             self.color,
             self.radius,
-            matrix_transform,
+            transform.get_matrix(),
             program,
             albedo_framebuffer,
         );
@@ -324,7 +324,7 @@ impl Drawable for Sphere {
     fn draw(
         &self,
         program: &LumenpyxProgram,
-        matrix_transform: [[f32; 4]; 4],
+        transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -333,7 +333,7 @@ impl Drawable for Sphere {
         draw_sphere(
             self.color,
             self.radius,
-            matrix_transform,
+            transform.get_matrix(),
             program,
             albedo_framebuffer,
             height_framebuffer,
@@ -419,7 +419,7 @@ impl Drawable for Rectangle {
     fn draw(
         &self,
         program: &LumenpyxProgram,
-        matrix_transform: [[f32; 4]; 4],
+        transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -429,7 +429,7 @@ impl Drawable for Rectangle {
             self.color,
             self.width,
             self.height,
-            matrix_transform,
+            transform.get_matrix(),
             program,
             albedo_framebuffer,
         );
@@ -495,7 +495,7 @@ impl Drawable for Cylinder {
     fn draw(
         &self,
         program: &LumenpyxProgram,
-        matrix_transform: [[f32; 4]; 4],
+        transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -505,7 +505,7 @@ impl Drawable for Cylinder {
             self.color,
             self.radius,
             self.height,
-            matrix_transform,
+            transform.get_matrix(),
             program,
             albedo_framebuffer,
             height_framebuffer,
@@ -883,8 +883,6 @@ impl Sprite {
         program: &LumenpyxProgram,
         transform: Transform,
     ) -> Sprite {
-        let display = &program.display;
-
         let albedo_texture = new_albedo_texture(program, albedo);
         let height_texture = new_non_albedo_texture(program, height, &albedo_texture);
         let roughness_texture = new_non_albedo_texture(program, roughness, &albedo_texture);
@@ -909,26 +907,12 @@ impl Drawable for Sprite {
     fn draw(
         &self,
         program: &LumenpyxProgram,
-        transform_matrix: [[f32; 4]; 4],
+        transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
-        let indices = &program.indices;
-        let display = &program.display;
-
-        let shader = program
-            .get_shader("sprite_shader")
-            .expect("Failed to get sprite shader");
-
-        let shape = FULL_SCREEN_QUAD;
-
-        let vertex_buffer = glium::VertexBuffer::new(display, &shape)
-            .expect("Failed to create vertex buffer for sprite");
-
-        let mut image = glium::uniforms::Sampler(&self.albedo_texture, DEFAULT_BEHAVIOR);
-
         // scale the transform matrix to match the size of the texture
         // check which side is longer and scale the other side to match
         let width = self.albedo_texture.get_width() as f32;
@@ -936,7 +920,7 @@ impl Drawable for Sprite {
             .albedo_texture
             .get_height()
             .expect("failed to get height of sprite's texture") as f32;
-        let mut transform_matrix = transform_matrix;
+        let mut transform = transform.clone();
 
         // adjust size of the sprite to match the texture
         {
@@ -945,34 +929,37 @@ impl Drawable for Sprite {
             let x_scale = width as f32 / smallest_dimension;
             let y_scale = height as f32 / smallest_dimension;
 
-            transform_matrix[0][0] *= x_scale;
-            transform_matrix[1][1] *= y_scale;
+            transform.set_scale(
+                transform.get_scale()[0] * x_scale,
+                transform.get_scale()[1] * y_scale,
+                transform.get_scale()[2],
+            );
         }
 
         draw_texture(
             &self.albedo_texture,
-            transform_matrix,
+            transform.get_matrix(),
             program,
             albedo_framebuffer,
         );
 
         draw_texture(
             &self.height_texture,
-            transform_matrix,
+            transform.get_matrix(),
             program,
             height_framebuffer,
         );
 
         draw_texture(
             &self.roughness_texture,
-            transform_matrix,
+            transform.get_matrix(),
             program,
             roughness_framebuffer,
         );
 
         draw_texture(
             &self.normal_texture,
-            transform_matrix,
+            transform.get_matrix(),
             program,
             normal_framebuffer,
         );

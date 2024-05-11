@@ -65,7 +65,7 @@ where
     fn draw(
         &self,
         program: &LumenpyxProgram,
-        transform_matrix: [[f32; 4]; 4],
+        transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -116,12 +116,13 @@ where
                     .get_matrix();
                 // adjust based off camera, the camera offset is the plugged in camera position, because we don't give it the actual position of the camera
                 // add instead of subtract because the transform matrix is -camera_position
+                let transform_matrix = transform.get_matrix();
                 adjusted_transform_matrix[3][0] += transform_matrix[3][0];
                 adjusted_transform_matrix[3][1] += transform_matrix[3][1];
 
                 self.object_1.draw(
                     program,
-                    adjusted_transform_matrix,
+                    &Transform::from_matrix(adjusted_transform_matrix),
                     mutable_iter.next().unwrap(),
                     mutable_iter.next().unwrap(),
                     mutable_iter.next().unwrap(),
@@ -141,12 +142,13 @@ where
                     .get_matrix();
                 // adjust based off camera, the camera offset is the plugged in camera position, because we don't give it the actual position of the camera
                 // add instead of subtract because the transform matrix is -camera_position
+                let transform_matrix = transform.get_matrix();
                 adjusted_transform_matrix[3][0] += transform_matrix[3][0];
                 adjusted_transform_matrix[3][1] += transform_matrix[3][1];
 
                 self.object_2.draw(
                     program,
-                    adjusted_transform_matrix,
+                    &Transform::from_matrix(adjusted_transform_matrix),
                     mutable_iter.next().unwrap(),
                     mutable_iter.next().unwrap(),
                     mutable_iter.next().unwrap(),

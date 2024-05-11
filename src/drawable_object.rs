@@ -17,7 +17,7 @@ pub trait Drawable {
     fn draw(
         &self,
         program: &LumenpyxProgram,
-        transform_matrix: [[f32; 4]; 4],
+        transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,

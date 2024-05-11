@@ -129,7 +129,7 @@ impl Drawable for Animation {
     fn draw(
         &self,
         program: &LumenpyxProgram,
-        transform_matrix: [[f32; 4]; 4],
+        transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -147,7 +147,7 @@ impl Drawable for Animation {
 
         current_frame.draw(
             program,
-            transform_matrix,
+            transform,
             albedo_framebuffer,
             height_framebuffer,
             roughness_framebuffer,
@@ -444,7 +444,7 @@ impl Drawable for AnimationStateMachine {
     fn draw(
         &self,
         program: &LumenpyxProgram,
-        transform_matrix: [[f32; 4]; 4],
+        transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
@@ -452,7 +452,7 @@ impl Drawable for AnimationStateMachine {
     ) {
         self.animations[self.current_animation].draw(
             program,
-            transform_matrix,
+            transform,
             albedo_framebuffer,
             height_framebuffer,
             roughness_framebuffer,
