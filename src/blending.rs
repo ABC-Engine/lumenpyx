@@ -1,3 +1,5 @@
+use std::any::TypeId;
+
 use glium::DrawParameters;
 use glium::Surface;
 
@@ -79,22 +81,17 @@ where
 
         // create textures for albdeo, height, roughness, and normal
         // not sure how inefficient this is, but probably not great
-        for _ in 0..8 {
+        for i in 0..8 {
             new_textures.push(
-                glium::texture::Texture2d::empty_with_format(
-                    display,
-                    glium::texture::UncompressedFloatFormat::U8U8U8U8,
-                    glium::texture::MipmapsOption::NoMipmap,
-                    render_resolution.0,
-                    render_resolution.1,
-                )
-                .expect("Failed to create blending texture"),
+                program
+                    .get_texture(&format!("blend_texture_{}", i))
+                    .expect("Failed to get blending texture"),
             );
         }
 
         for i in 0..8 {
             new_framebuffers.push(
-                glium::framebuffer::SimpleFrameBuffer::new(display, &new_textures[i])
+                glium::framebuffer::SimpleFrameBuffer::new(display, new_textures[i])
                     .expect("Failed to create blending framebuffer"),
             );
         }
@@ -161,32 +158,32 @@ where
         // the blending mode here is meant to blend the new textures with the main framebuffers aka the one passed in
         // combine the textures
         draw_mix(
-            &new_textures[0],
-            &new_textures[4],
+            new_textures[0],
+            new_textures[4],
             &self.blend,
             program,
             albedo_framebuffer,
         );
 
         draw_mix(
-            &new_textures[1],
-            &new_textures[5],
+            new_textures[1],
+            new_textures[5],
             &self.blend,
             program,
             height_framebuffer,
         );
 
         draw_mix(
-            &new_textures[2],
-            &new_textures[6],
+            new_textures[2],
+            new_textures[6],
             &self.blend,
             program,
             roughness_framebuffer,
         );
 
         draw_mix(
-            &new_textures[3],
-            &new_textures[7],
+            new_textures[3],
+            new_textures[7],
             &self.blend,
             program,
             normal_framebuffer,
@@ -220,6 +217,22 @@ where
             .expect("Failed to create mix shader");
 
             program.add_shader(shader, "mix");
+        }
+
+        let render_resolution = program.get_render_resolution();
+
+        for i in 0..8 {
+            let new_texture = glium::texture::Texture2d::empty_with_format(
+                &program.display,
+                glium::texture::UncompressedFloatFormat::U8U8U8U8,
+                glium::texture::MipmapsOption::NoMipmap,
+                render_resolution[0],
+                render_resolution[1],
+            )
+            .expect("Failed to create blending texture");
+
+            // i think this might break if we do a blend object inside a blend object im not sure how to fix that, if you need to do that, file an issue
+            program.add_texture(new_texture, &format!("blend_texture_{}", i) as &str);
         }
     }
 }

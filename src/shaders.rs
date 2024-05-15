@@ -266,18 +266,16 @@ pub(crate) fn draw_reflections(
     let display = &program.display;
     let indices = &program.indices;
 
-    let reflection_texture = glium::texture::Texture2d::empty_with_format(
-        display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
-        glium::texture::MipmapsOption::NoMipmap,
-        lit_uniform.0.dimensions().0,
-        lit_uniform.0.dimensions().1,
-    )
-    .expect("Failed to create reflection texture");
+    let reflection_texture = program
+        .cached_textures
+        .get("reflection_texture")
+        .expect("Failed to get reflection texture");
 
     let mut reflection_framebuffer =
-        glium::framebuffer::SimpleFrameBuffer::new(display, &reflection_texture)
+        glium::framebuffer::SimpleFrameBuffer::new(display, reflection_texture)
             .expect("Failed to create framebuffer for reflection texture");
+
+    reflection_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
     let shader = &program
         .get_shader("reflection_shader")
@@ -318,7 +316,7 @@ pub(crate) fn draw_reflections(
         )
         .expect("Failed to draw to the framebuffer");
 
-    let reflection_sampler = glium::uniforms::Sampler::new(&reflection_texture)
+    let reflection_sampler = glium::uniforms::Sampler::new(reflection_texture)
         .anisotropy(1)
         .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
         .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest);
@@ -331,6 +329,7 @@ pub(crate) fn draw_reflections(
             program.render_settings.blur_strength,
         );
     }
+    println!("draw_reflections");
     draw_overlay(framebuffer, program, reflection_sampler, lit_uniform);
 }
 

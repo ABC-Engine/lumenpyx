@@ -74,6 +74,7 @@ pub struct LumenpyxProgram {
     /// The indices for the program (there are no indices, but glium requires this to be here)
     pub indices: glium::index::NoIndices,
     shaders: FxHashMap<String, glium::Program>,
+    cached_textures: FxHashMap<String, glium::texture::Texture2d>,
     dimensions: [u32; 2],
     pub debug: DebugOption,
     pub render_settings: RenderSettings,
@@ -90,6 +91,7 @@ impl LumenpyxProgram {
             display,
             indices,
             shaders: FxHashMap::default(),
+            cached_textures: FxHashMap::default(),
             dimensions: resolution,
             debug: DebugOption::None,
             render_settings: RenderSettings {
@@ -116,6 +118,16 @@ impl LumenpyxProgram {
     /// Get a shader from the program with the given name
     pub fn get_shader(&self, name: &str) -> Option<&glium::Program> {
         self.shaders.get(name)
+    }
+
+    /// Add a texture to the program with the given name
+    pub fn add_texture(&mut self, texture: glium::texture::Texture2d, name: &str) {
+        self.cached_textures.insert(name.to_string(), texture);
+    }
+
+    /// Get a texture from the program with the given name
+    pub fn get_texture(&self, name: &str) -> Option<&glium::texture::Texture2d> {
+        self.cached_textures.get(name)
     }
 
     /// Remove a shader from the program
@@ -517,6 +529,7 @@ pub fn draw_all(
     for light in &lights {
         light.try_load_shaders(program);
     }
+    load_all_textures(program);
 
     /*
     STEP 1:
@@ -547,11 +560,15 @@ pub fn draw_all(
         panic!("Render resolution must be greater than or equal to the window resolution");
     }
 
+    let reflected_texture = program
+        .get_texture("reflected_texture")
+        .expect("Failed to get reflected texture");
+
     let (
         albedo_texture,
+        normal_texture,
         height_texture,
         roughness_texture,
-        normal_texture,
         shadow_strength_texture,
     ) = draw_all_no_post(drawables, program, camera);
 
@@ -565,28 +582,21 @@ pub fn draw_all(
         &shadow_strength_texture,
     );
 
-    let reflected_texture = glium::texture::Texture2d::empty_with_format(
-        display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
-        glium::texture::MipmapsOption::NoMipmap,
-        render_resolution[0],
-        render_resolution[1],
-    )
-    .expect("Failed to create reflected frame buffer");
-
     if render_settings.reflections {
-        let roughness = glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR);
-        let height = glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR);
-        let normal = glium::uniforms::Sampler(&normal_texture, DEFAULT_BEHAVIOR);
+        let roughness = glium::uniforms::Sampler(roughness_texture, DEFAULT_BEHAVIOR);
+        let height = glium::uniforms::Sampler(height_texture, DEFAULT_BEHAVIOR);
+        let normal = glium::uniforms::Sampler(normal_texture, DEFAULT_BEHAVIOR);
         let lit_sampler = if render_settings.shadows {
-            glium::uniforms::Sampler(&lit_texture, DEFAULT_BEHAVIOR)
+            glium::uniforms::Sampler(lit_texture, DEFAULT_BEHAVIOR)
         } else {
-            glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR)
+            glium::uniforms::Sampler(albedo_texture, DEFAULT_BEHAVIOR)
         };
 
         let mut reflected_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &reflected_texture)
+            glium::framebuffer::SimpleFrameBuffer::new(display, reflected_texture)
                 .expect("Failed to create reflected frame buffer");
+
+        reflected_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         draw_reflections(
             camera,
@@ -601,7 +611,7 @@ pub fn draw_all(
 
     {
         let reflected_texture = if render_settings.reflections {
-            &reflected_texture
+            reflected_texture
         } else if render_settings.shadows {
             &lit_texture
         } else {
@@ -610,14 +620,12 @@ pub fn draw_all(
 
         let finished_texture = match debug {
             DebugOption::None => glium::uniforms::Sampler(reflected_texture, DEFAULT_BEHAVIOR),
-            DebugOption::Albedo => glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR),
-            DebugOption::Height => glium::uniforms::Sampler(&height_texture, DEFAULT_BEHAVIOR),
-            DebugOption::Roughness => {
-                glium::uniforms::Sampler(&roughness_texture, DEFAULT_BEHAVIOR)
-            }
-            DebugOption::Normal => glium::uniforms::Sampler(&normal_texture, DEFAULT_BEHAVIOR),
+            DebugOption::Albedo => glium::uniforms::Sampler(albedo_texture, DEFAULT_BEHAVIOR),
+            DebugOption::Height => glium::uniforms::Sampler(height_texture, DEFAULT_BEHAVIOR),
+            DebugOption::Roughness => glium::uniforms::Sampler(roughness_texture, DEFAULT_BEHAVIOR),
+            DebugOption::Normal => glium::uniforms::Sampler(normal_texture, DEFAULT_BEHAVIOR),
             DebugOption::ShadowStrength => {
-                glium::uniforms::Sampler(&shadow_strength_texture, DEFAULT_BEHAVIOR)
+                glium::uniforms::Sampler(shadow_strength_texture, DEFAULT_BEHAVIOR)
             }
         };
 
@@ -625,16 +633,173 @@ pub fn draw_all(
     }
 }
 
-fn draw_all_no_post(
+fn load_all_textures(program: &mut LumenpyxProgram) {
+    let display = &program.display;
+    let render_settings = &program.render_settings;
+    let render_resolution = render_settings
+        .render_resolution
+        .unwrap_or(program.dimensions);
+    if render_resolution < program.dimensions {
+        panic!("Render resolution must be greater than or equal to the window resolution");
+    }
+
+    let albedo_texture = program.cached_textures.get("albedo_texture");
+    if albedo_texture.is_none() {
+        let albedo_texture_owned = glium::texture::Texture2d::empty_with_format(
+            display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            render_resolution[0],
+            render_resolution[1],
+        )
+        .expect("Failed to create albedo texture");
+
+        program
+            .cached_textures
+            .insert("albedo_texture".to_string(), albedo_texture_owned);
+    }
+
+    let height_texture = program.cached_textures.get("height_texture");
+    if height_texture.is_none() {
+        let height_texture_owned = glium::texture::Texture2d::empty_with_format(
+            display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            render_resolution[0],
+            render_resolution[1],
+        )
+        .expect("Failed to create height texture");
+
+        program
+            .cached_textures
+            .insert("height_texture".to_string(), height_texture_owned);
+    }
+
+    let normal_texture = program.cached_textures.get("normal_texture");
+    if normal_texture.is_none() {
+        let normal_texture_owned = glium::texture::Texture2d::empty_with_format(
+            display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            render_resolution[0],
+            render_resolution[1],
+        )
+        .expect("Failed to create normal texture");
+
+        program
+            .cached_textures
+            .insert("normal_texture".to_string(), normal_texture_owned);
+    }
+
+    let roughness_texture = program.cached_textures.get("roughness_texture");
+    if roughness_texture.is_none() {
+        let roughness_texture_owned = glium::texture::Texture2d::empty_with_format(
+            display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            render_resolution[0],
+            render_resolution[1],
+        )
+        .expect("Failed to create roughness texture");
+
+        program
+            .cached_textures
+            .insert("roughness_texture".to_string(), roughness_texture_owned);
+    }
+
+    let shadow_strength_texture = program.cached_textures.get("shadow_strength_texture");
+    if shadow_strength_texture.is_none() {
+        let shadow_strength_texture_owned = glium::texture::Texture2d::empty_with_format(
+            display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            render_resolution[0],
+            render_resolution[1],
+        )
+        .expect("Failed to create shadow strength texture");
+
+        program.cached_textures.insert(
+            "shadow_strength_texture".to_string(),
+            shadow_strength_texture_owned,
+        );
+    }
+
+    let last_drawable_texture = program.cached_textures.get("last_drawable_texture");
+    if last_drawable_texture.is_none() {
+        let last_drawable_texture_owned = glium::texture::Texture2d::empty_with_format(
+            display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            render_resolution[0],
+            render_resolution[1],
+        )
+        .expect("Failed to create last drawable texture");
+
+        program.cached_textures.insert(
+            "last_drawable_texture".to_string(),
+            last_drawable_texture_owned,
+        );
+    }
+
+    let reflected_texture = program.get_texture("reflected_texture");
+    if reflected_texture.is_none() {
+        let reflected_texture_owned = glium::texture::Texture2d::empty_with_format(
+            display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            render_resolution[0],
+            render_resolution[1],
+        )
+        .expect("Failed to create reflected frame buffer");
+
+        program
+            .cached_textures
+            .insert("reflected_texture".to_string(), reflected_texture_owned);
+    }
+
+    let reflection_texture = program.get_texture("reflection_texture");
+    if reflection_texture.is_none() {
+        let reflection_texture_owned = glium::texture::Texture2d::empty_with_format(
+            display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            render_resolution[0],
+            render_resolution[1],
+        )
+        .expect("Failed to create reflection frame buffer");
+
+        program
+            .cached_textures
+            .insert("reflection_texture".to_string(), reflection_texture_owned);
+    }
+
+    let lit_texture = program.get_texture("lit_texture");
+    if lit_texture.is_none() {
+        let lit_texture_owned = glium::texture::Texture2d::empty_with_format(
+            display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            render_resolution[0],
+            render_resolution[1],
+        )
+        .expect("Failed to create lit frame buffer");
+
+        program
+            .cached_textures
+            .insert("lit_texture".to_string(), lit_texture_owned);
+    }
+}
+
+fn draw_all_no_post<'a>(
     drawables: Vec<&dyn Drawable>,
-    program: &LumenpyxProgram,
+    program: &'a LumenpyxProgram,
     camera: &Camera,
 ) -> (
-    glium::Texture2d,
-    glium::Texture2d,
-    glium::Texture2d,
-    glium::Texture2d,
-    glium::Texture2d,
+    &'a glium::Texture2d,
+    &'a glium::Texture2d,
+    &'a glium::Texture2d,
+    &'a glium::Texture2d,
+    &'a glium::Texture2d,
 ) {
     let display = &program.display;
     let render_settings = &program.render_settings;
@@ -645,91 +810,76 @@ fn draw_all_no_post(
         panic!("Render resolution must be greater than or equal to the window resolution");
     }
 
-    let albedo_texture = glium::texture::Texture2d::empty_with_format(
-        display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
-        glium::texture::MipmapsOption::NoMipmap,
-        render_resolution[0],
-        render_resolution[1],
-    )
-    .expect("Failed to create albedo texture");
+    let albedo_texture = program
+        .get_texture("albedo_texture")
+        .expect("Failed to get albedo texture");
 
-    let height_texture = glium::texture::Texture2d::empty_with_format(
-        display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
-        glium::texture::MipmapsOption::NoMipmap,
-        render_resolution[0],
-        render_resolution[1],
-    )
-    .expect("Failed to create height texture");
+    let height_texture = program
+        .cached_textures
+        .get("height_texture")
+        .expect("Failed to get height texture");
 
-    let normal_texture = glium::texture::Texture2d::empty_with_format(
-        display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
-        glium::texture::MipmapsOption::NoMipmap,
-        render_resolution[0],
-        render_resolution[1],
-    )
-    .expect("Failed to create normal texture");
+    let normal_texture = program
+        .cached_textures
+        .get("normal_texture")
+        .expect("Failed to get normal texture");
 
-    let roughness_texture = glium::texture::Texture2d::empty_with_format(
-        display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
-        glium::texture::MipmapsOption::NoMipmap,
-        render_resolution[0],
-        render_resolution[1],
-    )
-    .expect("Failed to create roughness texture");
+    let roughness_texture = program
+        .cached_textures
+        .get("roughness_texture")
+        .expect("Failed to get roughness texture");
 
-    let shadow_strength_texture = glium::texture::Texture2d::empty_with_format(
-        display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
-        glium::texture::MipmapsOption::NoMipmap,
-        render_resolution[0],
-        render_resolution[1],
-    )
-    .expect("Failed to create shadow strength texture");
+    let shadow_strength_texture = program
+        .cached_textures
+        .get("shadow_strength_texture")
+        .expect("Failed to get shadow strength texture");
 
     {
-        let last_drawable_texture = glium::texture::Texture2d::empty_with_format(
-            display,
-            glium::texture::UncompressedFloatFormat::U8U8U8U8,
-            glium::texture::MipmapsOption::NoMipmap,
-            render_resolution[0],
-            render_resolution[1],
-        )
-        .expect("Failed to create last drawable texture");
+        let last_drawable_texture = program
+            .cached_textures
+            .get("last_drawable_texture")
+            .expect("Failed to get last drawable texture");
 
-        let last_drawable_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &last_drawable_texture)
+        let mut last_drawable_framebuffer =
+            glium::framebuffer::SimpleFrameBuffer::new(display, last_drawable_texture)
                 .expect("Failed to create last drawable framebuffer");
 
-        let last_drawable_sampler =
-            glium::uniforms::Sampler(&last_drawable_texture, DEFAULT_BEHAVIOR);
+        last_drawable_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
-        let this_drawable_sampler = glium::uniforms::Sampler(&albedo_texture, DEFAULT_BEHAVIOR);
+        let last_drawable_sampler =
+            glium::uniforms::Sampler(last_drawable_texture, DEFAULT_BEHAVIOR);
+
+        let this_drawable_sampler = glium::uniforms::Sampler(albedo_texture, DEFAULT_BEHAVIOR);
 
         let mut albedo_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &albedo_texture)
+            glium::framebuffer::SimpleFrameBuffer::new(display, albedo_texture)
                 .expect("Failed to create albedo framebuffer");
 
+        albedo_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+
         let mut height_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &height_texture)
+            glium::framebuffer::SimpleFrameBuffer::new(display, height_texture)
                 .expect("Failed to create height framebuffer");
 
+        height_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+
         let mut roughness_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &roughness_texture)
+            glium::framebuffer::SimpleFrameBuffer::new(display, roughness_texture)
                 .expect("Failed to create roughness framebuffer");
 
+        roughness_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+
         let mut normal_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &normal_texture)
+            glium::framebuffer::SimpleFrameBuffer::new(display, normal_texture)
                 .expect("Failed to create normal framebuffer");
 
-        normal_framebuffer.clear_color(0.0, 0.0, 1.0, 1.0);
+        normal_framebuffer.clear_color(0.0, 0.0, 1.0, 0.0);
 
         let mut shadow_strength_framebuffer =
-            glium::framebuffer::SimpleFrameBuffer::new(display, &shadow_strength_texture)
+            glium::framebuffer::SimpleFrameBuffer::new(display, shadow_strength_texture)
                 .expect("Failed to create shadow strength framebuffer");
+
+        shadow_strength_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         for drawable in &drawables {
             let new_transform =
@@ -772,22 +922,22 @@ fn draw_all_no_post(
 
     (
         albedo_texture,
-        height_texture,
         normal_texture,
+        height_texture,
         roughness_texture,
         shadow_strength_texture,
     )
 }
 
-fn draw_lighting(
+fn draw_lighting<'a>(
     lights: Vec<&dyn lights::LightDrawable>,
-    program: &LumenpyxProgram,
+    program: &'a LumenpyxProgram,
     camera: &Camera,
     albedo_texture: &glium::Texture2d,
     height_texture: &glium::Texture2d,
     roughness_texture: &glium::Texture2d,
     shadow_strength_texture: &glium::Texture2d,
-) -> glium::Texture2d {
+) -> &'a glium::Texture2d {
     let display = &program.display;
     let render_settings = &program.render_settings;
     let render_resolution = render_settings
@@ -797,14 +947,9 @@ fn draw_lighting(
         panic!("Render resolution must be greater than or equal to the window resolution");
     }
 
-    let lit_texture = glium::texture::Texture2d::empty_with_format(
-        display,
-        glium::texture::UncompressedFloatFormat::U8U8U8U8,
-        glium::texture::MipmapsOption::NoMipmap,
-        render_resolution[0],
-        render_resolution[1],
-    )
-    .expect("Failed to create lit frame buffer");
+    let lit_texture = program
+        .get_texture("lit_texture")
+        .expect("Failed to get lit texture");
 
     if render_settings.shadows {
         let albedo = glium::uniforms::Sampler(albedo_texture, DEFAULT_BEHAVIOR);
@@ -813,8 +958,9 @@ fn draw_lighting(
         let shadow_strength_sampler =
             glium::uniforms::Sampler(shadow_strength_texture, DEFAULT_BEHAVIOR);
 
-        let mut lit_framebuffer = glium::framebuffer::SimpleFrameBuffer::new(display, &lit_texture)
+        let mut lit_framebuffer = glium::framebuffer::SimpleFrameBuffer::new(display, lit_texture)
             .expect("Failed to create lit frame buffer");
+        lit_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         for light in lights {
             let new_transform =
