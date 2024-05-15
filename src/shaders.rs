@@ -329,7 +329,7 @@ pub(crate) fn draw_reflections(
             program.render_settings.blur_strength,
         );
     }
-    println!("draw_reflections");
+
     draw_overlay(framebuffer, program, reflection_sampler, lit_uniform);
 }
 
