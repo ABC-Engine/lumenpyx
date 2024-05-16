@@ -2,6 +2,7 @@ use glium;
 use glium::glutin::surface::WindowSurface;
 use glium::implement_vertex;
 use glium::Surface;
+use primitives::Texture;
 /// This module contains all the window and display setup functions
 pub use winit;
 use winit::event_loop::EventLoop;
@@ -20,6 +21,8 @@ pub mod blending;
 /// This module contains all the lights that can be used in the program
 /// As well as containing the trait that all lights must implement
 pub mod lights;
+
+const HANDLE_STRING_ID: &str = "wdAYG8&DWtyiwDhukhjwda";
 
 // include the whole lumenpyx.wiki folder into the documentation
 #[doc = include_str!("../lumenpyx wiki/Home.md")]
@@ -65,6 +68,10 @@ impl Default for DebugOption {
     }
 }
 
+pub struct TextureHandle {
+    id: u32,
+}
+
 /// The main struct that contains the window and display
 pub struct LumenpyxProgram {
     /// The window that the program is running in (this is a winit window)
@@ -74,7 +81,9 @@ pub struct LumenpyxProgram {
     /// The indices for the program (there are no indices, but glium requires this to be here)
     pub indices: glium::index::NoIndices,
     shaders: FxHashMap<String, glium::Program>,
+    /// numbers are reserved for the user added textures
     cached_textures: FxHashMap<String, glium::texture::Texture2d>,
+    next_texture_id: u32,
     dimensions: [u32; 2],
     pub debug: DebugOption,
     pub render_settings: RenderSettings,
@@ -91,6 +100,7 @@ impl LumenpyxProgram {
             display,
             indices,
             shaders: FxHashMap::default(),
+            next_texture_id: 0,
             cached_textures: FxHashMap::default(),
             dimensions: resolution,
             debug: DebugOption::None,
@@ -128,6 +138,15 @@ impl LumenpyxProgram {
     /// Get a texture from the program with the given name
     pub fn get_texture(&self, name: &str) -> Option<&glium::texture::Texture2d> {
         self.cached_textures.get(name)
+    }
+
+    /// Get a texture from a texture handle
+    pub fn get_texture_from_handle(
+        &self,
+        handle: &TextureHandle,
+    ) -> Option<&glium::texture::Texture2d> {
+        self.cached_textures
+            .get(&format!("{}_{}", HANDLE_STRING_ID, handle.id))
     }
 
     /// Remove a shader from the program
@@ -226,6 +245,19 @@ impl LumenpyxProgram {
         new_transform.translate(x, y, z);
 
         new_transform
+    }
+
+    pub(crate) fn add_not_named_texture(
+        &mut self,
+        texture: glium::texture::Texture2d,
+    ) -> TextureHandle {
+        let id = self.next_texture_id;
+        self.next_texture_id += 1;
+
+        self.cached_textures
+            .insert(format!("{}_{}", HANDLE_STRING_ID, id), texture);
+
+        TextureHandle { id }
     }
 }
 

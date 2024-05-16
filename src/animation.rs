@@ -26,7 +26,7 @@ impl Animation {
         num_frames: usize,
         time_between_frames: Duration,
         transform: Transform,
-        program: &LumenpyxProgram,
+        program: &mut LumenpyxProgram,
     ) -> Self {
         let mut albedo_textures = load_tex_from_images_albedo(albedo, num_frames, program);
         let mut height_textures =
@@ -51,11 +51,16 @@ impl Animation {
             let roughness_texture = roughness_textures.remove(0);
             let normal_texture = normal_textures.remove(0);
 
+            let albedo_handle = program.add_not_named_texture(albedo_texture);
+            let height_handle = program.add_not_named_texture(height_texture);
+            let roughness_handle = program.add_not_named_texture(roughness_texture);
+            let normal_handle = program.add_not_named_texture(normal_texture);
+
             let sprite = Sprite::new(
-                albedo_texture.into(),
-                height_texture.into(),
-                roughness_texture.into(),
-                normal_texture.into(),
+                albedo_handle,
+                height_handle,
+                roughness_handle,
+                normal_handle,
                 &program,
                 transform,
             );
@@ -79,7 +84,7 @@ impl Animation {
         num_frames: usize,
         time_between_frames: Duration,
         transform: Transform,
-        program: &LumenpyxProgram,
+        program: &mut LumenpyxProgram,
     ) -> Self {
         let mut albedo_textures = load_albedo_from_spritesheet(albedo, num_frames, program);
         let mut height_textures =
@@ -104,11 +109,16 @@ impl Animation {
             let roughness_texture = roughness_textures.remove(0);
             let normal_texture = normal_textures.remove(0);
 
+            let albedo_handle = program.add_not_named_texture(albedo_texture);
+            let height_handle = program.add_not_named_texture(height_texture);
+            let roughness_handle = program.add_not_named_texture(roughness_texture);
+            let normal_handle = program.add_not_named_texture(normal_texture);
+
             let sprite = Sprite::new(
-                albedo_texture.into(),
-                height_texture.into(),
-                roughness_texture.into(),
-                normal_texture.into(),
+                albedo_handle,
+                height_handle,
+                roughness_handle,
+                normal_handle,
                 &program,
                 transform,
             );
