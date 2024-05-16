@@ -171,22 +171,21 @@ impl Animation {
     }
 
     pub fn new_from_handles(
-        albedo: TextureHandle,
-        height: TextureHandle,
-        roughness: TextureHandle,
-        normal: TextureHandle,
-        num_frames: usize,
+        albedo: Vec<TextureHandle>,
+        height: Vec<TextureHandle>,
+        roughness: Vec<TextureHandle>,
+        normal: Vec<TextureHandle>,
+        program: &mut LumenpyxProgram,
         time_between_frames: Duration,
         transform: Transform,
-        program: &mut LumenpyxProgram,
     ) -> Self {
         let mut sprites = vec![];
-        for _ in 0..num_frames {
+        for i in 0..albedo.len() {
             let (sprite, _, _, _, _) = Sprite::new(
-                albedo.into(),
-                height.into(),
-                roughness.into(),
-                normal.into(),
+                albedo[i].clone().into(),
+                height[i].clone().into(),
+                roughness[i].clone().into(),
+                normal[i].clone().into(),
                 program,
                 transform,
             );
