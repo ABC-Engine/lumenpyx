@@ -9,6 +9,7 @@ use glium::Surface;
 use std::iter::zip;
 use std::time::{Duration, Instant};
 
+#[derive(Clone)]
 pub struct Animation {
     sprites: Vec<Sprite>,
     time_between_frames: Duration,

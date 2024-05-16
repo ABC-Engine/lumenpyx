@@ -1021,6 +1021,7 @@ impl TextureHandle {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Sprite {
     albedo_texture: TextureHandle,
     height_texture: TextureHandle,
