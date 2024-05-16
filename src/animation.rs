@@ -1,7 +1,8 @@
 use glium::texture;
 
 use crate::load_image;
-use crate::primitives::{Normal, Sprite, Texture};
+use crate::primitives::{Normal, Sprite, Texture, TextureInput};
+use crate::TextureHandle;
 use crate::Transform;
 use crate::{drawable_object::Drawable, LumenpyxProgram};
 use glium::Surface;
@@ -27,7 +28,13 @@ impl Animation {
         time_between_frames: Duration,
         transform: Transform,
         program: &mut LumenpyxProgram,
-    ) -> Self {
+    ) -> (
+        Self,
+        Vec<TextureHandle>,
+        Vec<TextureHandle>,
+        Vec<TextureHandle>,
+        Vec<TextureHandle>,
+    ) {
         let mut albedo_textures = load_tex_from_images_albedo(albedo, num_frames, program);
         let mut height_textures =
             load_tex_from_images_non_albedo(&albedo_textures, height, program);
@@ -45,37 +52,49 @@ impl Animation {
         }
 
         let mut sprites = vec![];
+        let mut albedo_handles = vec![];
+        let mut height_handles = vec![];
+        let mut roughness_handles = vec![];
+        let mut normal_handles = vec![];
         for _ in 0..num_frames {
             let albedo_texture = albedo_textures.remove(0);
             let height_texture = height_textures.remove(0);
             let roughness_texture = roughness_textures.remove(0);
             let normal_texture = normal_textures.remove(0);
 
-            let albedo_handle = program.add_not_named_texture(albedo_texture);
-            let height_handle = program.add_not_named_texture(height_texture);
-            let roughness_handle = program.add_not_named_texture(roughness_texture);
-            let normal_handle = program.add_not_named_texture(normal_texture);
-
-            let sprite = Sprite::new(
-                albedo_handle,
-                height_handle,
-                roughness_handle,
-                normal_handle,
-                &program,
-                transform,
-            );
+            let (sprite, albedo_handle, height_handle, roughness_handle, normal_handle) =
+                Sprite::new(
+                    albedo_texture.into(),
+                    height_texture.into(),
+                    roughness_texture.into(),
+                    normal_texture.into(),
+                    program,
+                    transform,
+                );
+            albedo_handles.push(albedo_handle);
+            height_handles.push(height_handle);
+            roughness_handles.push(roughness_handle);
+            normal_handles.push(normal_handle);
             sprites.push(sprite);
         }
 
-        Self {
-            sprites,
-            time_between_frames,
-            start_time: Instant::now(),
-            shadow_strength: 0.5,
-            transform,
-        }
+        (
+            Self {
+                sprites,
+                time_between_frames,
+                start_time: Instant::now(),
+                shadow_strength: 0.5,
+                transform,
+            },
+            albedo_handles,
+            height_handles,
+            roughness_handles,
+            normal_handles,
+        )
     }
 
+    /// Takes a path to a spritesheet
+    /// returns an Animation object and the handles to the textures in the order of albedo, height, roughness, normal
     pub fn new_from_spritesheet(
         albedo: Texture,
         height: Texture,
@@ -85,7 +104,13 @@ impl Animation {
         time_between_frames: Duration,
         transform: Transform,
         program: &mut LumenpyxProgram,
-    ) -> Self {
+    ) -> (
+        Self,
+        Vec<TextureHandle>,
+        Vec<TextureHandle>,
+        Vec<TextureHandle>,
+        Vec<TextureHandle>,
+    ) {
         let mut albedo_textures = load_albedo_from_spritesheet(albedo, num_frames, program);
         let mut height_textures =
             load_non_albedo_from_spritesheet(&albedo_textures, height, program);
@@ -103,23 +128,66 @@ impl Animation {
         }
 
         let mut sprites = vec![];
+        let mut albedo_handles = vec![];
+        let mut height_handles = vec![];
+        let mut roughness_handles = vec![];
+        let mut normal_handles = vec![];
         for _ in 0..num_frames {
             let albedo_texture = albedo_textures.remove(0);
             let height_texture = height_textures.remove(0);
             let roughness_texture = roughness_textures.remove(0);
             let normal_texture = normal_textures.remove(0);
 
-            let albedo_handle = program.add_not_named_texture(albedo_texture);
-            let height_handle = program.add_not_named_texture(height_texture);
-            let roughness_handle = program.add_not_named_texture(roughness_texture);
-            let normal_handle = program.add_not_named_texture(normal_texture);
+            let (sprite, albedo_handle, height_handle, roughness_handle, normal_handle) =
+                Sprite::new(
+                    albedo_texture.into(),
+                    height_texture.into(),
+                    roughness_texture.into(),
+                    normal_texture.into(),
+                    program,
+                    transform,
+                );
 
-            let sprite = Sprite::new(
-                albedo_handle,
-                height_handle,
-                roughness_handle,
-                normal_handle,
-                &program,
+            albedo_handles.push(albedo_handle);
+            height_handles.push(height_handle);
+            roughness_handles.push(roughness_handle);
+            normal_handles.push(normal_handle);
+            sprites.push(sprite);
+        }
+
+        (
+            Self {
+                sprites,
+                time_between_frames,
+                start_time: Instant::now(),
+                shadow_strength: 0.5,
+                transform,
+            },
+            albedo_handles,
+            height_handles,
+            roughness_handles,
+            normal_handles,
+        )
+    }
+
+    pub fn new_from_handles(
+        albedo: TextureHandle,
+        height: TextureHandle,
+        roughness: TextureHandle,
+        normal: TextureHandle,
+        num_frames: usize,
+        time_between_frames: Duration,
+        transform: Transform,
+        program: &mut LumenpyxProgram,
+    ) -> Self {
+        let mut sprites = vec![];
+        for _ in 0..num_frames {
+            let (sprite, _, _, _, _) = Sprite::new(
+                albedo.into(),
+                height.into(),
+                roughness.into(),
+                normal.into(),
+                program,
                 transform,
             );
             sprites.push(sprite);
@@ -186,14 +254,12 @@ impl Drawable for Animation {
 
 /// splits a texture into multiple textures, one for each frame
 fn load_textures_from_spritesheet_tex(
-    texture: glium::Texture2d,
+    texture: &glium::Texture2d,
     num_frames: usize,
     program: &LumenpyxProgram,
 ) -> Vec<glium::Texture2d> {
-    let texture_framebuffer =
-        glium::framebuffer::SimpleFrameBuffer::new(&program.display, &texture).expect(
-            "failed to create texture framebuffer when creating animation from spritesheet",
-        );
+    let texture_framebuffer = glium::framebuffer::SimpleFrameBuffer::new(&program.display, texture)
+        .expect("failed to create texture framebuffer when creating animation from spritesheet");
 
     // split the image into frames
     let frame_width = texture.width() / num_frames as u32;
@@ -252,7 +318,7 @@ fn load_textures_from_spritesheet_path(
     let texture = texture::Texture2d::new(&program.display, image)
         .expect("failed to create texture when creating animation from spritesheet");
 
-    return load_textures_from_spritesheet_tex(texture, num_frames, program);
+    return load_textures_from_spritesheet_tex(&texture, num_frames, program);
 }
 
 fn load_albedo_from_spritesheet(
@@ -276,7 +342,7 @@ fn load_non_albedo_from_spritesheet(
             load_textures_from_spritesheet_path(&path, albedo_textures.len(), program)
         }
         Texture::Texture(texture) => {
-            load_textures_from_spritesheet_tex(texture, albedo_textures.len(), program)
+            load_textures_from_spritesheet_tex(&texture, albedo_textures.len(), program)
         }
         _ => {
             let mut textures = vec![];

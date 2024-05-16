@@ -23,8 +23,9 @@ fn main() {
         13,
         std::time::Duration::from_millis(100),
         Transform::new([28.0, 0.0, 0.0]),
-        &lumen_program,
-    );
+        &mut lumen_program,
+    )
+    .0;
 
     let animation_2 = Animation::new_from_spritesheet(
         "../images/Skeleton Walk/Skeleton Walk.png".into(),
@@ -34,8 +35,9 @@ fn main() {
         13,
         std::time::Duration::from_millis(100),
         Transform::new([-28.0, 0.0, 0.0]),
-        &lumen_program,
-    );
+        &mut lumen_program,
+    )
+    .0;
 
     let camera = Camera::new([0.0, 0.0, 1.5]);
 

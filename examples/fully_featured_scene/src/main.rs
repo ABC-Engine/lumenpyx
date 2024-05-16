@@ -30,44 +30,28 @@ fn main() {
         )),
     ];
 
-    let (albedo_handle, heightmap_handle, roughness_handle, normal_handle) =
-        TextureHandle::new_from_textures(
-            "../images/Demo_Town/Demo-town-albedo-bottom.png".into(),
-            "../images/Demo_Town/Demo-town-Heightmap-Bottom.png".into(),
-            [0.0, 0.0, 0.0, 1.0].into(),
-            [0.0, 0.96, 0.48, 1.0].into(),
-            &mut lumen_program,
-        );
-
     // adapted from https://cainos.itch.io/pixel-art-platformer-village-props
     // Huge thank you to Cainos for the free assets!
     let mut scene_drawable_bottom = Sprite::new(
-        albedo_handle,
-        heightmap_handle,
-        roughness_handle,
-        normal_handle,
-        &lumen_program,
+        "../images/Demo_Town/Demo-town-albedo-bottom.png".into(),
+        "../images/Demo_Town/Demo-town-Heightmap-Bottom.png".into(),
+        [0.0, 0.0, 0.0, 1.0].into(),
+        [0.0, 0.96, 0.48, 1.0].into(),
+        &mut lumen_program,
         Transform::new([0.0, 0.0, 0.0]),
-    );
+    )
+    .0;
     scene_drawable_bottom.set_shadow_strength(0.0);
 
-    let (albedo_handle, heightmap_handle, roughness_handle, normal_handle) =
-        TextureHandle::new_from_textures(
-            "../images/Demo_Town/Demo-town-albedo-Top.png".into(),
-            "../images/Demo_Town/Demo-town-Heightmap-Top.png".into(),
-            "../images/Demo_Town/Demo-town-roughness.png".into(),
-            [0.0, 0.96, 0.48, 1.0].into(),
-            &mut lumen_program,
-        );
-
     let mut scene_drawable_top = Sprite::new(
-        albedo_handle,
-        heightmap_handle,
-        roughness_handle,
-        normal_handle,
-        &lumen_program,
+        "../images/Demo_Town/Demo-town-albedo-Top.png".into(),
+        "../images/Demo_Town/Demo-town-Heightmap-Top.png".into(),
+        "../images/Demo_Town/Demo-town-roughness.png".into(),
+        [0.0, 0.96, 0.48, 1.0].into(),
+        &mut lumen_program,
         Transform::new([0.0, 0.0, 0.0]),
-    );
+    )
+    .0;
     scene_drawable_top.set_shadow_strength(1.0);
 
     // credit to https://jesse-m.itch.io/skeleton-pack for the free assets
@@ -81,23 +65,15 @@ fn main() {
         let mut transform = Transform::new([0.0, 13.0, 0.0]);
         transform.set_scale(2.0, 2.0, 1.0);
 
-        let (albedo_handle, heightmap_handle, roughness_handle, normal_handle) =
-            TextureHandle::new_from_textures(
-                path.into(),
-                0.34.into(),
-                0.0.into(),
-                Default::default(),
-                &mut lumen_program,
-            );
-
         let mut sprite = Sprite::new(
-            albedo_handle,
-            heightmap_handle,
-            roughness_handle,
-            normal_handle,
-            &lumen_program,
+            path.into(),
+            0.34.into(),
+            0.0.into(),
+            Default::default(),
+            &mut lumen_program,
             Transform::new([0.0, 16.0, 0.0]),
-        );
+        )
+        .0;
         sprite.set_shadow_strength(1.0);
         skeleton_sprites.push(sprite);
     }

@@ -68,6 +68,7 @@ impl Default for DebugOption {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct TextureHandle {
     id: u32,
 }
