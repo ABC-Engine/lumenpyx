@@ -16,6 +16,8 @@ pub struct Animation {
     start_time: Instant,
     shadow_strength: f32,
     pub transform: Transform,
+    /// If true, the animation will loop, if false, the animation will not draw after the last frame
+    loop_animation: bool,
 }
 
 impl Animation {
@@ -29,6 +31,7 @@ impl Animation {
         time_between_frames: Duration,
         transform: Transform,
         program: &mut LumenpyxProgram,
+        loop_animation: bool,
     ) -> (
         Self,
         Vec<TextureHandle>,
@@ -86,6 +89,7 @@ impl Animation {
                 start_time: Instant::now(),
                 shadow_strength: 0.5,
                 transform,
+                loop_animation,
             },
             albedo_handles,
             height_handles,
@@ -105,6 +109,7 @@ impl Animation {
         time_between_frames: Duration,
         transform: Transform,
         program: &mut LumenpyxProgram,
+        loop_animation: bool,
     ) -> (
         Self,
         Vec<TextureHandle>,
@@ -163,6 +168,7 @@ impl Animation {
                 start_time: Instant::now(),
                 shadow_strength: 0.5,
                 transform,
+                loop_animation,
             },
             albedo_handles,
             height_handles,
@@ -179,6 +185,7 @@ impl Animation {
         program: &mut LumenpyxProgram,
         time_between_frames: Duration,
         transform: Transform,
+        loop_animation: bool,
     ) -> Self {
         let mut sprites = vec![];
         for i in 0..albedo.len() {
@@ -199,7 +206,12 @@ impl Animation {
             start_time: Instant::now(),
             shadow_strength: 0.5,
             transform,
+            loop_animation,
         }
+    }
+
+    pub fn restart_animation(&mut self) {
+        self.start_time = Instant::now();
     }
 }
 
@@ -213,13 +225,20 @@ impl Drawable for Animation {
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
-        let current_frame_num = self
+        let mut current_frame_num = self
             .start_time
             .elapsed()
             .as_nanos()
             .checked_div(self.time_between_frames.as_nanos())
-            .expect("time between frames on an animation cannot be set to 0")
-            % self.sprites.len() as u128;
+            .expect("time between frames on an animation cannot be set to 0");
+
+        if current_frame_num as usize >= self.sprites.len() {
+            if self.loop_animation {
+                current_frame_num = current_frame_num % self.sprites.len() as u128;
+            } else {
+                return;
+            }
+        }
 
         let current_frame = &self.sprites[current_frame_num as usize];
 
