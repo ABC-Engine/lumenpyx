@@ -90,10 +90,13 @@ where
         }
 
         for i in 0..8 {
-            new_framebuffers.push(
+            let mut new_framebuffer =
                 glium::framebuffer::SimpleFrameBuffer::new(display, new_textures[i])
-                    .expect("Failed to create blending framebuffer"),
-            );
+                    .expect("Failed to create blending framebuffer");
+
+            new_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
+
+            new_framebuffers.push(new_framebuffer);
         }
 
         {
