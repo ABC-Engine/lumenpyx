@@ -216,7 +216,7 @@ impl Animation {
 }
 
 impl Drawable for Animation {
-    fn draw(
+    /*fn draw(
         &self,
         program: &LumenpyxProgram,
         transform: &Transform,
@@ -250,6 +250,110 @@ impl Drawable for Animation {
             roughness_framebuffer,
             normal_framebuffer,
         );
+    }*/
+
+    fn draw_albedo(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let mut current_frame_num = self
+            .start_time
+            .elapsed()
+            .as_nanos()
+            .checked_div(self.time_between_frames.as_nanos())
+            .expect("time between frames on an animation cannot be set to 0");
+
+        if current_frame_num as usize >= self.sprites.len() {
+            if self.loop_animation {
+                current_frame_num = current_frame_num % self.sprites.len() as u128;
+            } else {
+                return;
+            }
+        }
+
+        let current_frame = &self.sprites[current_frame_num as usize];
+
+        current_frame.draw_albedo(program, transform, albedo_framebuffer);
+    }
+
+    fn draw_height(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let mut current_frame_num = self
+            .start_time
+            .elapsed()
+            .as_nanos()
+            .checked_div(self.time_between_frames.as_nanos())
+            .expect("time between frames on an animation cannot be set to 0");
+
+        if current_frame_num as usize >= self.sprites.len() {
+            if self.loop_animation {
+                current_frame_num = current_frame_num % self.sprites.len() as u128;
+            } else {
+                return;
+            }
+        }
+
+        let current_frame = &self.sprites[current_frame_num as usize];
+
+        current_frame.draw_height(program, transform, height_framebuffer);
+    }
+
+    fn draw_roughness(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let mut current_frame_num = self
+            .start_time
+            .elapsed()
+            .as_nanos()
+            .checked_div(self.time_between_frames.as_nanos())
+            .expect("time between frames on an animation cannot be set to 0");
+
+        if current_frame_num as usize >= self.sprites.len() {
+            if self.loop_animation {
+                current_frame_num = current_frame_num % self.sprites.len() as u128;
+            } else {
+                return;
+            }
+        }
+
+        let current_frame = &self.sprites[current_frame_num as usize];
+
+        current_frame.draw_roughness(program, transform, roughness_framebuffer);
+    }
+
+    fn draw_normal(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let mut current_frame_num = self
+            .start_time
+            .elapsed()
+            .as_nanos()
+            .checked_div(self.time_between_frames.as_nanos())
+            .expect("time between frames on an animation cannot be set to 0");
+
+        if current_frame_num as usize >= self.sprites.len() {
+            if self.loop_animation {
+                current_frame_num = current_frame_num % self.sprites.len() as u128;
+            } else {
+                return;
+            }
+        }
+
+        let current_frame = &self.sprites[current_frame_num as usize];
+
+        current_frame.draw_normal(program, transform, normal_framebuffer);
     }
 
     fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
@@ -536,23 +640,44 @@ impl AnimationStateMachine {
 }
 
 impl Drawable for AnimationStateMachine {
-    fn draw(
+    fn draw_albedo(
         &self,
         program: &LumenpyxProgram,
         transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
-        self.animations[self.current_animation].draw(
+        self.animations[self.current_animation].draw_albedo(program, transform, albedo_framebuffer);
+    }
+
+    fn draw_height(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        self.animations[self.current_animation].draw_height(program, transform, height_framebuffer);
+    }
+
+    fn draw_roughness(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        self.animations[self.current_animation].draw_roughness(
             program,
             transform,
-            albedo_framebuffer,
-            height_framebuffer,
             roughness_framebuffer,
-            normal_framebuffer,
         );
+    }
+
+    fn draw_normal(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        self.animations[self.current_animation].draw_normal(program, transform, normal_framebuffer);
     }
 
     fn try_load_shaders(&self, program: &mut LumenpyxProgram) {

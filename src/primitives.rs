@@ -254,14 +254,11 @@ impl Circle {
 }
 
 impl Drawable for Circle {
-    fn draw(
+    fn draw_albedo(
         &self,
         program: &LumenpyxProgram,
         transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
         draw_circle(
             self.color,
@@ -271,6 +268,7 @@ impl Drawable for Circle {
             albedo_framebuffer,
         );
     }
+    // don't need to implement the other draw functions because they are not used
 
     fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
         if program.get_shader("circle_ahr_shader").is_some() {
@@ -322,24 +320,108 @@ impl Sphere {
 }
 
 impl Drawable for Sphere {
-    fn draw(
+    fn draw_albedo(
         &self,
         program: &LumenpyxProgram,
         transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
-        draw_sphere(
+        draw_circle(
             self.color,
             self.radius,
             transform.get_matrix(),
             program,
             albedo_framebuffer,
-            height_framebuffer,
-            normal_framebuffer,
         );
+    }
+
+    fn draw_height(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let display = &program.display;
+        let indices = &program.indices;
+
+        let smallest_dim = height_framebuffer
+            .get_dimensions()
+            .0
+            .min(height_framebuffer.get_dimensions().1);
+
+        let radius = self.radius / smallest_dim as f32;
+
+        {
+            let height_shader = program
+                .get_shader("sphere_height_shader")
+                .expect("Failed to get sphere height shader");
+
+            let shape = FULL_SCREEN_QUAD;
+
+            let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+                .expect("Failed to create vertex buffer for sphere");
+
+            let uniforms = &uniform! {
+                matrix: transform.get_matrix(),
+                radius_squared: radius.powi(2),
+            };
+
+            height_framebuffer
+                .draw(
+                    &vertex_buffer,
+                    indices,
+                    &height_shader,
+                    uniforms,
+                    &DrawParameters {
+                        blend: DEFAULT_BLEND,
+                        ..Default::default()
+                    },
+                )
+                .expect("Failed to draw sphere height map");
+        }
+    }
+
+    fn draw_normal(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let display = &program.display;
+        let indices = &program.indices;
+
+        let normal_shader = program
+            .get_shader("sphere_normal_shader")
+            .expect("Failed to get sphere normal shader");
+
+        let shape = FULL_SCREEN_QUAD;
+
+        let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+            .expect("Failed to create vertex buffer for sphere");
+        let resolution = [
+            normal_framebuffer.get_dimensions().0 as f32,
+            normal_framebuffer.get_dimensions().1 as f32,
+        ];
+        let radius_squared = self.radius.powi(2);
+
+        let uniforms = &uniform! {
+            matrix: transform.get_matrix(),
+            radius_squared: radius_squared,
+            resolution: resolution,
+        };
+
+        normal_framebuffer
+            .draw(
+                &vertex_buffer,
+                indices,
+                &normal_shader,
+                uniforms,
+                &DrawParameters {
+                    blend: DEFAULT_BLEND,
+                    ..Default::default()
+                },
+            )
+            .expect("Failed to draw sphere normal map");
     }
 
     fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
@@ -417,14 +499,11 @@ impl Rectangle {
 }
 
 impl Drawable for Rectangle {
-    fn draw(
+    fn draw_albedo(
         &self,
         program: &LumenpyxProgram,
         transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
         draw_rectangle(
             self.color,
@@ -493,25 +572,116 @@ impl Cylinder {
 }
 
 impl Drawable for Cylinder {
-    fn draw(
+    fn draw_albedo(
         &self,
         program: &LumenpyxProgram,
         transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
-        draw_cylinder(
+        draw_rectangle(
             self.color,
-            self.radius,
+            self.radius * 2.0,
             self.height,
             transform.get_matrix(),
             program,
             albedo_framebuffer,
-            height_framebuffer,
-            normal_framebuffer,
         );
+    }
+
+    fn draw_height(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let smallest_dim = height_framebuffer
+            .get_dimensions()
+            .0
+            .min(height_framebuffer.get_dimensions().1);
+
+        let radius = self.radius / smallest_dim as f32;
+
+        let display = &program.display;
+        let indices = &program.indices;
+
+        let shader = program
+            .get_shader("cylinder_height_shader")
+            .expect("Failed to get cylinder height shader");
+
+        let shape = FULL_SCREEN_QUAD;
+
+        let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+            .expect("Failed to create vertex buffer for cylinder");
+
+        let uniforms = &uniform! {
+            width: radius * 2.0,
+            height: self.height,
+            matrix: transform.get_matrix(),
+        };
+
+        height_framebuffer
+            .draw(
+                &vertex_buffer,
+                indices,
+                &shader,
+                uniforms,
+                &DrawParameters {
+                    blend: DEFAULT_BLEND,
+                    ..Default::default()
+                },
+            )
+            .expect("Failed to draw cylinder height map");
+    }
+
+    fn draw_normal(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let smallest_dim = normal_framebuffer
+            .get_dimensions()
+            .0
+            .min(normal_framebuffer.get_dimensions().1);
+
+        let radius = self.radius / smallest_dim as f32;
+
+        let display = &program.display;
+        let indices = &program.indices;
+
+        let normal_shader = program
+            .get_shader("cylinder_normal_shader")
+            .expect("Failed to get cylinder normal shader");
+
+        let shape = FULL_SCREEN_QUAD;
+
+        let vertex_buffer = glium::VertexBuffer::new(display, &shape)
+            .expect("Failed to create vertex buffer for cylinder");
+
+        let resolution = [
+            normal_framebuffer.get_dimensions().0 as f32,
+            normal_framebuffer.get_dimensions().1 as f32,
+        ];
+
+        let uniforms = &uniform! {
+            width: radius * 2.0,
+            height: self.height,
+            resolution: resolution,
+            matrix: transform.get_matrix(),
+        };
+
+        normal_framebuffer
+            .draw(
+                &vertex_buffer,
+                indices,
+                &normal_shader,
+                uniforms,
+                &DrawParameters {
+                    blend: DEFAULT_BLEND,
+                    ..Default::default()
+                },
+            )
+            .expect("Failed to draw cylinder normal map");
     }
 
     fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
@@ -1023,6 +1193,8 @@ impl TextureHandle {
 
 #[derive(Clone, Copy)]
 pub struct Sprite {
+    width: u32,
+    height: u32,
     albedo_texture: TextureHandle,
     height_texture: TextureHandle,
     roughness_texture: TextureHandle,
@@ -1083,8 +1255,20 @@ impl Sprite {
             }
         };
 
+        let width = program
+            .get_texture_from_handle(&albedo_handle)
+            .unwrap()
+            .width();
+
+        let height = program
+            .get_texture_from_handle(&albedo_handle)
+            .unwrap()
+            .height();
+
         (
             Sprite {
+                width,
+                height,
                 albedo_texture: albedo_handle,
                 height_texture: height_handle,
                 roughness_texture: roughness_handle,
@@ -1105,42 +1289,28 @@ impl Sprite {
 }
 
 impl Drawable for Sprite {
-    fn draw(
+    fn draw_albedo(
         &self,
         program: &LumenpyxProgram,
         transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
-        let albedo_texture = program
+        let albedo_texture: &glium::Texture2d = program
             .get_texture_from_handle(&self.albedo_texture)
             .expect("failed to get albedo texture");
-        let height_texture = program
-            .get_texture_from_handle(&self.height_texture)
-            .expect("failed to get height texture");
-        let roughness_texture = program
-            .get_texture_from_handle(&self.roughness_texture)
-            .expect("failed to get roughness texture");
-        let normal_texture = program
-            .get_texture_from_handle(&self.normal_texture)
-            .expect("failed to get normal texture");
 
         // scale the transform matrix to match the size of the texture
         // check which side is longer and scale the other side to match
-        let width = albedo_texture.get_width() as f32;
-        let height = albedo_texture
-            .get_height()
-            .expect("failed to get height of sprite's texture") as f32;
+        let width = self.width as f32;
+        let height = self.height as f32;
         let mut transform = transform.clone();
 
         // adjust size of the sprite to match the texture
         {
             let smallest_dimension = (albedo_framebuffer.get_dimensions().1 as f32)
                 .min(albedo_framebuffer.get_dimensions().0 as f32);
-            let x_scale = width as f32 / smallest_dimension;
-            let y_scale = height as f32 / smallest_dimension;
+            let x_scale = width / smallest_dimension;
+            let y_scale = height / smallest_dimension;
 
             transform.set_scale(
                 transform.get_scale()[0] * x_scale,
@@ -1155,6 +1325,39 @@ impl Drawable for Sprite {
             program,
             albedo_framebuffer,
         );
+    }
+
+    fn draw_height(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let height_texture = program
+            .get_texture_from_handle(&self.height_texture)
+            .expect("failed to get albedo texture");
+
+        // scale the transform matrix to match the size of the texture
+        // check which side is longer and scale the other side to match
+        let width = height_texture.get_width() as f32;
+        let height = height_texture
+            .get_height()
+            .expect("failed to get height of sprite's texture") as f32;
+        let mut transform = transform.clone();
+
+        // adjust size of the sprite to match the texture
+        {
+            let smallest_dimension = (height_framebuffer.get_dimensions().1 as f32)
+                .min(height_framebuffer.get_dimensions().0 as f32);
+            let x_scale = width as f32 / smallest_dimension;
+            let y_scale = height as f32 / smallest_dimension;
+
+            transform.set_scale(
+                transform.get_scale()[0] * x_scale,
+                transform.get_scale()[1] * y_scale,
+                transform.get_scale()[2],
+            );
+        }
 
         draw_texture(
             &height_texture,
@@ -1162,19 +1365,81 @@ impl Drawable for Sprite {
             program,
             height_framebuffer,
         );
+    }
 
-        draw_texture(
-            &roughness_texture,
-            transform.get_matrix(),
-            program,
-            roughness_framebuffer,
-        );
+    fn draw_normal(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let normal_texture = program
+            .get_texture_from_handle(&self.normal_texture)
+            .expect("failed to get normal texture");
+
+        // scale the transform matrix to match the size of the texture
+        // check which side is longer and scale the other side to match
+        let width = self.width as f32;
+        let height = self.height as f32;
+        let mut transform = transform.clone();
+
+        // adjust size of the sprite to match the texture
+        {
+            let smallest_dimension = (normal_framebuffer.get_dimensions().1 as f32)
+                .min(normal_framebuffer.get_dimensions().0 as f32);
+            let x_scale = width / smallest_dimension;
+            let y_scale = height / smallest_dimension;
+
+            transform.set_scale(
+                transform.get_scale()[0] * x_scale,
+                transform.get_scale()[1] * y_scale,
+                transform.get_scale()[2],
+            );
+        }
 
         draw_texture(
             &normal_texture,
             transform.get_matrix(),
             program,
             normal_framebuffer,
+        );
+    }
+
+    fn draw_roughness(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
+        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let roughness_texture = program
+            .get_texture_from_handle(&self.roughness_texture)
+            .unwrap();
+
+        // scale the transform matrix to match the size of the texture
+        // check which side is longer and scale the other side to match
+        let width = self.width as f32;
+        let height = self.height as f32;
+        let mut transform = transform.clone();
+
+        // adjust size of the sprite to match the texture
+        {
+            let smallest_dimension = (roughness_framebuffer.get_dimensions().1 as f32)
+                .min(roughness_framebuffer.get_dimensions().0 as f32);
+            let x_scale = width / smallest_dimension;
+            let y_scale = height / smallest_dimension;
+
+            transform.set_scale(
+                transform.get_scale()[0] * x_scale,
+                transform.get_scale()[1] * y_scale,
+                transform.get_scale()[2],
+            );
+        }
+
+        draw_texture(
+            &roughness_texture,
+            transform.get_matrix(),
+            program,
+            roughness_framebuffer,
         );
     }
 

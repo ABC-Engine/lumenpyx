@@ -13,16 +13,37 @@ use glium::Surface;
 /// If you want to create a custom object, you will need to implement this trait.
 /// If you do, use the tutorial here: https://github.com/ABC-Engine/lumenpyx/wiki/Creating-custom-drawable-objects
 pub trait Drawable {
-    /// Draw the object to the screen
-    fn draw(
+    fn draw_albedo(
         &self,
         program: &LumenpyxProgram,
         transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+    }
+
+    fn draw_height(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+    }
+
+    fn draw_roughness(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+    }
+
+    fn draw_normal(
+        &self,
+        program: &LumenpyxProgram,
+        transform: &Transform,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-    );
+    ) {
+    }
 
     /// Load the shaders for the object
     /// This is called every frame, so make sure to check

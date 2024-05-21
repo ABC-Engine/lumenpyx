@@ -69,7 +69,7 @@ impl Default for DebugOption {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct TextureHandle {
     id: u32,
 }
@@ -943,15 +943,7 @@ fn draw_all_no_post<'a>(
             let new_transform =
                 program.adjust_transform_for_drawable(&drawable.get_transform(), camera);
 
-            drawable.draw(
-                program,
-                &new_transform,
-                &mut albedo_framebuffer,
-                &mut height_framebuffer,
-                &mut roughness_framebuffer,
-                &mut normal_framebuffer,
-            );
-
+            drawable.draw_albedo(program, &new_transform, &mut albedo_framebuffer);
             if render_settings.shadows {
                 let shadow_strength = drawable.get_recieve_shadows_strength();
 
@@ -975,6 +967,27 @@ fn draw_all_no_post<'a>(
                     glium::uniforms::MagnifySamplerFilter::Nearest,
                 );
             }
+        }
+
+        for drawable in &drawables {
+            let new_transform =
+                program.adjust_transform_for_drawable(&drawable.get_transform(), camera);
+
+            drawable.draw_height(program, &new_transform, &mut height_framebuffer);
+        }
+
+        for drawable in &drawables {
+            let new_transform =
+                program.adjust_transform_for_drawable(&drawable.get_transform(), camera);
+
+            drawable.draw_roughness(program, &new_transform, &mut roughness_framebuffer);
+        }
+
+        for drawable in &drawables {
+            let new_transform =
+                program.adjust_transform_for_drawable(&drawable.get_transform(), camera);
+
+            drawable.draw_normal(program, &new_transform, &mut normal_framebuffer);
         }
     }
 
