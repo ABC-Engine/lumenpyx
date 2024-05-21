@@ -1,6 +1,7 @@
 use glium;
 use glium::glutin::surface::WindowSurface;
 use glium::implement_vertex;
+use glium::Frame;
 use glium::Surface;
 use primitives::Texture;
 /// This module contains all the window and display setup functions
@@ -82,8 +83,7 @@ pub struct LumenpyxProgram {
     /// The indices for the program (there are no indices, but glium requires this to be here)
     pub indices: glium::index::NoIndices,
     shaders: FxHashMap<String, glium::Program>,
-    /// numbers are reserved for the user added textures
-    cached_textures: FxHashMap<String, glium::texture::Texture2d>,
+    cache: LumenpyxCache,
     next_texture_id: u32,
     dimensions: [u32; 2],
     pub debug: DebugOption,
@@ -102,7 +102,7 @@ impl LumenpyxProgram {
             indices,
             shaders: FxHashMap::default(),
             next_texture_id: 0,
-            cached_textures: FxHashMap::default(),
+            cache: LumenpyxCache::default(),
             dimensions: resolution,
             debug: DebugOption::None,
             render_settings: RenderSettings {
@@ -133,12 +133,12 @@ impl LumenpyxProgram {
 
     /// Add a texture to the program with the given name
     pub fn add_texture(&mut self, texture: glium::texture::Texture2d, name: &str) {
-        self.cached_textures.insert(name.to_string(), texture);
+        self.cache.insert(name.to_string(), texture);
     }
 
     /// Get a texture from the program with the given name
     pub fn get_texture(&self, name: &str) -> Option<&glium::texture::Texture2d> {
-        self.cached_textures.get(name)
+        self.cache.get_texture(name)
     }
 
     /// Get a texture from a texture handle
@@ -146,8 +146,8 @@ impl LumenpyxProgram {
         &self,
         handle: &TextureHandle,
     ) -> Option<&glium::texture::Texture2d> {
-        self.cached_textures
-            .get(&format!("{}_{}", HANDLE_STRING_ID, handle.id))
+        self.cache
+            .get_texture(&format!("{}_{}", HANDLE_STRING_ID, handle.id))
     }
 
     /// Remove a shader from the program
@@ -255,10 +255,38 @@ impl LumenpyxProgram {
         let id = self.next_texture_id;
         self.next_texture_id += 1;
 
-        self.cached_textures
+        self.cache
             .insert(format!("{}_{}", HANDLE_STRING_ID, id), texture);
 
         TextureHandle { id }
+    }
+}
+
+struct LumenpyxCache {
+    hashmap: FxHashMap<String, glium::Texture2d>,
+}
+
+impl Default for LumenpyxCache {
+    fn default() -> Self {
+        LumenpyxCache {
+            hashmap: FxHashMap::default(),
+        }
+    }
+}
+
+impl LumenpyxCache {
+    fn insert(&mut self, name: String, texture: glium::Texture2d) {
+        self.hashmap.insert(name, texture);
+    }
+
+    fn get_texture(&self, name: &str) -> Option<&glium::Texture2d> {
+        let texture = self.hashmap.get(name);
+
+        if let Some(texture) = texture {
+            Some(texture)
+        } else {
+            None
+        }
     }
 }
 
@@ -583,16 +611,6 @@ pub fn draw_all(
         upscale the result to the screen size
     */
 
-    let display = &program.display;
-    let debug = &program.debug;
-    let render_settings = &program.render_settings;
-    let render_resolution = render_settings
-        .render_resolution
-        .unwrap_or(program.dimensions);
-    if render_resolution < program.dimensions {
-        panic!("Render resolution must be greater than or equal to the window resolution");
-    }
-
     let reflected_texture = program
         .get_texture("reflected_texture")
         .expect("Failed to get reflected texture");
@@ -615,6 +633,15 @@ pub fn draw_all(
         &shadow_strength_texture,
     );
 
+    let display = &program.display;
+    let debug = &program.debug;
+    let render_settings = &program.render_settings;
+    let render_resolution = render_settings
+        .render_resolution
+        .unwrap_or(program.dimensions);
+    if render_resolution < program.dimensions {
+        panic!("Render resolution must be greater than or equal to the window resolution");
+    }
     if render_settings.reflections {
         let roughness = glium::uniforms::Sampler(roughness_texture, DEFAULT_BEHAVIOR);
         let height = glium::uniforms::Sampler(height_texture, DEFAULT_BEHAVIOR);
@@ -628,8 +655,6 @@ pub fn draw_all(
         let mut reflected_framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(display, reflected_texture)
                 .expect("Failed to create reflected frame buffer");
-
-        reflected_framebuffer.clear_color(0.0, 0.0, 0.0, 0.0);
 
         draw_reflections(
             camera,
@@ -676,7 +701,7 @@ fn load_all_textures(program: &mut LumenpyxProgram) {
         panic!("Render resolution must be greater than or equal to the window resolution");
     }
 
-    let albedo_texture = program.cached_textures.get("albedo_texture");
+    let albedo_texture = program.cache.get_texture("albedo_texture");
     if albedo_texture.is_none() {
         let albedo_texture_owned = glium::texture::Texture2d::empty_with_format(
             display,
@@ -688,11 +713,11 @@ fn load_all_textures(program: &mut LumenpyxProgram) {
         .expect("Failed to create albedo texture");
 
         program
-            .cached_textures
+            .cache
             .insert("albedo_texture".to_string(), albedo_texture_owned);
     }
 
-    let height_texture = program.cached_textures.get("height_texture");
+    let height_texture = program.cache.get_texture("height_texture");
     if height_texture.is_none() {
         let height_texture_owned = glium::texture::Texture2d::empty_with_format(
             display,
@@ -704,11 +729,11 @@ fn load_all_textures(program: &mut LumenpyxProgram) {
         .expect("Failed to create height texture");
 
         program
-            .cached_textures
+            .cache
             .insert("height_texture".to_string(), height_texture_owned);
     }
 
-    let normal_texture = program.cached_textures.get("normal_texture");
+    let normal_texture = program.cache.get_texture("normal_texture");
     if normal_texture.is_none() {
         let normal_texture_owned = glium::texture::Texture2d::empty_with_format(
             display,
@@ -720,11 +745,11 @@ fn load_all_textures(program: &mut LumenpyxProgram) {
         .expect("Failed to create normal texture");
 
         program
-            .cached_textures
+            .cache
             .insert("normal_texture".to_string(), normal_texture_owned);
     }
 
-    let roughness_texture = program.cached_textures.get("roughness_texture");
+    let roughness_texture = program.cache.get_texture("roughness_texture");
     if roughness_texture.is_none() {
         let roughness_texture_owned = glium::texture::Texture2d::empty_with_format(
             display,
@@ -736,11 +761,11 @@ fn load_all_textures(program: &mut LumenpyxProgram) {
         .expect("Failed to create roughness texture");
 
         program
-            .cached_textures
+            .cache
             .insert("roughness_texture".to_string(), roughness_texture_owned);
     }
 
-    let shadow_strength_texture = program.cached_textures.get("shadow_strength_texture");
+    let shadow_strength_texture = program.cache.get_texture("shadow_strength_texture");
     if shadow_strength_texture.is_none() {
         let shadow_strength_texture_owned = glium::texture::Texture2d::empty_with_format(
             display,
@@ -751,13 +776,13 @@ fn load_all_textures(program: &mut LumenpyxProgram) {
         )
         .expect("Failed to create shadow strength texture");
 
-        program.cached_textures.insert(
+        program.cache.insert(
             "shadow_strength_texture".to_string(),
             shadow_strength_texture_owned,
         );
     }
 
-    let last_drawable_texture = program.cached_textures.get("last_drawable_texture");
+    let last_drawable_texture = program.cache.get_texture("last_drawable_texture");
     if last_drawable_texture.is_none() {
         let last_drawable_texture_owned = glium::texture::Texture2d::empty_with_format(
             display,
@@ -768,7 +793,7 @@ fn load_all_textures(program: &mut LumenpyxProgram) {
         )
         .expect("Failed to create last drawable texture");
 
-        program.cached_textures.insert(
+        program.cache.insert(
             "last_drawable_texture".to_string(),
             last_drawable_texture_owned,
         );
@@ -786,7 +811,7 @@ fn load_all_textures(program: &mut LumenpyxProgram) {
         .expect("Failed to create reflected frame buffer");
 
         program
-            .cached_textures
+            .cache
             .insert("reflected_texture".to_string(), reflected_texture_owned);
     }
 
@@ -802,7 +827,7 @@ fn load_all_textures(program: &mut LumenpyxProgram) {
         .expect("Failed to create reflection frame buffer");
 
         program
-            .cached_textures
+            .cache
             .insert("reflection_texture".to_string(), reflection_texture_owned);
     }
 
@@ -818,7 +843,7 @@ fn load_all_textures(program: &mut LumenpyxProgram) {
         .expect("Failed to create lit frame buffer");
 
         program
-            .cached_textures
+            .cache
             .insert("lit_texture".to_string(), lit_texture_owned);
     }
 }
@@ -848,29 +873,29 @@ fn draw_all_no_post<'a>(
         .expect("Failed to get albedo texture");
 
     let height_texture = program
-        .cached_textures
-        .get("height_texture")
+        .cache
+        .get_texture("height_texture")
         .expect("Failed to get height texture");
 
     let normal_texture = program
-        .cached_textures
-        .get("normal_texture")
+        .cache
+        .get_texture("normal_texture")
         .expect("Failed to get normal texture");
 
     let roughness_texture = program
-        .cached_textures
-        .get("roughness_texture")
+        .cache
+        .get_texture("roughness_texture")
         .expect("Failed to get roughness texture");
 
     let shadow_strength_texture = program
-        .cached_textures
-        .get("shadow_strength_texture")
+        .cache
+        .get_texture("shadow_strength_texture")
         .expect("Failed to get shadow strength texture");
 
     {
         let last_drawable_texture = program
-            .cached_textures
-            .get("last_drawable_texture")
+            .cache
+            .get_texture("last_drawable_texture")
             .expect("Failed to get last drawable texture");
 
         let mut last_drawable_framebuffer =

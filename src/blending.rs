@@ -74,7 +74,6 @@ where
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
         let display = &program.display;
-        let render_resolution = albedo_framebuffer.get_dimensions();
 
         let mut new_textures = Vec::new();
         let mut new_framebuffers = Vec::new();

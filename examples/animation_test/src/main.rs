@@ -24,6 +24,7 @@ fn main() {
         std::time::Duration::from_millis(100),
         Transform::new([28.0, 0.0, 0.0]),
         &mut lumen_program,
+        true,
     )
     .0;
 
@@ -36,6 +37,7 @@ fn main() {
         std::time::Duration::from_millis(100),
         Transform::new([-28.0, 0.0, 0.0]),
         &mut lumen_program,
+        true,
     )
     .0;
 

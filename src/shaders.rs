@@ -267,8 +267,8 @@ pub(crate) fn draw_reflections(
     let indices = &program.indices;
 
     let reflection_texture = program
-        .cached_textures
-        .get("reflection_texture")
+        .cache
+        .get_texture("reflection_texture")
         .expect("Failed to get reflection texture");
 
     let mut reflection_framebuffer =
