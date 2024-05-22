@@ -60,20 +60,22 @@ where
     ) {
         let display = &program.display;
 
-        let albedo_texture_1 = program
+        let texture_1 = program
             .get_texture(texture_1_name)
             .expect("Failed to get blending texture");
-        let albedo_texture_2 = program
+        let texture_2 = program
             .get_texture(texture_2_name)
             .expect("Failed to get blending texture");
 
-        let mut albedo_framebuffer_1 =
-            glium::framebuffer::SimpleFrameBuffer::new(display, albedo_texture_1)
-                .expect("Failed to create blending framebuffer");
+        let mut framebuffer_1 = glium::framebuffer::SimpleFrameBuffer::new(display, texture_1)
+            .expect("Failed to create blending framebuffer");
 
-        let mut albedo_framebuffer_2 =
-            glium::framebuffer::SimpleFrameBuffer::new(display, albedo_texture_2)
-                .expect("Failed to create blending framebuffer");
+        framebuffer_1.clear_color(0.0, 0.0, 0.0, 0.0);
+
+        let mut framebuffer_2 = glium::framebuffer::SimpleFrameBuffer::new(display, texture_2)
+            .expect("Failed to create blending framebuffer");
+
+        framebuffer_2.clear_color(0.0, 0.0, 0.0, 0.0);
 
         {
             {
@@ -96,7 +98,7 @@ where
                 self.object_1.draw_albedo(
                     program,
                     &Transform::from_matrix(adjusted_transform_matrix),
-                    &mut albedo_framebuffer_1,
+                    &mut framebuffer_1,
                 );
             }
 
@@ -119,7 +121,7 @@ where
                 self.object_2.draw_albedo(
                     program,
                     &Transform::from_matrix(adjusted_transform_matrix),
-                    &mut albedo_framebuffer_2,
+                    &mut framebuffer_2,
                 );
             }
         }
@@ -127,13 +129,7 @@ where
         // overlay our texture to the main framebuffers
         // the blending mode here is meant to blend the new textures with the main framebuffers aka the one passed in
         // combine the textures
-        draw_mix(
-            albedo_texture_1,
-            albedo_texture_2,
-            &self.blend,
-            program,
-            framebuffer,
-        );
+        draw_mix(texture_1, texture_2, &self.blend, program, framebuffer);
     }
 
     pub fn set_shadow_strength(&mut self, shadow_strength: f32) {

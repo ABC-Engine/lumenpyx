@@ -969,25 +969,31 @@ fn draw_all_no_post<'a>(
             }
         }
 
-        for drawable in &drawables {
-            let new_transform =
-                program.adjust_transform_for_drawable(&drawable.get_transform(), camera);
+        if render_settings.shadows || render_settings.reflections {
+            for drawable in &drawables {
+                let new_transform =
+                    program.adjust_transform_for_drawable(&drawable.get_transform(), camera);
 
-            drawable.draw_height(program, &new_transform, &mut height_framebuffer);
+                drawable.draw_height(program, &new_transform, &mut height_framebuffer);
+            }
         }
 
-        for drawable in &drawables {
-            let new_transform =
-                program.adjust_transform_for_drawable(&drawable.get_transform(), camera);
+        if program.render_settings.reflections {
+            for drawable in &drawables {
+                let new_transform =
+                    program.adjust_transform_for_drawable(&drawable.get_transform(), camera);
 
-            drawable.draw_roughness(program, &new_transform, &mut roughness_framebuffer);
+                drawable.draw_roughness(program, &new_transform, &mut roughness_framebuffer);
+            }
         }
 
-        for drawable in &drawables {
-            let new_transform =
-                program.adjust_transform_for_drawable(&drawable.get_transform(), camera);
+        if program.render_settings.reflections {
+            for drawable in &drawables {
+                let new_transform =
+                    program.adjust_transform_for_drawable(&drawable.get_transform(), camera);
 
-            drawable.draw_normal(program, &new_transform, &mut normal_framebuffer);
+                drawable.draw_normal(program, &new_transform, &mut normal_framebuffer);
+            }
         }
     }
 
