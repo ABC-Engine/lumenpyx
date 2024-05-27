@@ -22,6 +22,7 @@ pub mod blending;
 /// This module contains all the lights that can be used in the program
 /// As well as containing the trait that all lights must implement
 pub mod lights;
+pub mod text;
 
 const HANDLE_STRING_ID: &str = "wdAYG8&DWtyiwDhukhjwda";
 
@@ -231,7 +232,7 @@ impl LumenpyxProgram {
         }
         new_transform.set_scale(scale[0], scale[1], scale[2]);
 
-        let (mut x, mut y, mut z) = (transform.get_x(), transform.get_y(), transform.get_z());
+        let (mut x, mut y, z) = (transform.get_x(), transform.get_y(), transform.get_z());
         // adjust off the camera no need to translate the z, it would just mess up the height map's interaction with the light
         x -= camera.position[0];
         y -= camera.position[1];
@@ -519,6 +520,7 @@ pub struct Camera {
 }
 
 impl Camera {
+    /// the z position of the camera is just for reflection purposes
     pub fn new(position: [f32; 3]) -> Camera {
         Camera { position }
     }

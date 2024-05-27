@@ -14,21 +14,6 @@ fn main() {
             .with_reflections(false),
     );
 
-    let mut lights = vec![
-        Box::new(lights::PointLight::new(
-            [0.56, -0.44, 1.0],
-            [1.0, 0.76, 0.52],
-            2.0,
-            0.02,
-        )),
-        Box::new(lights::PointLight::new(
-            [-0.545, -0.44, 1.0],
-            [1.0, 0.76, 0.52],
-            2.0,
-            0.02,
-        )),
-    ];
-
     let mut scene_drawable = Sprite::new(
         "../images/Demo-Scene-Albedo.png".into(),
         "../images/Demo-Scene-Heightmap.png".into(),
@@ -77,8 +62,6 @@ fn main() {
         }
 
         let drawable_refs: Vec<&dyn Drawable> = vec![&background, &sprite];
-        let light_refs: Vec<&dyn LightDrawable> =
-            lights.iter().map(|l| &**l as &dyn LightDrawable).collect();
-        draw_all(light_refs, drawable_refs, &mut program, &camera);
+        draw_all(vec![], drawable_refs, &mut program, &camera);
     });
 }
