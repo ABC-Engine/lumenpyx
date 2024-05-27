@@ -1,10 +1,10 @@
 use lumenpyx::drawable_object::Drawable;
-use lumenpyx::primitives::{NormalInput, Rectangle, Sprite};
+use lumenpyx::primitives::Rectangle;
 use lumenpyx::*;
 
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
-    let (mut lumen_program, event_loop) = LumenpyxProgram::new([128, 128], "text test");
+    let (mut lumen_program, event_loop) = LumenpyxProgram::new([256, 256], "text test");
 
     lumen_program.set_render_settings(
         RenderSettings::default()
@@ -26,17 +26,16 @@ fn main() {
         &mut lumen_program,
     );
 
-    text.set_font_size(8.0, &mut lumen_program);
+    text.set_font_size(16.0, &mut lumen_program);
     let mut new_transform = Transform::new([0.0, 0.0, 0.0]);
     new_transform.set_scale(1.0, 1.0, 1.0);
     text.set_transform(new_transform);
 
-    let background = Rectangle::new([0.0, 1.0, 0.0, 1.0], 128.0, 128.0, Transform::default());
+    let background = Rectangle::new([0.0, 1.0, 0.0, 1.0], 256.0, 256.0, Transform::default());
 
     let mut distance_to_60_frame = 0;
     let mut start_of_60_frame = std::time::Instant::now();
-    let time_elapsed = std::time::Instant::now();
-    let mut camera = Camera::new([0.0, 0.0, 1.5]);
+    let camera = Camera::new([0.0, 0.0, 1.5]);
 
     lumen_program.run(event_loop, |mut program| {
         distance_to_60_frame -= 1;
@@ -44,16 +43,6 @@ fn main() {
             println!("FPS: {}", 60.0 / start_of_60_frame.elapsed().as_secs_f32());
             distance_to_60_frame = 60;
             start_of_60_frame = std::time::Instant::now();
-        }
-        {
-            /*let mut new_transform = Transform::new([
-                (time_elapsed.elapsed().as_secs_f32() / 4.0).sin() * 64.0,
-                0.0,
-                0.0,
-            ]);
-            new_transform.set_rotation(time_elapsed.elapsed().as_secs_f32());
-            text.set_transform(new_transform);
-            camera.position[0] = (time_elapsed.elapsed().as_secs_f32()).sin() * 64.0;*/
         }
 
         let drawable_refs: Vec<&dyn Drawable> = vec![&background, &text];

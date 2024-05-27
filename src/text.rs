@@ -1,13 +1,14 @@
+use glium::Surface;
 use image::{self, Pixel, Rgba, RgbaImage};
 use parley::layout::{Alignment, Glyph, GlyphRun, Layout};
-use parley::style::{FontWeight, StyleProperty};
+use parley::style::StyleProperty;
 use parley::FontContext;
 use parley::LayoutContext;
 use swash::scale::image::Content;
 use swash::scale::{Render, ScaleContext, Scaler, Source, StrikeWith};
 use swash::zeno;
 use swash::FontRef;
-use zeno::{Format, Vector};
+use zeno::Format;
 
 use crate::primitives::{draw_texture, BASE_FRAGMENT_SHADER_SRC, BASE_VERTEX_SHADER_SRC};
 use crate::Drawable;
@@ -18,9 +19,18 @@ pub use parley::style::{FontFamily, FontStack, GenericFamily};
 /// Padding must be non zero
 pub struct TextBox<'a> {
     data: TextBoxData,
-    sprite: glium::texture::Texture2d,
+    albedo_sprite: glium::texture::Texture2d,
+    height_sprite: glium::texture::Texture2d,
+    roughness_sprite: glium::texture::Texture2d,
+    normal_sprite: glium::texture::Texture2d,
     transform: crate::Transform,
     font: Option<FontStack<'a>>,
+    /// the height that will be used in the draw height
+    height: f32,
+    /// The roughness that will be used in the draw function
+    roughness: f32,
+    /// The normal that will be used in the draw function
+    normal: [f32; 3],
 }
 
 impl<'a> TextBox<'a> {
@@ -46,19 +56,56 @@ impl<'a> TextBox<'a> {
             font_size: 16.0,
         };
 
-        let sprite = remake_text_box(&mut data, &None, lumenpyx_program);
+        let albedo_sprite = remake_text_box(&data, &None, lumenpyx_program);
+        let height_sprite = remake_text_box(&data, &None, lumenpyx_program);
+        let roughness_sprite = remake_text_box(&data, &None, lumenpyx_program);
+        let normal_sprite = remake_text_box(&data, &None, lumenpyx_program);
 
-        Self {
+        let mut new_self = Self {
             data,
-            sprite,
+            albedo_sprite,
+            height_sprite,
+            roughness_sprite,
+            normal_sprite,
             transform: crate::Transform::default(),
             font: None,
-        }
+            height: 0.0,
+            roughness: 0.0,
+            normal: [0.0, 0.0, 0.0],
+        };
+
+        // because we didn't draw the height, roughness, or normal properly
+        new_self.redraw_all_textures(lumenpyx_program);
+
+        new_self
+    }
+
+    pub fn redraw_all_textures(&mut self, lumenpyx_program: &mut crate::LumenpyxProgram) {
+        self.albedo_sprite = remake_text_box(&mut self.data, &self.font, lumenpyx_program);
+
+        let mut height_data = self.data.clone();
+        let height = (self.height * 255.0) as u8;
+        height_data.text_color = [height, height, height, 255];
+        self.height_sprite = remake_text_box(&mut height_data, &self.font, lumenpyx_program);
+
+        let mut roughness_data = self.data.clone();
+        let roughness = (self.roughness * 255.0) as u8;
+        roughness_data.text_color = [roughness, roughness, roughness, 255];
+        self.roughness_sprite = remake_text_box(&mut roughness_data, &self.font, lumenpyx_program);
+
+        let normal = self
+            .normal
+            .iter()
+            .map(|x| (x * 255.0) as u8)
+            .collect::<Vec<u8>>();
+        let mut normal_data = self.data.clone();
+        normal_data.text_color = [normal[0], normal[1], normal[2], 255];
+        self.normal_sprite = remake_text_box(&mut normal_data, &self.font, lumenpyx_program);
     }
 
     pub fn set_text(&mut self, text: String, lumenpyx_program: &mut crate::LumenpyxProgram) {
         self.data.text = text;
-        self.sprite = remake_text_box(&mut self.data, &self.font, lumenpyx_program);
+        self.redraw_all_textures(lumenpyx_program);
     }
 
     pub fn set_display_scale(
@@ -67,7 +114,7 @@ impl<'a> TextBox<'a> {
         lumenpyx_program: &mut crate::LumenpyxProgram,
     ) {
         self.data.display_scale = display_scale;
-        self.sprite = remake_text_box(&mut self.data, &self.font, lumenpyx_program);
+        self.redraw_all_textures(lumenpyx_program);
     }
 
     pub fn set_max_advance(
@@ -76,7 +123,7 @@ impl<'a> TextBox<'a> {
         lumenpyx_program: &mut crate::LumenpyxProgram,
     ) {
         self.data.max_advance = max_advance;
-        self.sprite = remake_text_box(&mut self.data, &self.font, lumenpyx_program);
+        self.redraw_all_textures(lumenpyx_program);
     }
 
     pub fn set_text_color(
@@ -85,7 +132,7 @@ impl<'a> TextBox<'a> {
         lumenpyx_program: &mut crate::LumenpyxProgram,
     ) {
         self.data.text_color = text_color;
-        self.sprite = remake_text_box(&mut self.data, &self.font, lumenpyx_program);
+        self.redraw_all_textures(lumenpyx_program);
     }
 
     pub fn set_padding(&mut self, padding: u32, lumenpyx_program: &mut crate::LumenpyxProgram) {
@@ -93,7 +140,7 @@ impl<'a> TextBox<'a> {
             panic!("Padding must be non zero");
         }
         self.data.padding = padding;
-        self.sprite = remake_text_box(&mut self.data, &self.font, lumenpyx_program);
+        self.redraw_all_textures(lumenpyx_program);
     }
 
     pub fn set_transform(&mut self, transform: crate::Transform) {
@@ -107,7 +154,7 @@ impl<'a> TextBox<'a> {
         lumenpyx_program: &mut crate::LumenpyxProgram,
     ) {
         self.font = Some(font_stack);
-        self.sprite = remake_text_box(&mut self.data, &self.font, lumenpyx_program);
+        self.redraw_all_textures(lumenpyx_program);
     }
 
     pub fn get_font_stack(&self) -> Option<&FontStack<'a>> {
@@ -132,12 +179,12 @@ impl<'a> TextBox<'a> {
         lumenpyx_program: &mut crate::LumenpyxProgram,
     ) {
         self.data.line_height = line_height;
-        self.sprite = remake_text_box(&mut self.data, &self.font, lumenpyx_program);
+        self.redraw_all_textures(lumenpyx_program);
     }
 
     pub fn set_font_size(&mut self, font_size: f32, lumenpyx_program: &mut crate::LumenpyxProgram) {
         self.data.font_size = font_size;
-        self.sprite = remake_text_box(&mut self.data, &self.font, lumenpyx_program);
+        self.redraw_all_textures(lumenpyx_program);
     }
 
     pub fn get_transform(&self) -> &crate::Transform {
@@ -159,6 +206,30 @@ impl<'a> TextBox<'a> {
     pub fn get_text_color(&self) -> [u8; 4] {
         self.data.text_color
     }
+
+    pub fn get_height(&self) -> f32 {
+        self.height
+    }
+
+    pub fn get_roughness(&self) -> f32 {
+        self.roughness
+    }
+
+    pub fn get_normal(&self) -> [f32; 3] {
+        self.normal
+    }
+
+    pub fn set_height(&mut self, height: f32) {
+        self.height = height;
+    }
+
+    pub fn set_roughness(&mut self, roughness: f32) {
+        self.roughness = roughness;
+    }
+
+    pub fn set_normal(&mut self, normal: [f32; 3]) {
+        self.normal = normal;
+    }
 }
 
 impl<'a> Drawable for TextBox<'a> {
@@ -168,11 +239,137 @@ impl<'a> Drawable for TextBox<'a> {
         transform: &crate::Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
+        let (width, height) = self.albedo_sprite.dimensions();
+
+        // scale the transform matrix to match the size of the texture
+        // check which side is longer and scale the other side to match
+        let mut transform = transform.clone();
+        let (width, height) = (width as f32, height as f32);
+
+        // adjust size of the sprite to match the texture
+        {
+            let smallest_dimension = (albedo_framebuffer.get_dimensions().1 as f32)
+                .min(albedo_framebuffer.get_dimensions().0 as f32);
+            let x_scale = width / smallest_dimension;
+            let y_scale = height / smallest_dimension;
+
+            transform.set_scale(
+                transform.get_scale()[0] * x_scale,
+                transform.get_scale()[1] * y_scale,
+                transform.get_scale()[2],
+            );
+        }
+
         draw_texture(
-            &self.sprite,
+            &self.albedo_sprite,
             transform.get_matrix(),
             program,
             albedo_framebuffer,
+        );
+    }
+
+    fn draw_normal(
+        &self,
+        program: &crate::LumenpyxProgram,
+        transform: &crate::Transform,
+        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let (width, height) = self.normal_sprite.dimensions();
+
+        // scale the transform matrix to match the size of the texture
+        // check which side is longer and scale the other side to match
+        let mut transform = transform.clone();
+        let (width, height) = (width as f32, height as f32);
+
+        // adjust size of the sprite to match the texture
+        {
+            let smallest_dimension = (normal_framebuffer.get_dimensions().1 as f32)
+                .min(normal_framebuffer.get_dimensions().0 as f32);
+            let x_scale = width / smallest_dimension;
+            let y_scale = height / smallest_dimension;
+
+            transform.set_scale(
+                transform.get_scale()[0] * x_scale,
+                transform.get_scale()[1] * y_scale,
+                transform.get_scale()[2],
+            );
+        }
+
+        draw_texture(
+            &self.normal_sprite,
+            transform.get_matrix(),
+            program,
+            normal_framebuffer,
+        );
+    }
+
+    fn draw_height(
+        &self,
+        program: &crate::LumenpyxProgram,
+        transform: &crate::Transform,
+        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let (width, height) = self.height_sprite.dimensions();
+
+        // scale the transform matrix to match the size of the texture
+        // check which side is longer and scale the other side to match
+        let mut transform = transform.clone();
+        let (width, height) = (width as f32, height as f32);
+
+        // adjust size of the sprite to match the texture
+        {
+            let smallest_dimension = (height_framebuffer.get_dimensions().1 as f32)
+                .min(height_framebuffer.get_dimensions().0 as f32);
+            let x_scale = width / smallest_dimension;
+            let y_scale = height / smallest_dimension;
+
+            transform.set_scale(
+                transform.get_scale()[0] * x_scale,
+                transform.get_scale()[1] * y_scale,
+                transform.get_scale()[2],
+            );
+        }
+
+        draw_texture(
+            &self.height_sprite,
+            transform.get_matrix(),
+            program,
+            height_framebuffer,
+        );
+    }
+
+    fn draw_roughness(
+        &self,
+        program: &crate::LumenpyxProgram,
+        transform: &crate::Transform,
+        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
+    ) {
+        let (width, height) = self.roughness_sprite.dimensions();
+
+        // scale the transform matrix to match the size of the texture
+        // check which side is longer and scale the other side to match
+        let mut transform = transform.clone();
+        let (width, height) = (width as f32, height as f32);
+
+        // adjust size of the sprite to match the texture
+        {
+            let smallest_dimension = (roughness_framebuffer.get_dimensions().1 as f32)
+                .min(roughness_framebuffer.get_dimensions().0 as f32);
+            let x_scale = width / smallest_dimension;
+            let y_scale = height / smallest_dimension;
+
+            transform.set_scale(
+                transform.get_scale()[0] * x_scale,
+                transform.get_scale()[1] * y_scale,
+                transform.get_scale()[2],
+            );
+        }
+
+        draw_texture(
+            &self.roughness_sprite,
+            transform.get_matrix(),
+            program,
+            roughness_framebuffer,
         );
     }
 
@@ -193,7 +390,7 @@ impl<'a> Drawable for TextBox<'a> {
     }
 
     fn get_transform(&self) -> crate::Transform {
-        crate::Transform::default()
+        self.transform
     }
 
     fn set_transform(&mut self, transform: crate::Transform) {
@@ -201,6 +398,7 @@ impl<'a> Drawable for TextBox<'a> {
     }
 }
 
+#[derive(Clone)]
 struct TextBoxData {
     text: String,
     display_scale: f32,
@@ -260,13 +458,8 @@ fn remake_text_box(
     }
 
     // Set default font family
-    builder.push_default(&StyleProperty::LineHeight(1.3));
-    builder.push_default(&StyleProperty::FontSize(16.0));
-
-    // Set the first 4 characters to bold
-    let bold = FontWeight::new(600.0);
-    let bold_style = StyleProperty::FontWeight(bold);
-    builder.push(&bold_style, 0..4);
+    builder.push_default(&StyleProperty::LineHeight(text_box_data.line_height));
+    builder.push_default(&StyleProperty::FontSize(text_box_data.font_size));
 
     // Build the builder into a Layout
     let mut layout: Layout<[u8; 4]> = builder.build();
@@ -277,7 +470,6 @@ fn remake_text_box(
     // Create image to render into
     let width = layout.width().ceil() as u32 + (padding * 2);
     let height = layout.height().ceil() as u32 + (padding * 2);
-    println!("Width: {}, Height: {}", width, height);
     let mut img = RgbaImage::from_pixel(width, height, bg_color);
 
     // Iterate over laid out lines
@@ -290,6 +482,7 @@ fn remake_text_box(
 
     // make a texture from the image
     let (width, height) = img.dimensions();
+    println!("Width: {}, Height: {}", width, height);
     let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&img, (width, height));
     let display = &lumenpyx_program.display;
     let texture = glium::texture::Texture2d::new(display, image).unwrap();
@@ -347,10 +540,6 @@ fn render_glyph(
     glyph_x: f32,
     glyph_y: f32,
 ) {
-    // Compute the fractional offset
-    // You'll likely want to quantize this in a real renderer
-    let offset = Vector::new(glyph_x.fract(), glyph_y.fract());
-
     // Render the glyph using swash
     let rendered_glyph = Render::new(
         // Select our source order
@@ -362,8 +551,6 @@ fn render_glyph(
     )
     // Select the simple alpha (non-subpixel) format
     .format(Format::Alpha)
-    // Apply the fractional offset
-    .offset(offset)
     // Render the image
     .render(scaler, glyph.id)
     .unwrap();
@@ -381,6 +568,7 @@ fn render_glyph(
                     let x = glyph_x + pixel_x;
                     let y = glyph_y + pixel_y;
                     let alpha = rendered_glyph.data[i];
+                    // this might be too big of an assumption, but i assume people want fully opaque text
                     let alpha = if alpha > 128 { 255 } else { 0 };
                     let color = Rgba([
                         color[0],
