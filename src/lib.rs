@@ -249,10 +249,8 @@ impl LumenpyxProgram {
         new_transform
     }
 
-    pub(crate) fn add_not_named_texture(
-        &mut self,
-        texture: glium::texture::Texture2d,
-    ) -> TextureHandle {
+    /// Add a texture to the program without a name, returns a handle to the texture
+    pub fn add_not_named_texture(&mut self, texture: glium::texture::Texture2d) -> TextureHandle {
         let id = self.next_texture_id;
         self.next_texture_id += 1;
 
@@ -260,6 +258,12 @@ impl LumenpyxProgram {
             .insert(format!("{}_{}", HANDLE_STRING_ID, id), texture);
 
         TextureHandle { id }
+    }
+
+    pub fn remove_texture(&mut self, handle: &TextureHandle) {
+        self.cache
+            .hashmap
+            .remove(&format!("{}_{}", HANDLE_STRING_ID, handle.id));
     }
 }
 

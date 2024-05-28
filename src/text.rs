@@ -11,7 +11,7 @@ use swash::FontRef;
 use zeno::Format;
 
 use crate::primitives::{draw_texture, BASE_FRAGMENT_SHADER_SRC, BASE_VERTEX_SHADER_SRC};
-use crate::Drawable;
+use crate::{Drawable, TextureHandle};
 
 pub use parley::style::{FontFamily, FontStack, GenericFamily};
 
@@ -19,10 +19,16 @@ pub use parley::style::{FontFamily, FontStack, GenericFamily};
 /// Padding must be non zero
 pub struct TextBox<'a> {
     data: TextBoxData,
+    /*
     albedo_sprite: glium::texture::Texture2d,
     height_sprite: glium::texture::Texture2d,
     roughness_sprite: glium::texture::Texture2d,
     normal_sprite: glium::texture::Texture2d,
+    */
+    albedo_sprite: TextureHandle,
+    height_sprite: TextureHandle,
+    roughness_sprite: TextureHandle,
+    normal_sprite: TextureHandle,
     transform: crate::Transform,
     font: Option<FontStack<'a>>,
     /// the height that will be used in the draw height
@@ -61,6 +67,11 @@ impl<'a> TextBox<'a> {
         let roughness_sprite = remake_text_box(&data, &None, lumenpyx_program);
         let normal_sprite = remake_text_box(&data, &None, lumenpyx_program);
 
+        let albedo_sprite = lumenpyx_program.add_not_named_texture(albedo_sprite);
+        let height_sprite = lumenpyx_program.add_not_named_texture(height_sprite);
+        let roughness_sprite = lumenpyx_program.add_not_named_texture(roughness_sprite);
+        let normal_sprite = lumenpyx_program.add_not_named_texture(normal_sprite);
+
         let mut new_self = Self {
             data,
             albedo_sprite,
@@ -81,17 +92,17 @@ impl<'a> TextBox<'a> {
     }
 
     pub fn redraw_all_textures(&mut self, lumenpyx_program: &mut crate::LumenpyxProgram) {
-        self.albedo_sprite = remake_text_box(&mut self.data, &self.font, lumenpyx_program);
+        let albedo_sprite = remake_text_box(&mut self.data, &self.font, lumenpyx_program);
 
         let mut height_data = self.data.clone();
         let height = (self.height * 255.0) as u8;
         height_data.text_color = [height, height, height, 255];
-        self.height_sprite = remake_text_box(&mut height_data, &self.font, lumenpyx_program);
+        let height_sprite = remake_text_box(&mut height_data, &self.font, lumenpyx_program);
 
         let mut roughness_data = self.data.clone();
         let roughness = (self.roughness * 255.0) as u8;
         roughness_data.text_color = [roughness, roughness, roughness, 255];
-        self.roughness_sprite = remake_text_box(&mut roughness_data, &self.font, lumenpyx_program);
+        let roughness_sprite = remake_text_box(&mut roughness_data, &self.font, lumenpyx_program);
 
         let normal = self
             .normal
@@ -100,7 +111,19 @@ impl<'a> TextBox<'a> {
             .collect::<Vec<u8>>();
         let mut normal_data = self.data.clone();
         normal_data.text_color = [normal[0], normal[1], normal[2], 255];
-        self.normal_sprite = remake_text_box(&mut normal_data, &self.font, lumenpyx_program);
+        let normal_sprite = remake_text_box(&mut normal_data, &self.font, lumenpyx_program);
+
+        // free the old textures
+        lumenpyx_program.remove_texture(&self.albedo_sprite);
+        lumenpyx_program.remove_texture(&self.height_sprite);
+        lumenpyx_program.remove_texture(&self.roughness_sprite);
+        lumenpyx_program.remove_texture(&self.normal_sprite);
+
+        // add the new textures
+        self.albedo_sprite = lumenpyx_program.add_not_named_texture(albedo_sprite);
+        self.height_sprite = lumenpyx_program.add_not_named_texture(height_sprite);
+        self.roughness_sprite = lumenpyx_program.add_not_named_texture(roughness_sprite);
+        self.normal_sprite = lumenpyx_program.add_not_named_texture(normal_sprite);
     }
 
     pub fn set_text(&mut self, text: String, lumenpyx_program: &mut crate::LumenpyxProgram) {
@@ -239,7 +262,10 @@ impl<'a> Drawable for TextBox<'a> {
         transform: &crate::Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
-        let (width, height) = self.albedo_sprite.dimensions();
+        let albedo_sprite = program
+            .get_texture_from_handle(&self.albedo_sprite)
+            .expect("Failed to get albedo texture");
+        let (width, height) = albedo_sprite.dimensions();
 
         // scale the transform matrix to match the size of the texture
         // check which side is longer and scale the other side to match
@@ -261,7 +287,7 @@ impl<'a> Drawable for TextBox<'a> {
         }
 
         draw_texture(
-            &self.albedo_sprite,
+            &albedo_sprite,
             transform.get_matrix(),
             program,
             albedo_framebuffer,
@@ -274,7 +300,10 @@ impl<'a> Drawable for TextBox<'a> {
         transform: &crate::Transform,
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
-        let (width, height) = self.normal_sprite.dimensions();
+        let normal_sprite = program
+            .get_texture_from_handle(&self.normal_sprite)
+            .expect("Failed to get normal texture");
+        let (width, height) = normal_sprite.dimensions();
 
         // scale the transform matrix to match the size of the texture
         // check which side is longer and scale the other side to match
@@ -296,7 +325,7 @@ impl<'a> Drawable for TextBox<'a> {
         }
 
         draw_texture(
-            &self.normal_sprite,
+            &normal_sprite,
             transform.get_matrix(),
             program,
             normal_framebuffer,
@@ -309,7 +338,10 @@ impl<'a> Drawable for TextBox<'a> {
         transform: &crate::Transform,
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
-        let (width, height) = self.height_sprite.dimensions();
+        let height_sprite = program
+            .get_texture_from_handle(&self.height_sprite)
+            .expect("Failed to get height texture");
+        let (width, height) = height_sprite.dimensions();
 
         // scale the transform matrix to match the size of the texture
         // check which side is longer and scale the other side to match
@@ -331,7 +363,7 @@ impl<'a> Drawable for TextBox<'a> {
         }
 
         draw_texture(
-            &self.height_sprite,
+            &height_sprite,
             transform.get_matrix(),
             program,
             height_framebuffer,
@@ -344,7 +376,10 @@ impl<'a> Drawable for TextBox<'a> {
         transform: &crate::Transform,
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
-        let (width, height) = self.roughness_sprite.dimensions();
+        let roughness_sprite = program
+            .get_texture_from_handle(&self.roughness_sprite)
+            .expect("Failed to get roughness texture");
+        let (width, height) = roughness_sprite.dimensions();
 
         // scale the transform matrix to match the size of the texture
         // check which side is longer and scale the other side to match
@@ -366,7 +401,7 @@ impl<'a> Drawable for TextBox<'a> {
         }
 
         draw_texture(
-            &self.roughness_sprite,
+            &roughness_sprite,
             transform.get_matrix(),
             program,
             roughness_framebuffer,

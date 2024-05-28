@@ -1286,6 +1286,13 @@ impl Sprite {
     pub fn set_shadow_strength(&mut self, strength: f32) {
         self.shadow_strength = strength;
     }
+
+    pub fn free_all_textures(&self, program: &mut LumenpyxProgram) {
+        program.remove_texture(&self.albedo_texture);
+        program.remove_texture(&self.height_texture);
+        program.remove_texture(&self.roughness_texture);
+        program.remove_texture(&self.normal_texture);
+    }
 }
 
 impl Drawable for Sprite {
