@@ -6,7 +6,7 @@ use parley::FontContext;
 use parley::LayoutContext;
 use swash::scale::image::Content;
 use swash::scale::{Render, ScaleContext, Scaler, Source, StrikeWith};
-use swash::zeno;
+use swash::zeno::{self, Vector};
 use swash::FontRef;
 use zeno::Format;
 
@@ -447,7 +447,6 @@ fn remake_text_box(
     builder.push_default(&brush_style);
 
     if let Some(font_stack) = font_stack {
-        println!("Font stack: {:?}", font_stack);
         // Set default font family
         let font_stack_style = StyleProperty::FontStack(*font_stack);
         builder.push_default(&font_stack_style);
@@ -482,7 +481,6 @@ fn remake_text_box(
 
     // make a texture from the image
     let (width, height) = img.dimensions();
-    println!("Width: {}, Height: {}", width, height);
     let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&img, (width, height));
     let display = &lumenpyx_program.display;
     let texture = glium::texture::Texture2d::new(display, image).unwrap();

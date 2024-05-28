@@ -13,7 +13,7 @@ fn main() {
     );
 
     let mut text = text::TextBox::new(
-        "Hello, World!".to_string(),
+        "Hello, World!!!!!!!!!!!!!!!".to_string(),
         1.0,
         Some(50.0),
         [0, 0, 0, 255],
@@ -26,7 +26,7 @@ fn main() {
         &mut lumen_program,
     );
 
-    text.set_font_size(16.0, &mut lumen_program);
+    text.set_font_size(16.3, &mut lumen_program);
     let mut new_transform = Transform::new([0.0, 0.0, 0.0]);
     new_transform.set_scale(1.0, 1.0, 1.0);
     text.set_transform(new_transform);
