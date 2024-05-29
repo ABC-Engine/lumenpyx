@@ -13,6 +13,7 @@ use zeno::Format;
 use crate::primitives::{draw_texture, BASE_FRAGMENT_SHADER_SRC, BASE_VERTEX_SHADER_SRC};
 use crate::{Drawable, TextureHandle};
 
+pub use parley::fontique::Collection;
 pub use parley::style::{FontFamily, FontStack, GenericFamily};
 
 // Note: make sure nothing is public in this struct or else the sprite will never be updated
@@ -60,6 +61,7 @@ impl<'a> TextBox<'a> {
             padding,
             line_height: 1.3,
             font_size: 16.0,
+            font_collection: None,
         };
 
         let albedo_sprite = remake_text_box(&data, &None, lumenpyx_program);
@@ -253,6 +255,38 @@ impl<'a> TextBox<'a> {
     pub fn set_normal(&mut self, normal: [f32; 3]) {
         self.normal = normal;
     }
+
+    pub fn set_font_collection(
+        &mut self,
+        font_collection: Collection,
+        lumenpyx_program: &mut crate::LumenpyxProgram,
+    ) {
+        self.data.font_collection = Some(font_collection);
+        self.redraw_all_textures(lumenpyx_program);
+    }
+
+    pub fn get_font_collection(&self) -> Option<&Collection> {
+        self.data.font_collection.as_ref()
+    }
+
+    pub fn add_font_to_collection(
+        &mut self,
+        font: Vec<u8>,
+        lumenpyx_program: &mut crate::LumenpyxProgram,
+    ) {
+        let mut collection;
+        if let Some(font_collection) = &self.data.font_collection {
+            collection = font_collection.clone();
+        } else {
+            collection = Collection::default();
+        }
+
+        collection.register_fonts(font);
+
+        self.data.font_collection = Some(collection);
+
+        self.redraw_all_textures(lumenpyx_program);
+    }
 }
 
 impl<'a> Drawable for TextBox<'a> {
@@ -442,6 +476,7 @@ struct TextBoxData {
     padding: u32,
     line_height: f32,
     font_size: f32,
+    font_collection: Option<Collection>,
 }
 
 fn remake_text_box(
@@ -471,6 +506,10 @@ fn remake_text_box(
     // These are all intended to be constructed rarely (perhaps even once per app (or once per thread))
     // and provide caches and scratch space to avoid allocations
     let mut font_cx = FontContext::default();
+    if let Some(font_collection) = &text_box_data.font_collection {
+        font_cx.collection = font_collection.clone();
+    }
+
     let mut layout_cx = LayoutContext::new();
     let mut scale_cx = ScaleContext::new();
 

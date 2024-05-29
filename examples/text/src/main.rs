@@ -1,6 +1,7 @@
 use lumenpyx::drawable_object::Drawable;
 use lumenpyx::primitives::Rectangle;
 use lumenpyx::*;
+use text::Collection;
 
 fn main() {
     //let (event_loop, window, display, indices) = setup_program();
@@ -20,6 +21,8 @@ fn main() {
         1,
         &mut lumen_program,
     );
+
+    text.add_font_to_collection(include_bytes!("../m3x6.ttf").to_vec(), &mut lumen_program);
 
     text.set_font_stack(
         text::FontStack::Single(text::FontFamily::Named("m3x6")),
