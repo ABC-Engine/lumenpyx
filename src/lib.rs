@@ -3,7 +3,11 @@ use glium::glutin::surface::WindowSurface;
 use glium::implement_vertex;
 use glium::Frame;
 use glium::Surface;
+use parley::fontique::Collection;
+use parley::FontContext;
+use parley::LayoutContext;
 use primitives::Texture;
+use swash::scale::ScaleContext;
 /// This module contains all the window and display setup functions
 pub use winit;
 use winit::event_loop::EventLoop;
@@ -89,6 +93,9 @@ pub struct LumenpyxProgram {
     dimensions: [u32; 2],
     pub debug: DebugOption,
     pub render_settings: RenderSettings,
+    font_context: Option<FontContext>,
+    scale_context: Option<ScaleContext>,
+    layout_context: Option<LayoutContext>,
 }
 
 impl LumenpyxProgram {
@@ -113,6 +120,9 @@ impl LumenpyxProgram {
                 blur_reflections: false,
                 blur_strength: 0.01,
             },
+            font_context: None,
+            scale_context: None,
+            layout_context: None,
         };
 
         program.set_name(name);
@@ -264,6 +274,46 @@ impl LumenpyxProgram {
         self.cache
             .hashmap
             .remove(&format!("{}_{}", HANDLE_STRING_ID, handle.id));
+    }
+
+    pub fn set_font_collection(
+        &mut self,
+        font_collection: Collection,
+        lumenpyx_program: &mut crate::LumenpyxProgram,
+    ) {
+        if let Some(font_context) = &mut lumenpyx_program.font_context {
+            font_context.collection = font_collection;
+        } else {
+            let mut new_font_context = FontContext::default();
+            new_font_context.collection = font_collection;
+            lumenpyx_program.font_context = Some(new_font_context);
+        }
+    }
+
+    pub fn add_font_to_collection(&mut self, font: Vec<u8>) {
+        if let Some(font_context) = &mut self.font_context {
+            font_context.collection.register_fonts(font);
+        } else {
+            let mut new_font_context = FontContext::default();
+            new_font_context.collection.register_fonts(font);
+            self.font_context = Some(new_font_context);
+        }
+    }
+
+    pub fn get_font_collection(&self) -> Option<&Collection> {
+        if let Some(font_context) = &self.font_context {
+            Some(&font_context.collection)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_font_context(&self) -> Option<&FontContext> {
+        self.font_context.as_ref()
+    }
+
+    pub fn get_font_context_mut(&mut self) -> Option<&mut FontContext> {
+        self.font_context.as_mut()
     }
 }
 

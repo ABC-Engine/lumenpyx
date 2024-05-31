@@ -1,3 +1,5 @@
+use std::borrow::BorrowMut;
+
 use glium::Surface;
 use image::{self, Pixel, Rgba, RgbaImage};
 use parley::layout::{Alignment, Glyph, GlyphRun, Layout};
@@ -61,7 +63,6 @@ impl<'a> TextBox<'a> {
             padding,
             line_height: 1.3,
             font_size: 16.0,
-            font_collection: None,
         };
 
         let albedo_sprite = remake_text_box(&data, &None, lumenpyx_program);
@@ -255,38 +256,6 @@ impl<'a> TextBox<'a> {
     pub fn set_normal(&mut self, normal: [f32; 3]) {
         self.normal = normal;
     }
-
-    pub fn set_font_collection(
-        &mut self,
-        font_collection: Collection,
-        lumenpyx_program: &mut crate::LumenpyxProgram,
-    ) {
-        self.data.font_collection = Some(font_collection);
-        self.redraw_all_textures(lumenpyx_program);
-    }
-
-    pub fn get_font_collection(&self) -> Option<&Collection> {
-        self.data.font_collection.as_ref()
-    }
-
-    pub fn add_font_to_collection(
-        &mut self,
-        font: Vec<u8>,
-        lumenpyx_program: &mut crate::LumenpyxProgram,
-    ) {
-        let mut collection;
-        if let Some(font_collection) = &self.data.font_collection {
-            collection = font_collection.clone();
-        } else {
-            collection = Collection::default();
-        }
-
-        collection.register_fonts(font);
-
-        self.data.font_collection = Some(collection);
-
-        self.redraw_all_textures(lumenpyx_program);
-    }
 }
 
 impl<'a> Drawable for TextBox<'a> {
@@ -476,7 +445,7 @@ struct TextBoxData {
     padding: u32,
     line_height: f32,
     font_size: f32,
-    font_collection: Option<Collection>,
+    //font_collection: Option<Collection>,
 }
 
 fn remake_text_box(
@@ -505,16 +474,35 @@ fn remake_text_box(
     //
     // These are all intended to be constructed rarely (perhaps even once per app (or once per thread))
     // and provide caches and scratch space to avoid allocations
-    let mut font_cx = FontContext::default();
-    if let Some(font_collection) = &text_box_data.font_collection {
-        font_cx.collection = font_collection.clone();
+    let mut font_cx_owned = None;
+    let font_cx_ref;
+    if let Some(font_cx) = &mut lumenpyx_program.font_context {
+        font_cx_ref = font_cx;
+    } else {
+        font_cx_owned = Some(FontContext::default());
+        font_cx_ref = font_cx_owned.as_mut().unwrap();
     }
 
-    let mut layout_cx = LayoutContext::new();
-    let mut scale_cx = ScaleContext::new();
+    let mut layout_cx_owned = None;
+    let layout_cx_ref;
+    if let Some(layout_cx) = &mut lumenpyx_program.layout_context {
+        layout_cx_ref = layout_cx;
+    } else {
+        layout_cx_owned = Some(LayoutContext::default());
+        layout_cx_ref = layout_cx_owned.as_mut().unwrap();
+    }
+
+    let mut scale_cx_owned = None;
+    let scale_cx_ref;
+    if let Some(scale_cx) = &mut lumenpyx_program.scale_context {
+        scale_cx_ref = scale_cx;
+    } else {
+        scale_cx_owned = Some(ScaleContext::default());
+        scale_cx_ref = scale_cx_owned.as_mut().unwrap();
+    }
 
     // Create a RangedBuilder
-    let mut builder = layout_cx.ranged_builder(&mut font_cx, &text, display_scale);
+    let mut builder = layout_cx_ref.ranged_builder(font_cx_ref, &text, display_scale);
 
     // Set default text colour styles (set foreground text color)
     let brush_style = StyleProperty::Brush(text_color);
@@ -549,7 +537,7 @@ fn remake_text_box(
     for line in layout.lines() {
         // Iterate over GlyphRun's within each line
         for glyph_run in line.glyph_runs() {
-            render_glyph_run(&mut scale_cx, &glyph_run, &mut img, padding);
+            render_glyph_run(scale_cx_ref, &glyph_run, &mut img, padding);
         }
     }
 
@@ -631,6 +619,7 @@ fn render_glyph(
     let glyph_height = rendered_glyph.placement.height;
     let glyph_x = (glyph_x.floor() as i32 + rendered_glyph.placement.left) as u32;
     let glyph_y = (glyph_y.floor() as i32 - rendered_glyph.placement.top) as u32;
+    println!("{} {} {} {}", glyph_x, glyph_y, glyph_width, glyph_height);
 
     match rendered_glyph.content {
         Content::Mask => {

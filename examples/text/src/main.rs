@@ -22,8 +22,7 @@ fn main() {
         &mut lumen_program,
     );
 
-    text.add_font_to_collection(include_bytes!("../m3x6.ttf").to_vec(), &mut lumen_program);
-
+    lumen_program.add_font_to_collection(include_bytes!("../m3x6.ttf").to_vec());
     text.set_font_stack(
         text::FontStack::Single(text::FontFamily::Named("m3x6")),
         &mut lumen_program,
