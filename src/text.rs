@@ -474,31 +474,28 @@ fn remake_text_box(
     //
     // These are all intended to be constructed rarely (perhaps even once per app (or once per thread))
     // and provide caches and scratch space to avoid allocations
-    let mut font_cx_owned = None;
     let font_cx_ref;
     if let Some(font_cx) = &mut lumenpyx_program.font_context {
         font_cx_ref = font_cx;
     } else {
-        font_cx_owned = Some(FontContext::default());
-        font_cx_ref = font_cx_owned.as_mut().unwrap();
+        lumenpyx_program.font_context = Some(FontContext::default());
+        font_cx_ref = lumenpyx_program.font_context.as_mut().unwrap();
     }
 
-    let mut layout_cx_owned = None;
     let layout_cx_ref;
     if let Some(layout_cx) = &mut lumenpyx_program.layout_context {
         layout_cx_ref = layout_cx;
     } else {
-        layout_cx_owned = Some(LayoutContext::default());
-        layout_cx_ref = layout_cx_owned.as_mut().unwrap();
+        lumenpyx_program.layout_context = Some(LayoutContext::default());
+        layout_cx_ref = lumenpyx_program.layout_context.as_mut().unwrap();
     }
 
-    let mut scale_cx_owned = None;
     let scale_cx_ref;
     if let Some(scale_cx) = &mut lumenpyx_program.scale_context {
         scale_cx_ref = scale_cx;
     } else {
-        scale_cx_owned = Some(ScaleContext::default());
-        scale_cx_ref = scale_cx_owned.as_mut().unwrap();
+        lumenpyx_program.scale_context = Some(ScaleContext::default());
+        scale_cx_ref = lumenpyx_program.scale_context.as_mut().unwrap();
     }
 
     // Create a RangedBuilder
