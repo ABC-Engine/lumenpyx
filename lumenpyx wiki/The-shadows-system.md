@@ -7,4 +7,4 @@ Here is a 2D example of what we are doing the lines that are in a shadow are red
 Here is the same thing but for a 3D example:
 ![Image](https://github.com/ABC-Engine/lumenpyx/blob/main/Visual%20Aids/3D%20Shadow%20Visualizer.png)
 
-If the line is in a shadow we color it using shadow strength * intensity * albedo, where intensity is $intensity / (1 + (dist * falloff)^2)$. If not we color it using intensity * albedo. 
+If the line is in a shadow we color it using shadow strength * intensity * albedo, where intensity is $intensity / (1 + (dist * falloff)^2$. If not we color it using intensity * albedo. 

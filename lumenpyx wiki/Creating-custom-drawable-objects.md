@@ -1,11 +1,10 @@
 This is not necessary to do, the default drawables that come with the library should be enough for most. However, if you have a solid understanding of OpenGL here is how you make a custom drawable.
 
 ```rust
-use lumenpyx::drawable_object::Drawable;
-use lumenpyx::LumenpyxProgram;
-use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniform;
 use glium::Surface;
+use lumenpyx::drawable_object::Drawable;
+use lumenpyx::LumenpyxProgram;
 use lumenpyx::Transform;
 use lumenpyx::Vertex;
 
@@ -16,7 +15,6 @@ const GENERATE_CIRCLE_VERTEX_SHADER_SRC: &str =
 const GENERATE_CIRCLE_FRAGMENT_SHADER_SRC: &str =
     include_str!(r"..\shaders\primitives\circle_ahr_shader.frag");
 
-
 pub struct Circle {
     color: [f32; 4],
     radius: f32,
@@ -24,17 +22,11 @@ pub struct Circle {
 }
 
 impl Drawable for Circle {
-    fn draw(
+    fn draw_albedo(
         &self,
         program: &LumenpyxProgram,
-        matrix_transform: [[f32; 4]; 4],
+        transform: &Transform,
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        // we won't use this as we are making a 2d circle so the height will be constant
-        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        // the normal and roughness are only needed if this drawable is going to be reflecting things,
-        // otherwise just don't draw to them
-        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
         let color = self.color;
         let radius = self.radius;
@@ -60,7 +52,7 @@ impl Drawable for Circle {
         let uniforms = &uniform! {
             circle_color: color,
             radius_squared: radius.powi(2),
-            matrix: matrix_transform,
+            matrix: transform.get_matrix(), // notice we use the transform passed in, not the one in the struct (the one passed in is correctly scaled and positioned based on the camera)
         };
 
         albedo_framebuffer
@@ -72,13 +64,9 @@ impl Drawable for Circle {
                 &Default::default(),
             )
             .unwrap();
-
-        // if we wanted a constant height for our heightmap we could do
-        // height is normally from 0-1
-        let height = 0.5;
-        // last term is alpha so it should always be 1.0
-        height_framebuffer.clear_color(height, height, height, 1.0)
     }
+
+    // there are virtually identical functions for the other framebuffers (height, normal, and roughness)
 
     // this is called every frame, so make sure to check if the shader is already loaded
     fn try_load_shaders(&self, program: &mut LumenpyxProgram) {
@@ -92,15 +80,19 @@ impl Drawable for Circle {
                 None,
             )
             .unwrap();
-    
+
             // then we add the shader to the program to be accessed later
             program.add_shader(shader, "circle_ahr_shader");
         }
     }
 
     // this is so that objects scale properly with camera movement and dimensions
-    fn get_position(&self) -> [[f32; 4]; 4] {
-        self.transform.get_matrix()
+    fn get_transform(&self) -> Transform {
+        self.transform
+    }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
     }
 }
 ```

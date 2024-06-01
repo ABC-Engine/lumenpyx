@@ -1,13 +1,13 @@
-This uses the same principles as the custom drawable object but takes them to the next level.
-
+This uses the same principles as the custom drawable object but is a little more complicated on the GLSL side (which I don't really go into here)
 ```rust
-use lumenpyx::lights::DEFAULT_LIGHT_BLENDING;
-use lumenpyx::LumenpyxProgram;
-use lumenpyx::shaders::FULL_SCREEN_QUAD;
 use glium::framebuffer::SimpleFrameBuffer;
-use lumenpyx::lights::LightDrawable;
 use glium::uniform;
 use glium::Surface;
+use lumenpyx::lights::LightDrawable;
+use lumenpyx::lights::DEFAULT_LIGHT_BLENDING;
+use lumenpyx::shaders::FULL_SCREEN_QUAD;
+use lumenpyx::LumenpyxProgram;
+use lumenpyx::Transform;
 
 pub(crate) const POINT_LIGHT_VERTEX_SHADER_SRC: &str =
     include_str!("../shaders/shading/lighting/point_light.vert");
@@ -92,13 +92,12 @@ impl LightDrawable for PointLight {
     }
 
     /// this is implemented for every custom light so it can be adjusted for the camera
-    fn get_transform(&self) -> [[f32; 4]; 4] {
-        [
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [self.position[0], self.position[1], self.position[2], 0.0],
-        ]
+    fn get_transform(&self) -> lumenpyx::Transform {
+        Transform::new(self.position)
+    }
+
+    fn set_transform(&mut self, transform: Transform) {
+        self.position = [transform.get_x(), transform.get_y(), transform.get_z()];
     }
 }
 ```
