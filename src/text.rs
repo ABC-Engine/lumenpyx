@@ -625,6 +625,9 @@ fn render_glyph(
                 for pixel_x in 0..glyph_width {
                     let x = glyph_x + pixel_x;
                     let y = glyph_y + pixel_y;
+                    if x >= img.width() || y >= img.height() {
+                        continue;
+                    }
                     let alpha = rendered_glyph.data[i];
                     // this might be too big of an assumption, but i assume people want fully opaque text
                     let alpha = if alpha > 128 { 255 } else { 0 };
