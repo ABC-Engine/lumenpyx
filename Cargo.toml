@@ -8,7 +8,7 @@ workspace = { members = [ "examples/animation_test", "examples/blending_test",
 ] }
 [package]
 name = "lumenpyx"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "A 2D pixel art renderer with realistic lighting"
 documentation = "https://github.com/ABC-Engine/lumenpyx/wiki"
