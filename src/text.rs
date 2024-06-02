@@ -616,7 +616,6 @@ fn render_glyph(
     let glyph_height = rendered_glyph.placement.height;
     let glyph_x = (glyph_x.floor() as i32 + rendered_glyph.placement.left) as u32;
     let glyph_y = (glyph_y.floor() as i32 - rendered_glyph.placement.top) as u32;
-    println!("{} {} {} {}", glyph_x, glyph_y, glyph_width, glyph_height);
 
     match rendered_glyph.content {
         Content::Mask => {
