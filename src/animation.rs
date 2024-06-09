@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 pub struct Animation {
     sprites: Vec<Sprite>,
     time_between_frames: Duration,
-    start_time: Instant,
+    time: AnimationTimeElapsed,
     shadow_strength: f32,
     pub transform: Transform,
     /// If true, the animation will loop, if false, the animation will not draw after the last frame
@@ -86,7 +86,7 @@ impl Animation {
             Self {
                 sprites,
                 time_between_frames,
-                start_time: Instant::now(),
+                time: Instant::now().into(),
                 shadow_strength: 0.5,
                 transform,
                 loop_animation,
@@ -165,7 +165,7 @@ impl Animation {
             Self {
                 sprites,
                 time_between_frames,
-                start_time: Instant::now(),
+                time: Instant::now().into(),
                 shadow_strength: 0.5,
                 transform,
                 loop_animation,
@@ -203,7 +203,7 @@ impl Animation {
         Self {
             sprites,
             time_between_frames,
-            start_time: Instant::now(),
+            time: Instant::now().into(),
             shadow_strength: 0.5,
             transform,
             loop_animation,
@@ -211,47 +211,60 @@ impl Animation {
     }
 
     pub fn restart_animation(&mut self) {
-        self.start_time = Instant::now();
+        self.time = Instant::now().into();
+    }
+
+    pub fn set_time(&mut self, time: AnimationTimeElapsed) {
+        self.time = time;
+    }
+}
+
+#[derive(Clone)]
+pub enum AnimationTimeElapsed {
+    Time(Duration),
+    SecondsSinceStart(f32),
+    TimeSinceInstant(Instant),
+}
+
+impl AnimationTimeElapsed {
+    pub fn as_nanos(&self) -> u128 {
+        match self {
+            AnimationTimeElapsed::Time(time) => time.as_nanos(),
+            AnimationTimeElapsed::SecondsSinceStart(seconds) => {
+                (*seconds as f64 * 1_000_000_000.0) as u128
+            }
+            AnimationTimeElapsed::TimeSinceInstant(instant) => instant.elapsed().as_nanos(),
+        }
+    }
+
+    pub fn as_secs_f32(&self) -> f32 {
+        match self {
+            AnimationTimeElapsed::Time(time) => time.as_secs_f32(),
+            AnimationTimeElapsed::SecondsSinceStart(seconds) => *seconds,
+            AnimationTimeElapsed::TimeSinceInstant(instant) => instant.elapsed().as_secs_f32(),
+        }
+    }
+}
+
+impl Into<AnimationTimeElapsed> for Duration {
+    fn into(self) -> AnimationTimeElapsed {
+        AnimationTimeElapsed::Time(self)
+    }
+}
+
+impl Into<AnimationTimeElapsed> for f32 {
+    fn into(self) -> AnimationTimeElapsed {
+        AnimationTimeElapsed::SecondsSinceStart(self)
+    }
+}
+
+impl Into<AnimationTimeElapsed> for Instant {
+    fn into(self) -> AnimationTimeElapsed {
+        AnimationTimeElapsed::TimeSinceInstant(self)
     }
 }
 
 impl Drawable for Animation {
-    /*fn draw(
-        &self,
-        program: &LumenpyxProgram,
-        transform: &Transform,
-        albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-        normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
-    ) {
-        let mut current_frame_num = self
-            .start_time
-            .elapsed()
-            .as_nanos()
-            .checked_div(self.time_between_frames.as_nanos())
-            .expect("time between frames on an animation cannot be set to 0");
-
-        if current_frame_num as usize >= self.sprites.len() {
-            if self.loop_animation {
-                current_frame_num = current_frame_num % self.sprites.len() as u128;
-            } else {
-                return;
-            }
-        }
-
-        let current_frame = &self.sprites[current_frame_num as usize];
-
-        current_frame.draw(
-            program,
-            transform,
-            albedo_framebuffer,
-            height_framebuffer,
-            roughness_framebuffer,
-            normal_framebuffer,
-        );
-    }*/
-
     fn draw_albedo(
         &self,
         program: &LumenpyxProgram,
@@ -259,8 +272,7 @@ impl Drawable for Animation {
         albedo_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
         let mut current_frame_num = self
-            .start_time
-            .elapsed()
+            .time
             .as_nanos()
             .checked_div(self.time_between_frames.as_nanos())
             .expect("time between frames on an animation cannot be set to 0");
@@ -285,8 +297,7 @@ impl Drawable for Animation {
         height_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
         let mut current_frame_num = self
-            .start_time
-            .elapsed()
+            .time
             .as_nanos()
             .checked_div(self.time_between_frames.as_nanos())
             .expect("time between frames on an animation cannot be set to 0");
@@ -311,8 +322,7 @@ impl Drawable for Animation {
         roughness_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
         let mut current_frame_num = self
-            .start_time
-            .elapsed()
+            .time
             .as_nanos()
             .checked_div(self.time_between_frames.as_nanos())
             .expect("time between frames on an animation cannot be set to 0");
@@ -337,8 +347,7 @@ impl Drawable for Animation {
         normal_framebuffer: &mut glium::framebuffer::SimpleFrameBuffer,
     ) {
         let mut current_frame_num = self
-            .start_time
-            .elapsed()
+            .time
             .as_nanos()
             .checked_div(self.time_between_frames.as_nanos())
             .expect("time between frames on an animation cannot be set to 0");
@@ -636,6 +645,17 @@ impl AnimationStateMachine {
 
     pub fn set_current_animation(&mut self, index: usize) {
         self.current_animation = index;
+    }
+
+    /// sets the time of all animations in the state machine
+    pub fn set_time(&mut self, time: AnimationTimeElapsed) {
+        for animation in &mut self.animations {
+            animation.set_time(time.clone());
+        }
+    }
+
+    pub fn restart_current_animation(&mut self) {
+        self.animations[self.current_animation].restart_animation();
     }
 }
 
