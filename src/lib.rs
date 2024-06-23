@@ -387,7 +387,10 @@ impl Transform {
             [0.0, 0.0, 0.0, 1.0],
         ];
 
-        multiply_matrix(rotation_matrix, self.matrix)
+        let mut self_matrix = self.matrix;
+        self_matrix[3][2] = 0.0;
+
+        multiply_matrix(rotation_matrix, self_matrix)
     }
 
     /// Set the matrix of the transform
