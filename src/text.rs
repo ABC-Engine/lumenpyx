@@ -614,8 +614,9 @@ fn render_glyph(
 
     let glyph_width = rendered_glyph.placement.width;
     let glyph_height = rendered_glyph.placement.height;
-    let glyph_x = (glyph_x.floor() as i32 + rendered_glyph.placement.left) as u32;
-    let glyph_y = (glyph_y.floor() as i32 - rendered_glyph.placement.top) as u32;
+    // max 0 to prevent int underflow
+    let glyph_x = (glyph_x.floor() as i32 + rendered_glyph.placement.left).max(0) as u32;
+    let glyph_y = (glyph_y.floor() as i32 - rendered_glyph.placement.top).max(0) as u32;
 
     match rendered_glyph.content {
         Content::Mask => {
