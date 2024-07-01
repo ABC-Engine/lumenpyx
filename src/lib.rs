@@ -186,6 +186,11 @@ impl LumenpyxProgram {
         self.dimensions = resolution;
     }
 
+    /// Get the resolution of the program
+    pub fn get_resolution(&self) -> [u32; 2] {
+        self.dimensions
+    }
+
     /// run the program with the given update function
     pub fn run<F>(&mut self, event_loop: EventLoop<()>, mut update: F)
     where
