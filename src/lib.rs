@@ -232,7 +232,7 @@ impl LumenpyxProgram {
 
     pub(crate) fn adjust_transform_for_drawable(
         &self,
-        mut transform: &Transform,
+        transform: &Transform,
         camera: &Camera,
     ) -> Transform {
         let render_resolution = self.get_render_resolution();

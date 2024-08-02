@@ -217,6 +217,10 @@ impl Animation {
     pub fn set_time(&mut self, time: AnimationTimeElapsed) {
         self.time = time;
     }
+
+    pub fn set_shadow_strength(&mut self, strength: f32) {
+        self.shadow_strength = strength;
+    }
 }
 
 #[derive(Clone)]
@@ -656,6 +660,12 @@ impl AnimationStateMachine {
 
     pub fn restart_current_animation(&mut self) {
         self.animations[self.current_animation].restart_animation();
+    }
+
+    pub fn set_shadow_strength(&mut self, strength: f32) {
+        for animation in &mut self.animations {
+            animation.set_shadow_strength(strength);
+        }
     }
 }
 

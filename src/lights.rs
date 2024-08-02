@@ -332,10 +332,22 @@ impl DirectionalLight {
         self.angular_falloff = angular_falloff;
     }
 
+    /// Get the angular falloff of the light
+    /// 0.0 is no falloff, 1.0 is full falloff
+    pub fn get_angular_falloff(&self) -> f32 {
+        self.angular_falloff
+    }
+
     /// Set the distance falloff of the light
     /// 0.0 is no falloff, 1.0 is full falloff
     pub fn set_distance_falloff(&mut self, distance_falloff: f32) {
         self.distance_falloff = distance_falloff;
+    }
+
+    /// Get the distance falloff of the light
+    /// 0.0 is no falloff, 1.0 is full falloff
+    pub fn get_distance_falloff(&self) -> f32 {
+        self.distance_falloff
     }
 }
 
@@ -451,9 +463,10 @@ fn draw_area_light(
 
     let shape = FULL_SCREEN_QUAD;
 
+    // the magic numbers are to transform the light position from -1.0 to 1.0 to 0.0 to 1.0
     let light_pos = [
-        ((light.position[0] * matrix_transform[0][0]) + 1.0) * 0.5,
-        ((light.position[1] * matrix_transform[1][1]) + 1.0) * 0.5,
+        ((matrix_transform[3][0]) + 1.0) * 0.5,
+        ((matrix_transform[3][1]) + 1.0) * 0.5,
         light.position[2] * matrix_transform[2][2],
     ];
     let light_width = light.width * matrix_transform[0][0];
@@ -503,9 +516,10 @@ fn draw_directional_light(
 
     let shape = FULL_SCREEN_QUAD;
 
+    // the magic numbers are to transform the light position from -1.0 to 1.0 to 0.0 to 1.0
     let light_pos = [
-        ((light.position[0] * matrix_transform[0][0]) + 1.0) * 0.5,
-        ((light.position[1] * matrix_transform[1][1]) + 1.0) * 0.5,
+        ((matrix_transform[3][0]) + 1.0) * 0.5,
+        ((matrix_transform[3][1]) + 1.0) * 0.5,
         light.position[2] * matrix_transform[2][2],
     ];
 
